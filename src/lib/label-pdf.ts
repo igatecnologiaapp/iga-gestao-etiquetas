@@ -153,6 +153,8 @@ function renderNutritionTable(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(baseSize - 0.5);
+  doc.text("Porções por embalagem: Variável", x + 1, cy + baseSize * 0.35);
+  cy += baseSize * 0.55 + 0.2;
   const serving = n?.serving_size_g ? `Porção: ${fmtNum(n.serving_size_g, 0)} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —";
   doc.text(serving, x + 1, cy + baseSize * 0.35);
   cy += baseSize * 0.55 + 0.4;
