@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      allergens: {
+        Row: {
+          code: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["entity_status"]
+          updated_at: string
+        }
+        Insert: {
+          code?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Update: {
+          code?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allergens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -127,6 +171,101 @@ export type Database = {
           },
         ]
       }
+      brands: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["entity_status"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brands_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          slug: string | null
+          status: Database["public"]["Enums"]["entity_status"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          slug?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          slug?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -166,6 +305,145 @@ export type Database = {
         }
         Relationships: []
       }
+      ingredients: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          origin: string | null
+          status: Database["public"]["Enums"]["entity_status"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          origin?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          origin?: string | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nutrition_facts: {
+        Row: {
+          added_sugars_g: number | null
+          carbs_g: number | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          daily_values: Json | null
+          data_updated_at: string | null
+          energy_kcal: number | null
+          fiber_g: number | null
+          id: string
+          name: string
+          notes: string | null
+          protein_g: number | null
+          reference_basis: string | null
+          responsible: string | null
+          saturated_fat_g: number | null
+          serving_household: string | null
+          serving_size_g: number | null
+          servings_per_pack: number | null
+          sodium_mg: number | null
+          status: Database["public"]["Enums"]["nutrition_status"]
+          total_fat_g: number | null
+          total_sugars_g: number | null
+          trans_fat_g: number | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          added_sugars_g?: number | null
+          carbs_g?: number | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          daily_values?: Json | null
+          data_updated_at?: string | null
+          energy_kcal?: number | null
+          fiber_g?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          protein_g?: number | null
+          reference_basis?: string | null
+          responsible?: string | null
+          saturated_fat_g?: number | null
+          serving_household?: string | null
+          serving_size_g?: number | null
+          servings_per_pack?: number | null
+          sodium_mg?: number | null
+          status?: Database["public"]["Enums"]["nutrition_status"]
+          total_fat_g?: number | null
+          total_sugars_g?: number | null
+          trans_fat_g?: number | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          added_sugars_g?: number | null
+          carbs_g?: number | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          daily_values?: Json | null
+          data_updated_at?: string | null
+          energy_kcal?: number | null
+          fiber_g?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          protein_g?: number | null
+          reference_basis?: string | null
+          responsible?: string | null
+          saturated_fat_g?: number | null
+          serving_household?: string | null
+          serving_size_g?: number | null
+          servings_per_pack?: number | null
+          sodium_mg?: number | null
+          status?: Database["public"]["Enums"]["nutrition_status"]
+          total_fat_g?: number | null
+          total_sugars_g?: number | null
+          trans_fat_g?: number | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrition_facts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           created_at: string
@@ -186,6 +464,254 @@ export type Database = {
           module?: string
         }
         Relationships: []
+      }
+      product_allergens: {
+        Row: {
+          allergen_id: string
+          company_id: string
+          created_at: string
+          id: string
+          may_contain: boolean
+          product_id: string
+        }
+        Insert: {
+          allergen_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          may_contain?: boolean
+          product_id: string
+        }
+        Update: {
+          allergen_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          may_contain?: boolean
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_allergens_allergen_id_fkey"
+            columns: ["allergen_id"]
+            isOneToOne: false
+            referencedRelation: "allergens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_allergens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_allergens_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_allergens_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_ingredients: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          ingredient_id: string
+          position: number | null
+          product_id: string
+          quantity: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          position?: number | null
+          product_id: string
+          quantity?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          position?: number | null
+          product_id?: string
+          quantity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_ingredients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_ingredients_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_ingredients_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          branch_id: string | null
+          brand_id: string | null
+          category_id: string | null
+          commercial_description: string | null
+          company_id: string
+          contains_gluten: boolean | null
+          contains_lactose: boolean | null
+          created_at: string
+          created_by: string | null
+          ean: string | null
+          id: string
+          image_url: string | null
+          internal_code: string | null
+          legal_notes: string | null
+          name: string
+          nutrition_fact_id: string | null
+          preparation: string | null
+          preservation: string | null
+          shelf_life_days: number | null
+          sku: string | null
+          standard_weight: number | null
+          status: Database["public"]["Enums"]["entity_status"]
+          storage_temperature: string | null
+          subcategory_id: string | null
+          unit_of_measure: string | null
+          updated_at: string
+          variable_weight: boolean
+        }
+        Insert: {
+          branch_id?: string | null
+          brand_id?: string | null
+          category_id?: string | null
+          commercial_description?: string | null
+          company_id: string
+          contains_gluten?: boolean | null
+          contains_lactose?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          ean?: string | null
+          id?: string
+          image_url?: string | null
+          internal_code?: string | null
+          legal_notes?: string | null
+          name: string
+          nutrition_fact_id?: string | null
+          preparation?: string | null
+          preservation?: string | null
+          shelf_life_days?: number | null
+          sku?: string | null
+          standard_weight?: number | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          storage_temperature?: string | null
+          subcategory_id?: string | null
+          unit_of_measure?: string | null
+          updated_at?: string
+          variable_weight?: boolean
+        }
+        Update: {
+          branch_id?: string | null
+          brand_id?: string | null
+          category_id?: string | null
+          commercial_description?: string | null
+          company_id?: string
+          contains_gluten?: boolean | null
+          contains_lactose?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          ean?: string | null
+          id?: string
+          image_url?: string | null
+          internal_code?: string | null
+          legal_notes?: string | null
+          name?: string
+          nutrition_fact_id?: string | null
+          preparation?: string | null
+          preservation?: string | null
+          shelf_life_days?: number | null
+          sku?: string | null
+          standard_weight?: number | null
+          status?: Database["public"]["Enums"]["entity_status"]
+          storage_temperature?: string | null
+          subcategory_id?: string | null
+          unit_of_measure?: string | null
+          updated_at?: string
+          variable_weight?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_nutrition_fact_id_fkey"
+            columns: ["nutrition_fact_id"]
+            isOneToOne: false
+            referencedRelation: "nutrition_facts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -368,7 +894,56 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      product_pending_issues: {
+        Row: {
+          company_id: string | null
+          missing_allergens: boolean | null
+          missing_ingredients: boolean | null
+          missing_nutrition: boolean | null
+          missing_preservation: boolean | null
+          missing_shelf_life: boolean | null
+          name: string | null
+          nutrition_in_review: boolean | null
+          product_id: string | null
+          status: Database["public"]["Enums"]["entity_status"] | null
+          status_pending: boolean | null
+        }
+        Insert: {
+          company_id?: string | null
+          missing_allergens?: never
+          missing_ingredients?: never
+          missing_nutrition?: never
+          missing_preservation?: never
+          missing_shelf_life?: never
+          name?: string | null
+          nutrition_in_review?: never
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["entity_status"] | null
+          status_pending?: never
+        }
+        Update: {
+          company_id?: string | null
+          missing_allergens?: never
+          missing_ingredients?: never
+          missing_nutrition?: never
+          missing_preservation?: never
+          missing_shelf_life?: never
+          name?: string | null
+          nutrition_in_review?: never
+          product_id?: string | null
+          status?: Database["public"]["Enums"]["entity_status"] | null
+          status_pending?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       has_any_role: {
@@ -416,7 +991,8 @@ export type Database = {
         | "LOGOUT"
         | "PERMISSION_CHANGE"
         | "OTHER"
-      entity_status: "ativo" | "inativo" | "pendente"
+      entity_status: "ativo" | "inativo" | "pendente" | "revisao_necessaria"
+      nutrition_status: "vigente" | "em_revisao" | "substituida" | "inativa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -554,7 +1130,8 @@ export const Constants = {
         "PERMISSION_CHANGE",
         "OTHER",
       ],
-      entity_status: ["ativo", "inativo", "pendente"],
+      entity_status: ["ativo", "inativo", "pendente", "revisao_necessaria"],
+      nutrition_status: ["vigente", "em_revisao", "substituida", "inativa"],
     },
   },
 } as const
