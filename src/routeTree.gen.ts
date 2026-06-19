@@ -28,6 +28,7 @@ import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
 import { Route as AppLayoutsRouteImport } from './routes/app.layouts'
 import { Route as AppLayoutFormatsRouteImport } from './routes/app.layout-formats'
 import { Route as AppLayoutCategoriesRouteImport } from './routes/app.layout-categories'
+import { Route as AppIntegrationsRouteImport } from './routes/app.integrations'
 import { Route as AppIngredientsRouteImport } from './routes/app.ingredients'
 import { Route as AppCompaniesRouteImport } from './routes/app.companies'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
@@ -133,6 +134,11 @@ const AppLayoutCategoriesRoute = AppLayoutCategoriesRouteImport.update({
   path: '/layout-categories',
   getParentRoute: () => AppRoute,
 } as any)
+const AppIntegrationsRoute = AppIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppIngredientsRoute = AppIngredientsRouteImport.update({
   id: '/ingredients',
   path: '/ingredients',
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/integrations': typeof AppIntegrationsRoute
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/integrations': typeof AppIntegrationsRoute
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/integrations': typeof AppIntegrationsRoute
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
@@ -282,6 +291,7 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/integrations'
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/integrations'
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/integrations'
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
@@ -502,6 +514,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutCategoriesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/integrations': {
+      id: '/app/integrations'
+      path: '/integrations'
+      fullPath: '/app/integrations'
+      preLoaderRoute: typeof AppIntegrationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/ingredients': {
       id: '/app/ingredients'
       path: '/ingredients'
@@ -600,6 +619,7 @@ interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppIngredientsRoute: typeof AppIngredientsRoute
+  AppIntegrationsRoute: typeof AppIntegrationsRoute
   AppLayoutCategoriesRoute: typeof AppLayoutCategoriesRoute
   AppLayoutFormatsRoute: typeof AppLayoutFormatsRoute
   AppLayoutsRoute: typeof AppLayoutsRouteWithChildren
@@ -626,6 +646,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppCompaniesRoute: AppCompaniesRoute,
   AppIngredientsRoute: AppIngredientsRoute,
+  AppIntegrationsRoute: AppIntegrationsRoute,
   AppLayoutCategoriesRoute: AppLayoutCategoriesRoute,
   AppLayoutFormatsRoute: AppLayoutFormatsRoute,
   AppLayoutsRoute: AppLayoutsRouteWithChildren,
