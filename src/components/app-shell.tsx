@@ -1,30 +1,33 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard,
-  Building2,
-  Store,
-  Users,
-  ShieldCheck,
-  Settings,
-  FileText,
-  LogOut,
-  Tag,
+  LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
+  LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { CompanySwitcher } from "@/components/company-switcher";
 
-type NavItem = { to: string; label: string; icon: any; exact?: boolean };
+type NavItem = { to: string; label: string; icon: any; exact?: boolean; group: string };
 const nav: NavItem[] = [
-  { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/app/companies", label: "Empresas", icon: Building2 },
-  { to: "/app/branches", label: "Filiais", icon: Store },
-  { to: "/app/users", label: "Usuários", icon: Users },
-  { to: "/app/roles", label: "Perfis", icon: ShieldCheck },
-  { to: "/app/audit", label: "Auditoria", icon: FileText },
-  { to: "/app/settings", label: "Configurações", icon: Settings },
+  { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true, group: "Geral" },
+  { to: "/app/products", label: "Produtos", icon: Package, group: "Cadastros" },
+  { to: "/app/categories", label: "Categorias", icon: FolderTree, group: "Cadastros" },
+  { to: "/app/brands", label: "Marcas", icon: Bookmark, group: "Cadastros" },
+  { to: "/app/ingredients", label: "Ingredientes", icon: Leaf, group: "Cadastros" },
+  { to: "/app/allergens", label: "Alergênicos", icon: AlertCircle, group: "Cadastros" },
+  { to: "/app/nutrition", label: "Inf. Nutricionais", icon: Activity, group: "Cadastros" },
+  { to: "/app/pending", label: "Pendências Regulatórias", icon: AlertCircle, group: "Cadastros" },
+  { to: "/app/companies", label: "Empresas", icon: Building2, group: "Administração" },
+  { to: "/app/branches", label: "Filiais", icon: Store, group: "Administração" },
+  { to: "/app/users", label: "Usuários", icon: Users, group: "Administração" },
+  { to: "/app/roles", label: "Perfis", icon: ShieldCheck, group: "Administração" },
+  { to: "/app/audit", label: "Auditoria", icon: FileText, group: "Administração" },
+  { to: "/app/settings", label: "Configurações", icon: Settings, group: "Administração" },
 ];
+
+const groups = ["Geral", "Cadastros", "Administração"] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
@@ -48,25 +51,30 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="text-xs text-muted-foreground">Painel admin</div>
           </div>
         </div>
-        <nav className="flex-1 p-3 space-y-1">
-          {nav.map((item) => {
-            const active = item.exact ? path === item.to : path.startsWith(item.to);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <item.icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+          {groups.map((g) => (
+            <div key={g} className="space-y-1">
+              <div className="px-3 pt-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{g}</div>
+              {nav.filter((i) => i.group === g).map((item) => {
+                const active = item.exact ? path === item.to : path.startsWith(item.to);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    )}
+                  >
+                    <item.icon className="size-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
         <div className="border-t border-sidebar-border p-3">
           <div className="px-2 pb-2 text-xs text-muted-foreground truncate">
@@ -79,11 +87,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden h-14 flex items-center justify-between gap-2 border-b bg-background px-4">
-          <div className="flex items-center gap-2 font-semibold">
+        <header className="h-14 flex items-center justify-between gap-2 border-b bg-background px-4 md:px-6">
+          <div className="md:hidden flex items-center gap-2 font-semibold">
             <Tag className="size-5 text-primary" /> Etiquetas
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
+          <div className="flex-1 flex justify-end md:justify-start">
+            <CompanySwitcher />
+          </div>
+          <Button variant="ghost" size="sm" className="md:hidden" onClick={handleSignOut}>
             <LogOut className="size-4" />
           </Button>
         </header>
