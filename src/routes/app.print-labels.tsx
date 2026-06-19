@@ -207,6 +207,29 @@ function PrintLabelsPage() {
     };
   }, [layout.data]);
 
+  const previewData = useMemo(() => ({
+    product_name: product?.name,
+    brand: undefined as string | undefined,
+    internal_code: product?.internal_code,
+    sku: product?.sku,
+    ean: product?.ean,
+    ingredients: product?.commercial_description,
+    allergens: product?.contains_gluten || product?.contains_lactose
+      ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
+      : undefined,
+    gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
+    lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
+    preservation: product?.preservation,
+    lot: batchCode,
+    manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
+    expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
+    weight: weight ? `${weight} kg` : (product?.standard_weight ? `${product.standard_weight} ${product.unit_of_measure ?? ""}` : undefined),
+    nutrition: nutrition.data,
+    qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId },
+    barcode_value: product?.ean || product?.internal_code,
+  }), [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId]);
+
+
   // Validations
   const blocking = useMemo(() => {
     const errs: string[] = [];
@@ -495,6 +518,22 @@ function PrintLabelsPage() {
           )}
 
           <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              disabled={!previewFormat || !elements.data}
+              onClick={async () => {
+                if (!previewFormat || !elements.data) return;
+                const { buildLabelsPdf, openBlob } = await import("@/lib/label-pdf");
+                const blob = await buildLabelsPdf({
+                  format: previewFormat as any,
+                  elements: elements.data as any,
+                  labels: [previewData as any],
+                });
+                openBlob(blob);
+              }}
+            >
+              <PrinterIcon className="size-4 mr-2" /> Pré-visualizar PDF
+            </Button>
             <Button onClick={() => emit.mutate()} disabled={!canEmit || emit.isPending}>
               <PrinterIcon className="size-4 mr-2" />
               {emit.isPending ? "Emitindo..." : `Confirmar emissão (${quantity})`}
@@ -506,7 +545,7 @@ function PrintLabelsPage() {
           <div className="font-semibold">Pré-visualização</div>
           {previewFormat && elements.data ? (
             <div className="overflow-auto">
-              <LabelPreview format={previewFormat} elements={elements.data} zoom={2} />
+              <LabelPreview format={previewFormat} elements={elements.data} zoom={2} data={previewData as any} />
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">Selecione produto e layout para pré-visualizar.</div>
@@ -515,6 +554,7 @@ function PrintLabelsPage() {
             <div className="text-xs text-muted-foreground">Perfil ativo: <b>{role}</b></div>
           )}
         </Card>
+
       </div>
     </div>
   );

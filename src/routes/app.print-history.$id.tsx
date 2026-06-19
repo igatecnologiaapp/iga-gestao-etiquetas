@@ -14,7 +14,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { LabelPreview, type PreviewElement, type PreviewFormat } from "@/components/label-preview";
 import { toast } from "sonner";
 import { uniqueLabelCode } from "@/lib/label-emission";
-import { ArrowLeft, RotateCcw, Ban } from "lucide-react";
+import { ArrowLeft, RotateCcw, Ban, FileDown, Eye } from "lucide-react";
+import {
+  buildLabelsPdf, buildFormatFromSnapshot, buildLabelDataFromSnapshot,
+  downloadBlob, openBlob,
+} from "@/lib/label-pdf";
 
 export const Route = createFileRoute("/app/print-history/$id")({ component: Page });
 
@@ -79,6 +83,29 @@ function Page() {
     };
   })();
   const previewElements: PreviewElement[] = snapshot.data?.layout_snapshot?.elements ?? [];
+
+  async function generatePdf(action: "download" | "preview") {
+    if (!snapshot.data || !batch.data || !labels.data) return;
+    const fmt = buildFormatFromSnapshot(snapshot.data.layout_snapshot);
+    const elements = (snapshot.data.layout_snapshot?.elements ?? []) as any[];
+    if (!fmt) { toast.error("Snapshot sem formato"); return; }
+    const labelData = labels.data.filter((l) => l.status !== "cancelled").map((l) =>
+      buildLabelDataFromSnapshot(snapshot.data, { unique_label_code: l.unique_label_code, sequential: l.sequential_number }),
+    );
+    const blob = await buildLabelsPdf({ format: fmt as any, elements, labels: labelData });
+    const fname = `lote-${batch.data.id.slice(0, 8)}.pdf`;
+    if (action === "download") downloadBlob(blob, fname); else openBlob(blob);
+    const { data: u } = await supabase.auth.getUser();
+    await (supabase.from("print_events" as any) as any).insert({
+      company_id: batch.data.company_id, branch_id: batch.data.branch_id,
+      print_batch_id: batch.data.id,
+      event_type: action === "download" ? "pdf_downloaded" : "pdf_generated",
+      event_notes: `${labelData.length} etiqueta(s)`,
+      metadata: { filename: fname }, created_by: u.user?.id ?? null,
+    });
+    qc.invalidateQueries({ queryKey: ["pe", id] });
+  }
+
 
   const cancel = useMutation({
     mutationFn: async () => {
@@ -182,8 +209,10 @@ function Page() {
         title={`Lote ${b.id.slice(0, 8)}`}
         description={`Emitido em ${new Date(b.created_at).toLocaleString("pt-BR")}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button asChild variant="outline"><Link to="/app/print-history"><ArrowLeft className="size-4 mr-1" />Voltar</Link></Button>
+            <Button variant="outline" onClick={() => generatePdf("preview")} disabled={!snapshot.data}><Eye className="size-4 mr-1" />Visualizar PDF</Button>
+            <Button variant="outline" onClick={() => generatePdf("download")} disabled={!snapshot.data}><FileDown className="size-4 mr-1" />Baixar PDF</Button>
             {canReprint && b.status !== "cancelled" && (
               <Dialog open={reprintOpen} onOpenChange={setReprintOpen}>
                 <DialogTrigger asChild><Button variant="outline"><RotateCcw className="size-4 mr-1" />Reimprimir</Button></DialogTrigger>
@@ -228,7 +257,7 @@ function Page() {
         <Card className="p-5 space-y-2">
           <div className="font-semibold">Pré-visualização (snapshot)</div>
           {previewFormat ? (
-            <div className="overflow-auto"><LabelPreview format={previewFormat} elements={previewElements} zoom={2} /></div>
+            <div className="overflow-auto"><LabelPreview format={previewFormat} elements={previewElements} zoom={2} data={buildLabelDataFromSnapshot(snapshot.data, { unique_label_code: labels.data?.[0]?.unique_label_code, sequential: 1 }) as any} /></div>
           ) : <div className="text-sm text-muted-foreground">Sem snapshot disponível.</div>}
         </Card>
       </div>

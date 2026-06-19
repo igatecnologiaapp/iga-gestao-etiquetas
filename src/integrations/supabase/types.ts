@@ -1983,6 +1983,8 @@ export type Database = {
         | "layout_suggested"
         | "no_layout_suggestion"
         | "previewed"
+        | "pdf_generated"
+        | "pdf_downloaded"
       printed_label_status: "generated" | "cancelled" | "reprinted"
       printer_type:
         | "termica"
@@ -2180,6 +2182,8 @@ export const Constants = {
         "layout_suggested",
         "no_layout_suggestion",
         "previewed",
+        "pdf_generated",
+        "pdf_downloaded",
       ],
       printed_label_status: ["generated", "cancelled", "reprinted"],
       printer_type: [
