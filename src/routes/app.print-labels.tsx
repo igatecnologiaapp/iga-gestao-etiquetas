@@ -378,8 +378,13 @@ function PrintLabelsPage() {
         elements: elements.data ?? [],
         format: layout.data.label_formats,
       };
+      const reg = productPrice.data?.regular_price ?? activePromo?.regular_price ?? null;
+      const promoPrice = shelfModel === "promocional" ? (activePromo?.promotional_price ?? null) : null;
+      const whp = shelfModel === "atacado" ? (activePromo?.wholesale_price ?? productPrice.data?.wholesale_price ?? null) : null;
+      const whq = shelfModel === "atacado" ? (activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity ?? null) : null;
       const emissionSnap = {
         label_type: labelType,
+        shelf_model: isShelf ? shelfModel : null,
         batch_code: batchCode,
         manufacture_date: manufactureDate,
         expiration_date: expiration,
@@ -387,6 +392,17 @@ function PrintLabelsPage() {
         suggestion_source: layoutSource,
         overridden: layoutOverridden,
         emitted_at: new Date().toISOString(),
+        sale_unit: productPrice.data?.sale_unit ?? product.unit_of_measure ?? null,
+        regular_price: reg != null ? Number(reg) : null,
+        promotional_price: promoPrice != null ? Number(promoPrice) : null,
+        previous_price: promoPrice != null && reg != null ? Number(reg) : null,
+        wholesale_price: whp != null ? Number(whp) : null,
+        wholesale_min_quantity: whq != null ? Number(whq) : null,
+        promotion_id: activePromo?.promotion_id ?? null,
+        promotion_name: activePromo?.promotions?.name ?? null,
+        promotion_rules: activePromo?.promotion_rules ?? null,
+        promotion_start: activePromo?.promotions?.start_date ?? null,
+        promotion_end: activePromo?.promotions?.end_date ?? null,
       };
 
       const productSnap = product;
