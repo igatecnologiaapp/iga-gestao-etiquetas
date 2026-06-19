@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.create_company_with_admin(text, text, text, text, text) FROM anon, PUBLIC;
+GRANT EXECUTE ON FUNCTION public.create_company_with_admin(text, text, text, text, text) TO authenticated;
