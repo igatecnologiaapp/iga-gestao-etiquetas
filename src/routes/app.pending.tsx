@@ -1,10 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveCompany } from "@/hooks/use-active-company";
 import { PageHeader } from "@/components/page-header";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
 import { AlertCircle } from "lucide-react";
@@ -16,6 +20,7 @@ export const Route = createFileRoute("/app/pending")({
 
 type IssueRow = {
   product_id: string; company_id: string; name: string; status: string;
+  category_id: string | null; brand_id: string | null;
   missing_nutrition: boolean; missing_ingredients: boolean; missing_allergens: boolean;
   missing_shelf_life: boolean; missing_preservation: boolean;
   nutrition_in_review: boolean; status_pending: boolean;
@@ -33,6 +38,27 @@ const issueLabels: Array<[keyof IssueRow, string]> = [
 
 function PendingPage() {
   const { companyId } = useActiveCompany();
+  const [search, setSearch] = useState("");
+  const [issueFilter, setIssueFilter] = useState<string>("__all__");
+  const [statusFilter, setStatusFilter] = useState<string>("__all__");
+  const [categoryId, setCategoryId] = useState<string>("__all__");
+  const [brandId, setBrandId] = useState<string>("__all__");
+
+  const { data: categories } = useQuery({
+    queryKey: ["pending-cats", companyId], enabled: !!companyId,
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id,name").eq("company_id", companyId!).order("name");
+      return data ?? [];
+    },
+  });
+  const { data: brands } = useQuery({
+    queryKey: ["pending-brands", companyId], enabled: !!companyId,
+    queryFn: async () => {
+      const { data } = await supabase.from("brands").select("id,name").eq("company_id", companyId!).order("name");
+      return data ?? [];
+    },
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ["pending", companyId],
     enabled: !!companyId,
@@ -47,6 +73,18 @@ function PendingPage() {
       );
     },
   });
+
+  const filtered = useMemo(() => {
+    return (data ?? []).filter((r) => {
+      if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
+      if (statusFilter !== "__all__" && r.status !== statusFilter) return false;
+      if (categoryId !== "__all__" && r.category_id !== categoryId) return false;
+      if (brandId !== "__all__" && r.brand_id !== brandId) return false;
+      if (issueFilter !== "__all__" && !(r as any)[issueFilter]) return false;
+      return true;
+    });
+  }, [data, search, statusFilter, categoryId, brandId, issueFilter]);
+
 
   return (
     <>
