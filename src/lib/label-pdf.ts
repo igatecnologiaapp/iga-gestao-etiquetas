@@ -69,6 +69,18 @@ export type PdfLabelData = {
   expiry?: string;
   weight?: string;
   price?: string;
+  // Shelf-label / promotion fields (Phase 6)
+  regular_price?: string;
+  promotional_price?: string;
+  previous_price?: string;
+  wholesale_price?: string;
+  wholesale_min_quantity?: string;
+  promotion_name?: string;
+  promotion_rules?: string;
+  promotion_start?: string;
+  promotion_end?: string;
+  promotion_period?: string;
+  sale_unit?: string;
   company_name?: string;
   nutrition?: PdfNutrition | null;
   qr_payload?: any;
