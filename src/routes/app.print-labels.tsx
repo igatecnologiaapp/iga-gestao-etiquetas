@@ -259,27 +259,43 @@ function PrintLabelsPage() {
     };
   }, [layout.data]);
 
-  const previewData = useMemo(() => ({
-    product_name: product?.name,
-    brand: undefined as string | undefined,
-    internal_code: product?.internal_code,
-    sku: product?.sku,
-    ean: product?.ean,
-    ingredients: product?.commercial_description,
-    allergens: product?.contains_gluten || product?.contains_lactose
-      ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
-      : undefined,
-    gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
-    lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
-    preservation: product?.preservation,
-    lot: batchCode,
-    manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
-    expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
-    weight: weight ? `${weight} kg` : (product?.standard_weight ? `${product.standard_weight} ${product.unit_of_measure ?? ""}` : undefined),
-    nutrition: nutrition.data,
-    qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId },
-    barcode_value: product?.ean || product?.internal_code,
-  }), [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId]);
+  const previewData = useMemo(() => {
+    const reg = productPrice.data?.regular_price ?? activePromo?.regular_price ?? null;
+    const promo = shelfModel === "promocional" ? (activePromo?.promotional_price ?? productPrice.data?.current_promotional_price ?? null) : null;
+    const whp = shelfModel === "atacado" ? (activePromo?.wholesale_price ?? productPrice.data?.wholesale_price ?? null) : null;
+    const whq = shelfModel === "atacado" ? (activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity ?? null) : null;
+    return {
+      product_name: product?.name,
+      brand: undefined as string | undefined,
+      internal_code: product?.internal_code,
+      sku: product?.sku,
+      ean: product?.ean,
+      ingredients: product?.commercial_description,
+      allergens: product?.contains_gluten || product?.contains_lactose
+        ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
+        : undefined,
+      gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
+      lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
+      preservation: product?.preservation,
+      lot: batchCode,
+      manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
+      expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
+      weight: weight ? `${weight} kg` : (product?.standard_weight ? `${product.standard_weight} ${product.unit_of_measure ?? ""}` : undefined),
+      nutrition: nutrition.data,
+      sale_unit: productPrice.data?.sale_unit ?? product?.unit_of_measure,
+      regular_price: reg != null ? formatBRL(Number(reg)) : undefined,
+      promotional_price: promo != null ? formatBRL(Number(promo)) : undefined,
+      previous_price: promo != null && reg != null ? formatBRL(Number(reg)) : undefined,
+      wholesale_price: whp != null ? formatBRL(Number(whp)) : undefined,
+      wholesale_min_quantity: whq != null ? String(whq) : undefined,
+      promotion_name: activePromo?.promotions?.name,
+      promotion_rules: activePromo?.promotion_rules,
+      promotion_start: activePromo?.promotions?.start_date ? new Date(activePromo.promotions.start_date).toLocaleDateString("pt-BR") : undefined,
+      promotion_end: activePromo?.promotions?.end_date ? new Date(activePromo.promotions.end_date).toLocaleDateString("pt-BR") : undefined,
+      qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId, label_type: labelType },
+      barcode_value: product?.ean || product?.internal_code,
+    };
+  }, [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId, labelType, productPrice.data, activePromo, shelfModel]);
 
 
   // Validations
@@ -291,12 +307,25 @@ function PrintLabelsPage() {
     if (product && product.status !== "ativo") errs.push("Produto inativo.");
     if (layout.data && layout.data.status !== "ativo") errs.push("Layout inativo.");
     if (!version.data) errs.push("Layout não tem versão vigente.");
-    if (product?.variable_weight && !weight) errs.push("Produto de peso variável — informe o peso.");
+    if (product?.variable_weight && !weight && !isShelf) errs.push("Produto de peso variável — informe o peso.");
     if (labelType === "nutricional") {
       for (const m of blockingIssuesForNutritional(pending.data)) errs.push(m);
     }
+    if (isShelf) {
+      const reg = productPrice.data?.regular_price ?? activePromo?.regular_price;
+      if (reg == null) errs.push("Produto sem preço normal cadastrado.");
+      if (shelfModel === "promocional") {
+        if (!activePromo) errs.push("Nenhuma promoção ativa para este produto.");
+        else if (activePromo.promotional_price == null) errs.push("Promoção sem preço promocional definido.");
+      }
+      if (shelfModel === "atacado") {
+        const whp = activePromo?.wholesale_price ?? productPrice.data?.wholesale_price;
+        const whq = activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity;
+        if (whp == null || whq == null) errs.push("Preço por quantidade (atacado) não definido.");
+      }
+    }
     // Required layout elements
-    if (elements.data) {
+    if (elements.data && !isShelf) {
       const missingReq = elements.data.filter((e: any) => e.required).filter((e: any) => {
         if (e.element_type === "lot") return !batchCode;
         if (e.element_type === "manufacture_date") return !manufactureDate;
@@ -307,7 +336,7 @@ function PrintLabelsPage() {
       if (missingReq.length) errs.push(`Campos obrigatórios do layout não preenchidos: ${missingReq.map((e: any) => e.element_type).join(", ")}`);
     }
     return errs;
-  }, [productId, layoutId, quantity, product, layout.data, version.data, weight, labelType, pending.data, elements.data, batchCode, manufactureDate, expiration]);
+  }, [productId, layoutId, quantity, product, layout.data, version.data, weight, labelType, pending.data, elements.data, batchCode, manufactureDate, expiration, isShelf, shelfModel, productPrice.data, activePromo]);
 
   const canEmit = !isReadOnly && canCreateProduct && blocking.length === 0;
 
