@@ -115,55 +115,55 @@ function ReportsPage() {
         <TabsContent value="emissions">
           <EmissionsReport
             companyId={companyId} branchId={branchId} from={from} to={to} labelType={labelType}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "etiquetas-por-periodo", fmt)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "etiquetas-por-periodo", fmt)}
           />
         </TabsContent>
         <TabsContent value="top-products">
           <TopProductsReport
             companyId={companyId} branchId={branchId}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "produtos-mais-impressos", fmt)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "produtos-mais-impressos", fmt)}
           />
         </TabsContent>
         <TabsContent value="top-layouts">
           <TopLayoutsReport
             companyId={companyId} branchId={branchId}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "layouts-mais-utilizados", fmt)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "layouts-mais-utilizados", fmt)}
           />
         </TabsContent>
         <TabsContent value="by-user">
           <ByUserReport
             companyId={companyId} branchId={branchId}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "impressoes-por-usuario", fmt, true)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "impressoes-por-usuario", fmt, true)}
           />
         </TabsContent>
         <TabsContent value="reprints">
           <ReprintsReport
             companyId={companyId} branchId={branchId} from={from} to={to}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "reimpressoes", fmt)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "reimpressoes", fmt)}
           />
         </TabsContent>
         <TabsContent value="pending">
           <PendingReport
             companyId={companyId}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "pendencias-nutricionais", fmt)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "pendencias-nutricionais", fmt)}
           />
         </TabsContent>
         <TabsContent value="audit">
           <AuditReport
             companyId={companyId} from={from} to={to}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "auditoria", fmt, true)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "auditoria", fmt, true)}
           />
         </TabsContent>
         <TabsContent value="price-history">
           <PriceHistoryReport
             companyId={companyId} from={from} to={to}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "historico-precos", fmt, true)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "historico-precos", fmt, true)}
           />
         </TabsContent>
         <TabsContent value="promos">
           <PromotionsReport
             companyId={companyId}
-            onExport={(rows, cols, fmt) => handleExport(rows, cols, "promocoes", fmt)}
+            onExport={(rows: any, cols: any, fmt: any) => handleExport(rows, cols, "promocoes", fmt)}
           />
         </TabsContent>
       </Tabs>
