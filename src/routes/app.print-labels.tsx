@@ -604,13 +604,20 @@ function PrintLabelsPage() {
             </div>
 
             <div>
-              <Label>Impressora</Label>
+              <Label>Impressora preferencial</Label>
               <Select value={printerId} onValueChange={setPrinterId}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={printers.data?.length ? "Selecione" : "Nenhuma cadastrada"} /></SelectTrigger>
                 <SelectContent>
-                  {printers.data?.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  {printers.data?.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}{p.is_default ? " (padrão)" : ""}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
+                A escolha é registrada na emissão. Por limitação do navegador, a impressão é feita pelo diálogo nativo do sistema operacional ao abrir o PDF.
+              </p>
             </div>
             <div>
               <Label>Quantidade</Label>
