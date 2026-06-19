@@ -95,7 +95,7 @@ function labelOf(el: PreviewElement, d: PreviewData): string {
     case "allergens": return d.allergens ?? "";
     case "gluten": return d.gluten ?? "";
     case "lactose": return d.lactose ?? "";
-    case "preservation": return d.preservation ? `Conservar: ${d.preservation}` : "";
+    case "preservation": return d.preservation ? `Conservação: ${d.preservation}` : "";
     case "preparation": return d.preparation ?? "";
     case "lot": return d.lot ? `Lote: ${d.lot}` : "";
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
@@ -158,7 +158,8 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
   rows.push(["Sódio", `${fmt(n?.sodium_mg, 0)} mg`, ""]);
   return (
     <div style={{ fontSize: fontPx, lineHeight: 1.1, padding: 1, height: "100%", overflow: "hidden" }}>
-      <div style={{ fontWeight: 700, textAlign: "center", borderBottom: "1px solid #000" }}>INF. NUTRICIONAL</div>
+      <div style={{ fontWeight: 700, textAlign: "center", borderBottom: "1px solid #000" }}>INFORMAÇÃO NUTRICIONAL</div>
+      <div style={{ fontSize: fontPx * 0.9 }}>Porções por embalagem: Variável</div>
       <div style={{ fontSize: fontPx * 0.9 }}>{n?.serving_size_g ? `Porção: ${n.serving_size_g} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —"}</div>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: fontPx * 0.9 }}>
         <tbody>

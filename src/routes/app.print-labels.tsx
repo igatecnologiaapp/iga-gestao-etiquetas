@@ -137,6 +137,36 @@ function PrintLabelsPage() {
     },
   });
 
+  // Ingredients selected for the product (joined with name)
+  const productIngredients = useQuery({
+    queryKey: ["em-prod-ingredients", productId],
+    enabled: !!productId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_ingredients")
+        .select("position, ingredients(name)")
+        .eq("product_id", productId)
+        .order("position");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  // Allergens selected for the product (joined with name)
+  const productAllergens = useQuery({
+    queryKey: ["em-prod-allergens", productId],
+    enabled: !!productId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_allergens")
+        .select("allergens(name, code)")
+        .eq("product_id", productId);
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+
   // Phase 6 — product price (regular/wholesale) for the product+branch
   const productPrice = useQuery({
     queryKey: ["em-price", companyId, productId, branchId],
@@ -270,12 +300,30 @@ function PrintLabelsPage() {
       internal_code: product?.internal_code,
       sku: product?.sku,
       ean: product?.ean,
-      ingredients: product?.commercial_description,
-      allergens: product?.contains_gluten || product?.contains_lactose
-        ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
+      ingredients: (() => {
+        const list = (productIngredients.data ?? [])
+          .map((r: any) => r?.ingredients?.name)
+          .filter(Boolean);
+        if (list.length) return list.join(", ");
+        return product?.commercial_description || undefined;
+      })(),
+      allergens: (() => {
+        const list = (productAllergens.data ?? [])
+          .map((r: any) => r?.allergens?.name)
+          .filter(Boolean);
+        const parts: string[] = [];
+        if (list.length) parts.push(`Contém: ${list.join(", ")}`);
+        if (product?.contains_gluten) parts.push("CONTÉM GLÚTEN");
+        else if (product) parts.push("NÃO CONTÉM GLÚTEN");
+        if (product?.contains_lactose) parts.push("Contém lactose");
+        return parts.length ? parts.join(" · ") : undefined;
+      })(),
+      gluten: product
+        ? (product.contains_gluten ? "CONTÉM GLÚTEN" : "NÃO CONTÉM GLÚTEN")
         : undefined,
-      gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
-      lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
+      lactose: product
+        ? (product.contains_lactose ? "CONTÉM LACTOSE" : "NÃO CONTÉM LACTOSE")
+        : undefined,
       preservation: product?.preservation,
       lot: batchCode,
       manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
@@ -295,7 +343,7 @@ function PrintLabelsPage() {
       qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId, label_type: labelType },
       barcode_value: product?.ean || product?.internal_code,
     };
-  }, [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId, labelType, productPrice.data, activePromo, shelfModel]);
+  }, [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId, labelType, productPrice.data, activePromo, shelfModel, productIngredients.data, productAllergens.data]);
 
 
   // Validations
@@ -450,8 +498,8 @@ function PrintLabelsPage() {
         printed_label_id: l.id,
         product_snapshot: productSnap,
         nutrition_snapshot: nutSnap,
-        ingredients_snapshot: null,
-        allergens_snapshot: null,
+        ingredients_snapshot: (productIngredients.data ?? []).map((r: any) => ({ name: r?.ingredients?.name, position: r?.position })).filter((i: any) => i.name),
+        allergens_snapshot: (productAllergens.data ?? []).map((r: any) => ({ name: r?.allergens?.name, code: r?.allergens?.code })).filter((a: any) => a.name),
         layout_snapshot: layoutSnap,
         printer_snapshot: printerSnap,
         emission_snapshot: emissionSnap,

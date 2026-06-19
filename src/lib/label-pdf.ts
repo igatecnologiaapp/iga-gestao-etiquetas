@@ -153,6 +153,8 @@ function renderNutritionTable(
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(baseSize - 0.5);
+  doc.text("Porções por embalagem: Variável", x + 1, cy + baseSize * 0.35);
+  cy += baseSize * 0.55 + 0.2;
   const serving = n?.serving_size_g ? `Porção: ${fmtNum(n.serving_size_g, 0)} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —";
   doc.text(serving, x + 1, cy + baseSize * 0.35);
   cy += baseSize * 0.55 + 0.4;
@@ -222,7 +224,7 @@ function elementValue(el: PdfElement, d: PdfLabelData): string {
     case "allergens": return d.allergens ?? "";
     case "gluten": return d.gluten ?? "";
     case "lactose": return d.lactose ?? "";
-    case "preservation": return d.preservation ? `Conservar: ${d.preservation}` : "";
+    case "preservation": return d.preservation ? `Conservação: ${d.preservation}` : "";
     case "preparation": return d.preparation ?? "";
     case "lot": return d.lot ? `Lote: ${d.lot}` : "";
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
@@ -398,12 +400,13 @@ export function buildLabelDataFromSnapshot(snapshot: any, opts?: { unique_label_
   const al = (snapshot?.allergens_snapshot ?? []) as any[];
   const ingText = Array.isArray(ing) && ing.length
     ? ing.map((i: any) => i?.name ?? i).join(", ")
-    : (p.commercial_description ? "" : "");
-  const alText = Array.isArray(al) && al.length
-    ? `Contém: ${al.map((a: any) => a?.name ?? a).join(", ")}`
-    : (p.contains_gluten || p.contains_lactose
-        ? `${p.contains_gluten ? "Contém glúten. " : ""}${p.contains_lactose ? "Contém lactose." : ""}`
-        : "");
+    : (p.commercial_description ?? "");
+  const alParts: string[] = [];
+  if (Array.isArray(al) && al.length) alParts.push(`Contém: ${al.map((a: any) => a?.name ?? a).join(", ")}`);
+  if (p.contains_gluten) alParts.push("CONTÉM GLÚTEN");
+  else if (p && Object.keys(p).length) alParts.push("NÃO CONTÉM GLÚTEN");
+  if (p.contains_lactose) alParts.push("Contém lactose");
+  const alText = alParts.join(" · ");
   return {
     product_name: p.name,
     brand: p.brand_name ?? undefined,
@@ -412,8 +415,8 @@ export function buildLabelDataFromSnapshot(snapshot: any, opts?: { unique_label_
     ean: p.ean,
     ingredients: ingText,
     allergens: alText,
-    gluten: p.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
-    lactose: p.contains_lactose ? "CONTÉM LACTOSE" : undefined,
+    gluten: p ? (p.contains_gluten ? "CONTÉM GLÚTEN" : "NÃO CONTÉM GLÚTEN") : undefined,
+    lactose: p ? (p.contains_lactose ? "CONTÉM LACTOSE" : "NÃO CONTÉM LACTOSE") : undefined,
     preservation: p.preservation,
     preparation: p.preparation,
     legal_notes: p.legal_notes,
