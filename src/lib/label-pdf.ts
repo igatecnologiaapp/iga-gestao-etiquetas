@@ -101,6 +101,13 @@ function toMm(value: number, unit: string) {
   return value * (UNIT_TO_MM[unit] ?? 1);
 }
 
+export function formatBRL(v: number | string | null | undefined): string {
+  if (v == null || v === "") return "";
+  const n = typeof v === "number" ? v : Number(v);
+  if (!isFinite(n)) return "";
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 function fmtNum(n: number | null | undefined, digits = 1) {
   if (n === null || n === undefined || Number.isNaN(Number(n))) return "—";
   const v = Number(n);
