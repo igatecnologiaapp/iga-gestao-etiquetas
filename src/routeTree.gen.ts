@@ -37,6 +37,7 @@ import { Route as AppBrandsRouteImport } from './routes/app.brands'
 import { Route as AppBranchesRouteImport } from './routes/app.branches'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AppAllergensRouteImport } from './routes/app.allergens'
+import { Route as AppAdminHandoverRouteImport } from './routes/app.admin-handover'
 import { Route as AppPrintHistoryIdRouteImport } from './routes/app.print-history.$id'
 import { Route as AppLayoutsIdRouteImport } from './routes/app.layouts.$id'
 import { Route as AppIntegrationsIdRouteImport } from './routes/app.integrations.$id'
@@ -181,6 +182,11 @@ const AppAllergensRoute = AppAllergensRouteImport.update({
   path: '/allergens',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminHandoverRoute = AppAdminHandoverRouteImport.update({
+  id: '/admin-handover',
+  path: '/admin-handover',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPrintHistoryIdRoute = AppPrintHistoryIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/admin-handover': typeof AppAdminHandoverRoute
   '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/admin-handover': typeof AppAdminHandoverRoute
   '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/admin-handover': typeof AppAdminHandoverRoute
   '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/admin-handover'
     | '/app/allergens'
     | '/app/audit'
     | '/app/branches'
@@ -334,6 +344,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/app/admin-handover'
     | '/app/allergens'
     | '/app/audit'
     | '/app/branches'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/admin-handover'
     | '/app/allergens'
     | '/app/audit'
     | '/app/branches'
@@ -601,6 +613,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAllergensRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/admin-handover': {
+      id: '/app/admin-handover'
+      path: '/admin-handover'
+      fullPath: '/app/admin-handover'
+      preLoaderRoute: typeof AppAdminHandoverRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/print-history/$id': {
       id: '/app/print-history/$id'
       path: '/$id'
@@ -662,6 +681,7 @@ const AppPrintHistoryRouteWithChildren = AppPrintHistoryRoute._addFileChildren(
 )
 
 interface AppRouteChildren {
+  AppAdminHandoverRoute: typeof AppAdminHandoverRoute
   AppAllergensRoute: typeof AppAllergensRoute
   AppAuditRoute: typeof AppAuditRoute
   AppBranchesRoute: typeof AppBranchesRoute
@@ -690,6 +710,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAdminHandoverRoute: AppAdminHandoverRoute,
   AppAllergensRoute: AppAllergensRoute,
   AppAuditRoute: AppAuditRoute,
   AppBranchesRoute: AppBranchesRoute,
@@ -727,13 +748,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

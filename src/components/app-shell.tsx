@@ -33,6 +33,7 @@ const nav: NavItem[] = [
   { to: "/app/companies", label: "Empresas", icon: Building2, group: "Administração" },
   { to: "/app/branches", label: "Filiais", icon: Store, group: "Administração" },
   { to: "/app/users", label: "Usuários", icon: Users, group: "Administração" },
+  { to: "/app/admin-handover", label: "Transferir Admin Principal", icon: ShieldCheck, group: "Administração" },
   { to: "/app/roles", label: "Perfis", icon: ShieldCheck, group: "Administração" },
   { to: "/app/audit", label: "Auditoria", icon: FileText, group: "Administração" },
   { to: "/app/integrations", label: "Integrações", icon: Plug, group: "Integrações" },
