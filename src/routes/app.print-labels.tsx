@@ -137,6 +137,50 @@ function PrintLabelsPage() {
     },
   });
 
+  // Phase 6 — product price (regular/wholesale) for the product+branch
+  const productPrice = useQuery({
+    queryKey: ["em-price", companyId, productId, branchId],
+    enabled: !!companyId && !!productId && isShelf,
+    queryFn: async () => {
+      let q = (supabase.from("product_prices" as any) as any)
+        .select("*").eq("company_id", companyId!).eq("product_id", productId);
+      const { data, error } = await q;
+      if (error) throw error;
+      const list = (data as any[]) ?? [];
+      return list.find((p) => p.branch_id === (branchId || null)) ?? list.find((p) => p.branch_id == null) ?? null;
+    },
+  });
+
+  // Phase 6 — active promotions for product
+  const activePromotions = useQuery({
+    queryKey: ["em-promos", companyId, productId],
+    enabled: !!companyId && !!productId && isShelf,
+    queryFn: async () => {
+      const nowIso = new Date().toISOString();
+      const { data, error } = await (supabase.from("promotion_products" as any) as any)
+        .select("*, promotions:promotion_id(id,name,status,start_date,end_date)")
+        .eq("company_id", companyId!).eq("product_id", productId).eq("status", "ativo");
+      if (error) throw error;
+      return ((data as any[]) ?? []).filter((row) => {
+        const p = row.promotions;
+        return p && p.status === "active" && p.start_date <= nowIso && p.end_date >= nowIso;
+      });
+    },
+  });
+
+  // Auto-pick first active promotion when shelf=promocional
+  useEffect(() => {
+    if (!isShelf) { setPromotionId(""); return; }
+    if (shelfModel === "promocional" && !promotionId && activePromotions.data?.length) {
+      setPromotionId(activePromotions.data[0].promotion_id);
+    }
+  }, [isShelf, shelfModel, activePromotions.data, promotionId]);
+
+  const activePromo = useMemo(
+    () => activePromotions.data?.find((p) => p.promotion_id === promotionId) ?? null,
+    [activePromotions.data, promotionId],
+  );
+
   // Auto-suggest layout when product+type change
   const suggest = useMutation({
     mutationFn: async () => {
