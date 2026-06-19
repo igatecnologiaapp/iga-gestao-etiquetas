@@ -18,6 +18,8 @@ import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppRolesRouteImport } from './routes/app.roles'
 import { Route as AppProductsRouteImport } from './routes/app.products'
 import { Route as AppPrintersRouteImport } from './routes/app.printers'
+import { Route as AppPrintLabelsRouteImport } from './routes/app.print-labels'
+import { Route as AppPrintHistoryRouteImport } from './routes/app.print-history'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
 import { Route as AppLayoutsRouteImport } from './routes/app.layouts'
@@ -30,6 +32,7 @@ import { Route as AppBrandsRouteImport } from './routes/app.brands'
 import { Route as AppBranchesRouteImport } from './routes/app.branches'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AppAllergensRouteImport } from './routes/app.allergens'
+import { Route as AppPrintHistoryIdRouteImport } from './routes/app.print-history.$id'
 import { Route as AppLayoutsIdRouteImport } from './routes/app.layouts.$id'
 
 const AuthRoute = AuthRouteImport.update({
@@ -75,6 +78,16 @@ const AppProductsRoute = AppProductsRouteImport.update({
 const AppPrintersRoute = AppPrintersRouteImport.update({
   id: '/printers',
   path: '/printers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPrintLabelsRoute = AppPrintLabelsRouteImport.update({
+  id: '/print-labels',
+  path: '/print-labels',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPrintHistoryRoute = AppPrintHistoryRouteImport.update({
+  id: '/print-history',
+  path: '/print-history',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPendingRoute = AppPendingRouteImport.update({
@@ -137,6 +150,11 @@ const AppAllergensRoute = AppAllergensRouteImport.update({
   path: '/allergens',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPrintHistoryIdRoute = AppPrintHistoryIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppPrintHistoryRoute,
+} as any)
 const AppLayoutsIdRoute = AppLayoutsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -159,6 +177,8 @@ export interface FileRoutesByFullPath {
   '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/print-history': typeof AppPrintHistoryRouteWithChildren
+  '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
@@ -166,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
+  '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -182,6 +203,8 @@ export interface FileRoutesByTo {
   '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/print-history': typeof AppPrintHistoryRouteWithChildren
+  '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
@@ -189,6 +212,7 @@ export interface FileRoutesByTo {
   '/app/users': typeof AppUsersRoute
   '/app': typeof AppIndexRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
+  '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -207,6 +231,8 @@ export interface FileRoutesById {
   '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/print-history': typeof AppPrintHistoryRouteWithChildren
+  '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
@@ -214,6 +240,7 @@ export interface FileRoutesById {
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
+  '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -233,6 +260,8 @@ export interface FileRouteTypes {
     | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/print-history'
+    | '/app/print-labels'
     | '/app/printers'
     | '/app/products'
     | '/app/roles'
@@ -240,6 +269,7 @@ export interface FileRouteTypes {
     | '/app/users'
     | '/app/'
     | '/app/layouts/$id'
+    | '/app/print-history/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -256,6 +286,8 @@ export interface FileRouteTypes {
     | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/print-history'
+    | '/app/print-labels'
     | '/app/printers'
     | '/app/products'
     | '/app/roles'
@@ -263,6 +295,7 @@ export interface FileRouteTypes {
     | '/app/users'
     | '/app'
     | '/app/layouts/$id'
+    | '/app/print-history/$id'
   id:
     | '__root__'
     | '/'
@@ -280,6 +313,8 @@ export interface FileRouteTypes {
     | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/print-history'
+    | '/app/print-labels'
     | '/app/printers'
     | '/app/products'
     | '/app/roles'
@@ -287,6 +322,7 @@ export interface FileRouteTypes {
     | '/app/users'
     | '/app/'
     | '/app/layouts/$id'
+    | '/app/print-history/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -358,6 +394,20 @@ declare module '@tanstack/react-router' {
       path: '/printers'
       fullPath: '/app/printers'
       preLoaderRoute: typeof AppPrintersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/print-labels': {
+      id: '/app/print-labels'
+      path: '/print-labels'
+      fullPath: '/app/print-labels'
+      preLoaderRoute: typeof AppPrintLabelsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/print-history': {
+      id: '/app/print-history'
+      path: '/print-history'
+      fullPath: '/app/print-history'
+      preLoaderRoute: typeof AppPrintHistoryRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/pending': {
@@ -444,6 +494,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAllergensRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/print-history/$id': {
+      id: '/app/print-history/$id'
+      path: '/$id'
+      fullPath: '/app/print-history/$id'
+      preLoaderRoute: typeof AppPrintHistoryIdRouteImport
+      parentRoute: typeof AppPrintHistoryRoute
+    }
     '/app/layouts/$id': {
       id: '/app/layouts/$id'
       path: '/$id'
@@ -466,6 +523,18 @@ const AppLayoutsRouteWithChildren = AppLayoutsRoute._addFileChildren(
   AppLayoutsRouteChildren,
 )
 
+interface AppPrintHistoryRouteChildren {
+  AppPrintHistoryIdRoute: typeof AppPrintHistoryIdRoute
+}
+
+const AppPrintHistoryRouteChildren: AppPrintHistoryRouteChildren = {
+  AppPrintHistoryIdRoute: AppPrintHistoryIdRoute,
+}
+
+const AppPrintHistoryRouteWithChildren = AppPrintHistoryRoute._addFileChildren(
+  AppPrintHistoryRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAllergensRoute: typeof AppAllergensRoute
   AppAuditRoute: typeof AppAuditRoute
@@ -479,6 +548,8 @@ interface AppRouteChildren {
   AppLayoutsRoute: typeof AppLayoutsRouteWithChildren
   AppNutritionRoute: typeof AppNutritionRoute
   AppPendingRoute: typeof AppPendingRoute
+  AppPrintHistoryRoute: typeof AppPrintHistoryRouteWithChildren
+  AppPrintLabelsRoute: typeof AppPrintLabelsRoute
   AppPrintersRoute: typeof AppPrintersRoute
   AppProductsRoute: typeof AppProductsRoute
   AppRolesRoute: typeof AppRolesRoute
@@ -500,6 +571,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppLayoutsRoute: AppLayoutsRouteWithChildren,
   AppNutritionRoute: AppNutritionRoute,
   AppPendingRoute: AppPendingRoute,
+  AppPrintHistoryRoute: AppPrintHistoryRouteWithChildren,
+  AppPrintLabelsRoute: AppPrintLabelsRoute,
   AppPrintersRoute: AppPrintersRoute,
   AppProductsRoute: AppProductsRoute,
   AppRolesRoute: AppRolesRoute,

@@ -357,6 +357,7 @@ export type Database = {
           description: string | null
           id: string
           is_native: boolean
+          label_type: Database["public"]["Enums"]["label_type"] | null
           name: string
           status: Database["public"]["Enums"]["label_status"]
           updated_at: string
@@ -368,6 +369,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_native?: boolean
+          label_type?: Database["public"]["Enums"]["label_type"] | null
           name: string
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
@@ -379,6 +381,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_native?: boolean
+          label_type?: Database["public"]["Enums"]["label_type"] | null
           name?: string
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
@@ -696,6 +699,7 @@ export type Database = {
           format_id: string
           id: string
           is_default: boolean
+          label_type: Database["public"]["Enums"]["label_type"] | null
           locked: boolean
           name: string
           status: Database["public"]["Enums"]["label_status"]
@@ -712,6 +716,7 @@ export type Database = {
           format_id: string
           id?: string
           is_default?: boolean
+          label_type?: Database["public"]["Enums"]["label_type"] | null
           locked?: boolean
           name: string
           status?: Database["public"]["Enums"]["label_status"]
@@ -728,6 +733,7 @@ export type Database = {
           format_id?: string
           id?: string
           is_default?: boolean
+          label_type?: Database["public"]["Enums"]["label_type"] | null
           locked?: boolean
           name?: string
           status?: Database["public"]["Enums"]["label_status"]
@@ -760,6 +766,73 @@ export type Database = {
             columns: ["format_id"]
             isOneToOne: false
             referencedRelation: "label_formats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      label_snapshots: {
+        Row: {
+          allergens_snapshot: Json | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          emission_snapshot: Json | null
+          id: string
+          ingredients_snapshot: Json | null
+          layout_snapshot: Json | null
+          nutrition_snapshot: Json | null
+          printed_label_id: string
+          printer_snapshot: Json | null
+          product_snapshot: Json | null
+        }
+        Insert: {
+          allergens_snapshot?: Json | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          emission_snapshot?: Json | null
+          id?: string
+          ingredients_snapshot?: Json | null
+          layout_snapshot?: Json | null
+          nutrition_snapshot?: Json | null
+          printed_label_id: string
+          printer_snapshot?: Json | null
+          product_snapshot?: Json | null
+        }
+        Update: {
+          allergens_snapshot?: Json | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          emission_snapshot?: Json | null
+          id?: string
+          ingredients_snapshot?: Json | null
+          layout_snapshot?: Json | null
+          nutrition_snapshot?: Json | null
+          printed_label_id?: string
+          printer_snapshot?: Json | null
+          product_snapshot?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_snapshots_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_snapshots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_snapshots_printed_label_id_fkey"
+            columns: ["printed_label_id"]
+            isOneToOne: false
+            referencedRelation: "printed_labels"
             referencedColumns: ["id"]
           },
         ]
@@ -933,6 +1006,307 @@ export type Database = {
           module?: string
         }
         Relationships: []
+      }
+      print_batches: {
+        Row: {
+          batch_code: string | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          expiration_date: string | null
+          id: string
+          label_layout_id: string
+          label_layout_version_id: string
+          label_type: Database["public"]["Enums"]["label_type"]
+          layout_overridden: boolean | null
+          layout_suggested: boolean | null
+          layout_suggestion_source: string | null
+          manufacture_date: string | null
+          notes: string | null
+          printer_config_id: string | null
+          product_id: string
+          quantity: number
+          requested_by: string | null
+          status: Database["public"]["Enums"]["print_batch_status"]
+          updated_at: string
+          variable_weight: number | null
+        }
+        Insert: {
+          batch_code?: string | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          expiration_date?: string | null
+          id?: string
+          label_layout_id: string
+          label_layout_version_id: string
+          label_type: Database["public"]["Enums"]["label_type"]
+          layout_overridden?: boolean | null
+          layout_suggested?: boolean | null
+          layout_suggestion_source?: string | null
+          manufacture_date?: string | null
+          notes?: string | null
+          printer_config_id?: string | null
+          product_id: string
+          quantity: number
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["print_batch_status"]
+          updated_at?: string
+          variable_weight?: number | null
+        }
+        Update: {
+          batch_code?: string | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          expiration_date?: string | null
+          id?: string
+          label_layout_id?: string
+          label_layout_version_id?: string
+          label_type?: Database["public"]["Enums"]["label_type"]
+          layout_overridden?: boolean | null
+          layout_suggested?: boolean | null
+          layout_suggestion_source?: string | null
+          manufacture_date?: string | null
+          notes?: string | null
+          printer_config_id?: string | null
+          product_id?: string
+          quantity?: number
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["print_batch_status"]
+          updated_at?: string
+          variable_weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_batches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_label_layout_id_fkey"
+            columns: ["label_layout_id"]
+            isOneToOne: false
+            referencedRelation: "label_layouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_label_layout_version_id_fkey"
+            columns: ["label_layout_version_id"]
+            isOneToOne: false
+            referencedRelation: "label_layout_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_printer_config_id_fkey"
+            columns: ["printer_config_id"]
+            isOneToOne: false
+            referencedRelation: "printer_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "print_batches_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      print_events: {
+        Row: {
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          event_notes: string | null
+          event_type: Database["public"]["Enums"]["print_event_type"]
+          id: string
+          metadata: Json | null
+          print_batch_id: string | null
+          printed_label_id: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          event_notes?: string | null
+          event_type: Database["public"]["Enums"]["print_event_type"]
+          id?: string
+          metadata?: Json | null
+          print_batch_id?: string | null
+          printed_label_id?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          event_notes?: string | null
+          event_type?: Database["public"]["Enums"]["print_event_type"]
+          id?: string
+          metadata?: Json | null
+          print_batch_id?: string | null
+          printed_label_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_events_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_events_print_batch_id_fkey"
+            columns: ["print_batch_id"]
+            isOneToOne: false
+            referencedRelation: "print_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_events_printed_label_id_fkey"
+            columns: ["printed_label_id"]
+            isOneToOne: false
+            referencedRelation: "printed_labels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printed_labels: {
+        Row: {
+          barcode_value: string | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label_layout_id: string
+          label_layout_version_id: string
+          print_batch_id: string
+          product_id: string
+          qr_code_payload: Json | null
+          reprint_of: string | null
+          sequential_number: number
+          status: Database["public"]["Enums"]["printed_label_status"]
+          unique_label_code: string
+        }
+        Insert: {
+          barcode_value?: string | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label_layout_id: string
+          label_layout_version_id: string
+          print_batch_id: string
+          product_id: string
+          qr_code_payload?: Json | null
+          reprint_of?: string | null
+          sequential_number: number
+          status?: Database["public"]["Enums"]["printed_label_status"]
+          unique_label_code: string
+        }
+        Update: {
+          barcode_value?: string | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label_layout_id?: string
+          label_layout_version_id?: string
+          print_batch_id?: string
+          product_id?: string
+          qr_code_payload?: Json | null
+          reprint_of?: string | null
+          sequential_number?: number
+          status?: Database["public"]["Enums"]["printed_label_status"]
+          unique_label_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printed_labels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_label_layout_id_fkey"
+            columns: ["label_layout_id"]
+            isOneToOne: false
+            referencedRelation: "label_layouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_label_layout_version_id_fkey"
+            columns: ["label_layout_version_id"]
+            isOneToOne: false
+            referencedRelation: "label_layout_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_print_batch_id_fkey"
+            columns: ["print_batch_id"]
+            isOneToOne: false
+            referencedRelation: "print_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "printed_labels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_reprint_of_fkey"
+            columns: ["reprint_of"]
+            isOneToOne: false
+            referencedRelation: "printed_labels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       printer_configs: {
         Row: {
@@ -1533,6 +1907,18 @@ export type Database = {
         }
         Returns: string
       }
+      suggest_label_layout: {
+        Args: {
+          _branch_id: string
+          _company_id: string
+          _label_type: Database["public"]["Enums"]["label_type"]
+          _product_id: string
+        }
+        Returns: {
+          layout_id: string
+          source: string
+        }[]
+      }
     }
     Enums: {
       app_role: "administrador" | "supervisor" | "operador" | "consulta"
@@ -1577,8 +1963,27 @@ export type Database = {
         | "box"
       label_orientation: "vertical" | "horizontal"
       label_status: "ativo" | "inativo" | "arquivado"
+      label_type:
+        | "nutricional"
+        | "gondola"
+        | "promocional"
+        | "logistica"
+        | "producao"
+        | "identificacao"
+        | "validade"
+        | "outros"
       measure_unit: "mm" | "cm" | "in" | "px"
       nutrition_status: "vigente" | "em_revisao" | "substituida" | "inativa"
+      print_batch_status: "draft" | "generated" | "cancelled" | "reprinted"
+      print_event_type:
+        | "generated"
+        | "cancelled"
+        | "reprinted"
+        | "layout_changed"
+        | "layout_suggested"
+        | "no_layout_suggestion"
+        | "previewed"
+      printed_label_status: "generated" | "cancelled" | "reprinted"
       printer_type:
         | "termica"
         | "laser"
@@ -1754,8 +2159,29 @@ export const Constants = {
       ],
       label_orientation: ["vertical", "horizontal"],
       label_status: ["ativo", "inativo", "arquivado"],
+      label_type: [
+        "nutricional",
+        "gondola",
+        "promocional",
+        "logistica",
+        "producao",
+        "identificacao",
+        "validade",
+        "outros",
+      ],
       measure_unit: ["mm", "cm", "in", "px"],
       nutrition_status: ["vigente", "em_revisao", "substituida", "inativa"],
+      print_batch_status: ["draft", "generated", "cancelled", "reprinted"],
+      print_event_type: [
+        "generated",
+        "cancelled",
+        "reprinted",
+        "layout_changed",
+        "layout_suggested",
+        "no_layout_suggestion",
+        "previewed",
+      ],
+      printed_label_status: ["generated", "cancelled", "reprinted"],
       printer_type: [
         "termica",
         "laser",
