@@ -3001,6 +3001,16 @@ export type Database = {
       }
     }
     Functions: {
+      create_company_with_admin: {
+        Args: {
+          _email?: string
+          _legal_name?: string
+          _name: string
+          _phone?: string
+          _tax_id?: string
+        }
+        Returns: string
+      }
       get_active_promotion_for_product: {
         Args: { _company_id: string; _product_id: string }
         Returns: {
