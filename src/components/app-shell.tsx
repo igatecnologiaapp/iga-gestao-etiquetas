@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
   LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History, DollarSign, Percent,
-  BarChart3, Plug, MessageSquare, PanelLeftClose, PanelLeftOpen, Menu,
+  BarChart3, Plug, MessageSquare, PanelLeftClose, PanelLeftOpen, Menu, ChevronDown,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -62,40 +62,89 @@ export function AppShell({ children }: { children: ReactNode }) {
   // close mobile drawer on route change
   useEffect(() => { setMobileOpen(false); }, [path]);
 
+  // which group contains the current active route
+  const activeGroup = (() => {
+    const match = nav.find((i) => (i.exact ? path === i.to : path.startsWith(i.to)));
+    return match?.group;
+  })();
+
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    let saved: Record<string, boolean> = {};
+    if (typeof window !== "undefined") {
+      try {
+        const raw = window.sessionStorage.getItem("sidebar:openGroups");
+        if (raw) saved = JSON.parse(raw);
+      } catch {}
+    }
+    const init: Record<string, boolean> = {};
+    groups.forEach((g) => { init[g] = saved[g] ?? true; });
+    return init;
+  });
+
+  // auto-open the group containing the active route
+  useEffect(() => {
+    if (activeGroup) {
+      setOpenGroups((prev) => (prev[activeGroup] ? prev : { ...prev, [activeGroup]: true }));
+    }
+  }, [activeGroup]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try { window.sessionStorage.setItem("sidebar:openGroups", JSON.stringify(openGroups)); } catch {}
+    }
+  }, [openGroups]);
+
+  const toggleGroup = (g: string) => setOpenGroups((p) => ({ ...p, [g]: !p[g] }));
+
   async function handleSignOut() {
     await signOut();
     navigate({ to: "/auth", replace: true });
   }
 
   const renderNav = (isCollapsed: boolean) => (
-    <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
-      {groups.map((g) => (
-        <div key={g} className="space-y-1">
-          {!isCollapsed && (
-            <div className="px-3 pt-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{g}</div>
-          )}
-          {nav.filter((i) => i.group === g).map((item) => {
-            const active = item.exact ? path === item.to : path.startsWith(item.to);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                title={isCollapsed ? item.label : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  isCollapsed && "justify-center px-2",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
+    <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
+      {groups.map((g) => {
+        const items = nav.filter((i) => i.group === g);
+        if (items.length === 0) return null;
+        const isOpen = isCollapsed ? true : !!openGroups[g];
+        return (
+          <div key={g} className="space-y-1">
+            {!isCollapsed ? (
+              <button
+                type="button"
+                onClick={() => toggleGroup(g)}
+                aria-expanded={isOpen}
+                className="w-full flex items-center justify-between px-3 pt-1 pb-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold hover:text-foreground transition-colors"
               >
-                <item.icon className="size-4 shrink-0" />
-                {!isCollapsed && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
-        </div>
-      ))}
+                <span>{g}</span>
+                <ChevronDown className={cn("size-3 transition-transform", isOpen ? "rotate-0" : "-rotate-90")} />
+              </button>
+            ) : (
+              <div className="h-px bg-sidebar-border/60 mx-2 my-1" aria-hidden />
+            )}
+            {isOpen && items.map((item) => {
+              const active = item.exact ? path === item.to : path.startsWith(item.to);
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  title={isCollapsed ? item.label : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    isCollapsed && "justify-center px-2",
+                    active
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  )}
+                >
+                  <item.icon className="size-4 shrink-0" />
+                  {!isCollapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              );
+            })}
+          </div>
+        );
+      })}
     </nav>
   );
 
