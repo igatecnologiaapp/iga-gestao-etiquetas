@@ -85,17 +85,18 @@ function CompaniesPage() {
           <h1 className="text-2xl font-bold">Empresas</h1>
           <p className="text-muted-foreground">Empresas (matriz) às quais você tem acesso.</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="size-4" /> Nova empresa</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Nova empresa</DialogTitle>
-              <DialogDescription>
-                Você será automaticamente vinculado como Administrador desta empresa.
-              </DialogDescription>
-            </DialogHeader>
+        {isAdmin && (
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="size-4" /> Nova empresa</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nova empresa</DialogTitle>
+                <DialogDescription>
+                  Apenas Administradores podem cadastrar empresas. Depois de criada, atribua o perfil dos demais usuários em Usuários.
+                </DialogDescription>
+              </DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); createMut.mutate(); }} className="space-y-3">
               <Field label="Nome fantasia *">
                 <Input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
