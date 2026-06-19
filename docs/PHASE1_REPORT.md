@@ -89,14 +89,50 @@ Se o usuário for excluído ou perder o vínculo, recrie pelo painel:
    - O trigger `handle_new_user` cria automaticamente um registro em `public.user_profiles` com o mesmo `id`.
 2. **Criar a primeira empresa** em *Cloud → SQL Editor* (rode autenticado como dono — bypass de RLS no SQL Editor):
    ```sql
-   INSERT INTO public.companies (name, legal_name, tax_id)
-   VALUES ('IGA Comercial', 'IGA Comercial LTDA', NULL)
-   RETURNING id;
-   ```
-3. **Vincular o usuário como Administrador** da empresa criada:
-   ```sql
-   INSERT INTO public.user_company_roles (user_id, company_id, role)
-   SELECT u.id, c.id, 'administrador'::public.app_role
+### Passo a passo SQL (idempotente)
+```sql
+-- empresa
+INSERT INTO public.companies (name, legal_name, status)
+SELECT 'IGA Comercial', 'IGA Comercial LTDA', 'ativo'
+WHERE NOT EXISTS (SELECT 1 FROM public.companies WHERE name = 'IGA Comercial');
+
+-- filial matriz
+INSERT INTO public.branches (company_id, name, code, status)
+SELECT c.id, 'Matriz', 'MAT', 'ativo' FROM public.companies c
+WHERE c.name='IGA Comercial'
+  AND NOT EXISTS (SELECT 1 FROM public.branches b WHERE b.company_id=c.id AND b.code='MAT');
+
+-- vínculo administrador
+INSERT INTO public.user_company_roles (user_id, company_id, role)
+SELECT u.id, c.id, 'administrador'::public.app_role
+FROM auth.users u, public.companies c
+WHERE u.email='igacomercial.sp@gmail.com' AND c.name='IGA Comercial'
+  AND NOT EXISTS (
+    SELECT 1 FROM public.user_company_roles ucr
+    WHERE ucr.user_id=u.id AND ucr.company_id=c.id AND ucr.role='administrador'
+  );
+
+-- acesso à filial
+INSERT INTO public.user_branch_access (user_id, branch_id)
+SELECT u.id, b.id
+FROM auth.users u
+JOIN public.companies c ON c.name='IGA Comercial'
+JOIN public.branches  b ON b.company_id=c.id AND b.code='MAT'
+WHERE u.email='igacomercial.sp@gmail.com'
+  AND NOT EXISTS (
+    SELECT 1 FROM public.user_branch_access uba
+    WHERE uba.user_id=u.id AND uba.branch_id=b.id
+  );
+
+-- auditoria explícita
+INSERT INTO public.audit_logs (company_id, user_id, action, table_name, record_id, new_values, reason)
+SELECT c.id, u.id, 'PERMISSION_CHANGE'::public.audit_action, 'user_company_roles',
+       u.id::text,
+       jsonb_build_object('email', u.email, 'role', 'administrador'),
+       'Seed/Recriação do Administrador principal'
+FROM auth.users u, public.companies c
+WHERE u.email='igacomercial.sp@gmail.com' AND c.name='IGA Comercial';
+```
    FROM auth.users u, public.companies c
    WHERE u.email = 'igacomercial.sp@gmail.com'
      AND c.name  = 'IGA Comercial';
