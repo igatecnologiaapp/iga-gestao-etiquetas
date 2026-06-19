@@ -115,7 +115,8 @@ function Page() {
                 <TableCell>{r.batch_code ?? "—"}</TableCell>
                 <TableCell className="text-right">{r.quantity}</TableCell>
                 <TableCell><Badge variant={r.status === "generated" ? "default" : r.status === "cancelled" ? "destructive" : "outline"}>{r.status}</Badge></TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right space-x-1">
+                  <Button variant="ghost" size="sm" onClick={() => downloadBatchPdf(r.id)} title="Baixar PDF do lote"><FileDown className="size-4" /></Button>
                   <Button asChild variant="outline" size="sm"><Link to="/app/print-history/$id" params={{ id: r.id }}>Detalhes</Link></Button>
                 </TableCell>
               </TableRow>
