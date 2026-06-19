@@ -51,6 +51,10 @@ function PrintLabelsPage() {
   const [expiration, setExpiration] = useState<string>("");
   const [weight, setWeight] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [shelfModel, setShelfModel] = useState<ShelfModel>("simples");
+  const [promotionId, setPromotionId] = useState<string>("");
+
+  const isShelf = isShelfLabel(labelType);
 
   // Lookups
   const branches = useQuery({
