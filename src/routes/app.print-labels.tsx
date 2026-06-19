@@ -300,12 +300,27 @@ function PrintLabelsPage() {
       internal_code: product?.internal_code,
       sku: product?.sku,
       ean: product?.ean,
-      ingredients: product?.commercial_description,
-      allergens: product?.contains_gluten || product?.contains_lactose
-        ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
+      ingredients: (() => {
+        const list = (productIngredients.data ?? [])
+          .map((r: any) => r?.ingredients?.name)
+          .filter(Boolean);
+        if (list.length) return list.join(", ");
+        return product?.commercial_description || undefined;
+      })(),
+      allergens: (() => {
+        const list = (productAllergens.data ?? [])
+          .map((r: any) => r?.allergens?.name)
+          .filter(Boolean);
+        if (list.length) return `Contém: ${list.join(", ")}`;
+        if (product?.contains_lactose) return "Contém lactose.";
+        return undefined;
+      })(),
+      gluten: product
+        ? (product.contains_gluten ? "CONTÉM GLÚTEN" : "NÃO CONTÉM GLÚTEN")
         : undefined,
-      gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
-      lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
+      lactose: product
+        ? (product.contains_lactose ? "CONTÉM LACTOSE" : "NÃO CONTÉM LACTOSE")
+        : undefined,
       preservation: product?.preservation,
       lot: batchCode,
       manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
