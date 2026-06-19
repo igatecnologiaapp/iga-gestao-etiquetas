@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
   LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History, DollarSign, Percent,
-  BarChart3, Plug, MessageSquare, PanelLeftClose, PanelLeftOpen, Menu,
+  BarChart3, Plug, MessageSquare, PanelLeftClose, PanelLeftOpen, Menu, ChevronDown,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
