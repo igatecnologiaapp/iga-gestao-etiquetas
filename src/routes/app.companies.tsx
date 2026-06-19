@@ -52,21 +52,22 @@ function CompaniesPage() {
 
   const createMut = useMutation({
     mutationFn: async () => {
-      const { data: userRes } = await supabase.auth.getUser();
-      const uid = userRes.user!.id;
-      const { data: created, error } = await supabase
-        .from("companies")
-        .insert({
-          name: form.name,
-          legal_name: form.legal_name || null,
-          tax_id: form.tax_id || null,
-          email: form.email || null,
-          phone: form.phone || null,
-          created_by: uid,
-        })
-        .select().single();
-      if (error) throw error;
-      return created;
+      const { data, error } = await supabase.rpc("create_company_with_admin", {
+        _name: form.name,
+        _legal_name: form.legal_name || null,
+        _tax_id: form.tax_id || null,
+        _email: form.email || null,
+        _phone: form.phone || null,
+      });
+      if (error) {
+        const msg = error.message?.includes("forbidden")
+          ? "Você não tem permissão para criar empresas (requer perfil administrador)."
+          : error.message?.includes("not_authenticated")
+            ? "Sessão expirada. Entre novamente."
+            : error.message;
+        throw new Error(msg);
+      }
+      return data;
     },
     onSuccess: () => {
       toast.success("Empresa criada");
