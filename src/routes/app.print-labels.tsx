@@ -675,9 +675,7 @@ function PrintLabelsPage() {
         <Card className="p-5 space-y-3">
           <div className="font-semibold">Pré-visualização</div>
           {previewFormat && elements.data ? (
-            <div className="overflow-auto">
-              <LabelPreview format={previewFormat} elements={elements.data} zoom={2} data={previewData as any} />
-            </div>
+            <FitPreview format={previewFormat} elements={elements.data} data={previewData as any} />
           ) : (
             <div className="text-sm text-muted-foreground">Selecione produto e layout para pré-visualizar.</div>
           )}
