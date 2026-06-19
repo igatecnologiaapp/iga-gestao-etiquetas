@@ -305,6 +305,110 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["template_status"]
+          subject: string
+          updated_at: string
+          variables: string[]
+        }
+        Insert: {
+          body: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["template_status"]
+          subject: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["template_status"]
+          subject?: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_system_mappings: {
+        Row: {
+          company_id: string
+          created_at: string
+          entity_type: Database["public"]["Enums"]["external_entity_type"]
+          external_id: string
+          external_payload: Json | null
+          id: string
+          integration_config_id: string
+          internal_id: string
+          last_sync_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          entity_type: Database["public"]["Enums"]["external_entity_type"]
+          external_id: string
+          external_payload?: Json | null
+          id?: string
+          integration_config_id: string
+          internal_id: string
+          last_sync_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          entity_type?: Database["public"]["Enums"]["external_entity_type"]
+          external_id?: string
+          external_payload?: Json | null
+          id?: string
+          integration_config_id?: string
+          internal_id?: string
+          last_sync_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_system_mappings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_system_mappings_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredients: {
         Row: {
           company_id: string
@@ -345,6 +449,320 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_configs: {
+        Row: {
+          auth_type: Database["public"]["Enums"]["integration_auth_type"]
+          base_url: string | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          integration_type: Database["public"]["Enums"]["integration_type"]
+          last_error_at: string | null
+          last_error_message: string | null
+          last_success_at: string | null
+          last_test_at: string | null
+          name: string
+          provider: string | null
+          settings_json: Json
+          status: Database["public"]["Enums"]["integration_status"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auth_type?: Database["public"]["Enums"]["integration_auth_type"]
+          base_url?: string | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_type: Database["public"]["Enums"]["integration_type"]
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
+          last_test_at?: string | null
+          name: string
+          provider?: string | null
+          settings_json?: Json
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auth_type?: Database["public"]["Enums"]["integration_auth_type"]
+          base_url?: string | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_type?: Database["public"]["Enums"]["integration_type"]
+          last_error_at?: string | null
+          last_error_message?: string | null
+          last_success_at?: string | null
+          last_test_at?: string | null
+          name?: string
+          provider?: string | null
+          settings_json?: Json
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_configs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_event_queue: {
+        Row: {
+          attempts: number
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          error_message: string | null
+          event_name: string
+          id: string
+          integration_config_id: string | null
+          last_attempt_at: string | null
+          next_retry_at: string | null
+          payload: Json
+          status: Database["public"]["Enums"]["integration_queue_status"]
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          error_message?: string | null
+          event_name: string
+          id?: string
+          integration_config_id?: string | null
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          payload?: Json
+          status?: Database["public"]["Enums"]["integration_queue_status"]
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          error_message?: string | null
+          event_name?: string
+          id?: string
+          integration_config_id?: string | null
+          last_attempt_at?: string | null
+          next_retry_at?: string | null
+          payload?: Json
+          status?: Database["public"]["Enums"]["integration_queue_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_event_queue_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_event_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_event_queue_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_logs: {
+        Row: {
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          direction: Database["public"]["Enums"]["integration_log_direction"]
+          error_message: string | null
+          event_type: string
+          id: string
+          integration_config_id: string | null
+          request_payload: Json | null
+          response_payload: Json | null
+          status: Database["public"]["Enums"]["integration_log_status"]
+        }
+        Insert: {
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          direction: Database["public"]["Enums"]["integration_log_direction"]
+          error_message?: string | null
+          event_type: string
+          id?: string
+          integration_config_id?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: Database["public"]["Enums"]["integration_log_status"]
+        }
+        Update: {
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          direction?: Database["public"]["Enums"]["integration_log_direction"]
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          integration_config_id?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: Database["public"]["Enums"]["integration_log_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_logs_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_tokens: {
+        Row: {
+          company_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          integration_config_id: string
+          token_hash: string
+          token_name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          integration_config_id: string
+          token_hash: string
+          token_name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          integration_config_id?: string
+          token_hash?: string
+          token_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_tokens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_tokens_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_webhooks: {
+        Row: {
+          company_id: string
+          created_at: string
+          event: string
+          id: string
+          integration_config_id: string
+          is_active: boolean
+          last_delivery_at: string | null
+          secret_hash: string | null
+          target_url: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          event: string
+          id?: string
+          integration_config_id: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          secret_hash?: string | null
+          target_url: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          event?: string
+          id?: string
+          integration_config_id?: string
+          is_active?: boolean
+          last_delivery_at?: string | null
+          secret_hash?: string | null
+          target_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_webhooks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_webhooks_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
             referencedColumns: ["id"]
           },
         ]
@@ -1311,12 +1729,18 @@ export type Database = {
       printer_configs: {
         Row: {
           branch_id: string | null
+          command_language:
+            | Database["public"]["Enums"]["printer_command_language"]
+            | null
           company_id: string
+          connection_settings: Json
           connection_type: string | null
           created_at: string
           created_by: string | null
           dpi: number | null
+          driver_notes: string | null
           id: string
+          integration_config_id: string | null
           is_default: boolean
           location: string | null
           manufacturer: string | null
@@ -1327,18 +1751,25 @@ export type Database = {
           notes: string | null
           paper_type: string | null
           printer_type: Database["public"]["Enums"]["printer_type"] | null
+          protocol: string | null
           ribbon_type: string | null
           status: Database["public"]["Enums"]["label_status"]
           updated_at: string
         }
         Insert: {
           branch_id?: string | null
+          command_language?:
+            | Database["public"]["Enums"]["printer_command_language"]
+            | null
           company_id: string
+          connection_settings?: Json
           connection_type?: string | null
           created_at?: string
           created_by?: string | null
           dpi?: number | null
+          driver_notes?: string | null
           id?: string
+          integration_config_id?: string | null
           is_default?: boolean
           location?: string | null
           manufacturer?: string | null
@@ -1349,18 +1780,25 @@ export type Database = {
           notes?: string | null
           paper_type?: string | null
           printer_type?: Database["public"]["Enums"]["printer_type"] | null
+          protocol?: string | null
           ribbon_type?: string | null
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
         }
         Update: {
           branch_id?: string | null
+          command_language?:
+            | Database["public"]["Enums"]["printer_command_language"]
+            | null
           company_id?: string
+          connection_settings?: Json
           connection_type?: string | null
           created_at?: string
           created_by?: string | null
           dpi?: number | null
+          driver_notes?: string | null
           id?: string
+          integration_config_id?: string | null
           is_default?: boolean
           location?: string | null
           manufacturer?: string | null
@@ -1371,6 +1809,7 @@ export type Database = {
           notes?: string | null
           paper_type?: string | null
           printer_type?: Database["public"]["Enums"]["printer_type"] | null
+          protocol?: string | null
           ribbon_type?: string | null
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
@@ -1388,6 +1827,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printer_configs_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
             referencedColumns: ["id"]
           },
         ]
@@ -1977,6 +2423,79 @@ export type Database = {
           },
         ]
       }
+      scale_configs: {
+        Row: {
+          branch_id: string | null
+          company_id: string
+          connection_type: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          integration_config_id: string | null
+          manufacturer: string | null
+          model: string | null
+          name: string
+          protocol: string | null
+          settings_json: Json
+          status: Database["public"]["Enums"]["integration_status"]
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          company_id: string
+          connection_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_config_id?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name: string
+          protocol?: string | null
+          settings_json?: Json
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          company_id?: string
+          connection_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          integration_config_id?: string | null
+          manufacturer?: string | null
+          model?: string | null
+          name?: string
+          protocol?: string | null
+          settings_json?: Json
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scale_configs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scale_configs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scale_configs_integration_config_id_fkey"
+            columns: ["integration_config_id"]
+            isOneToOne: false
+            referencedRelation: "integration_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           company_id: string | null
@@ -2127,6 +2646,50 @@ export type Database = {
           {
             foreignKeyName: "user_profiles_default_company_id_fkey"
             columns: ["default_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_templates: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          name: string
+          status: Database["public"]["Enums"]["template_status"]
+          updated_at: string
+          variables: string[]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          name: string
+          status?: Database["public"]["Enums"]["template_status"]
+          updated_at?: string
+          variables?: string[]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          name?: string
+          status?: Database["public"]["Enums"]["template_status"]
+          updated_at?: string
+          variables?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_templates_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
@@ -2515,6 +3078,46 @@ export type Database = {
         | "PERMISSION_CHANGE"
         | "OTHER"
       entity_status: "ativo" | "inativo" | "pendente" | "revisao_necessaria"
+      external_entity_type:
+        | "product"
+        | "category"
+        | "brand"
+        | "label"
+        | "promotion"
+        | "customer"
+        | "supplier"
+        | "price"
+      integration_auth_type:
+        | "none"
+        | "api_key"
+        | "bearer"
+        | "basic"
+        | "oauth2"
+        | "hmac"
+        | "custom"
+      integration_log_direction: "inbound" | "outbound"
+      integration_log_status: "success" | "error" | "pending" | "skipped"
+      integration_queue_status:
+        | "pending"
+        | "processing"
+        | "success"
+        | "error"
+        | "skipped"
+      integration_status:
+        | "inactive"
+        | "testing"
+        | "active"
+        | "error"
+        | "disabled"
+      integration_type:
+        | "erp"
+        | "printer"
+        | "scale"
+        | "whatsapp"
+        | "email"
+        | "external_api"
+        | "production"
+        | "tech_sheet"
       label_element_type:
         | "product_name"
         | "internal_code"
@@ -2564,6 +3167,7 @@ export type Database = {
         | "pdf_generated"
         | "pdf_downloaded"
       printed_label_status: "generated" | "cancelled" | "reprinted"
+      printer_command_language: "ZPL" | "EPL" | "ESC_POS" | "PDF" | "generic"
       printer_type:
         | "termica"
         | "laser"
@@ -2574,6 +3178,7 @@ export type Database = {
         | "bobina_continua"
         | "etiqueta_adesiva"
       promotion_status: "draft" | "scheduled" | "active" | "ended" | "cancelled"
+      template_status: "draft" | "active" | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2713,6 +3318,51 @@ export const Constants = {
         "OTHER",
       ],
       entity_status: ["ativo", "inativo", "pendente", "revisao_necessaria"],
+      external_entity_type: [
+        "product",
+        "category",
+        "brand",
+        "label",
+        "promotion",
+        "customer",
+        "supplier",
+        "price",
+      ],
+      integration_auth_type: [
+        "none",
+        "api_key",
+        "bearer",
+        "basic",
+        "oauth2",
+        "hmac",
+        "custom",
+      ],
+      integration_log_direction: ["inbound", "outbound"],
+      integration_log_status: ["success", "error", "pending", "skipped"],
+      integration_queue_status: [
+        "pending",
+        "processing",
+        "success",
+        "error",
+        "skipped",
+      ],
+      integration_status: [
+        "inactive",
+        "testing",
+        "active",
+        "error",
+        "disabled",
+      ],
+      integration_type: [
+        "erp",
+        "printer",
+        "scale",
+        "whatsapp",
+        "email",
+        "external_api",
+        "production",
+        "tech_sheet",
+      ],
       label_element_type: [
         "product_name",
         "internal_code",
@@ -2765,6 +3415,7 @@ export const Constants = {
         "pdf_downloaded",
       ],
       printed_label_status: ["generated", "cancelled", "reprinted"],
+      printer_command_language: ["ZPL", "EPL", "ESC_POS", "PDF", "generic"],
       printer_type: [
         "termica",
         "laser",
@@ -2776,6 +3427,7 @@ export const Constants = {
         "etiqueta_adesiva",
       ],
       promotion_status: ["draft", "scheduled", "active", "ended", "cancelled"],
+      template_status: ["draft", "active", "disabled"],
     },
   },
 } as const

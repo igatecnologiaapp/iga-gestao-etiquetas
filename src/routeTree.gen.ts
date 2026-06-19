@@ -25,9 +25,11 @@ import { Route as AppPrintHistoryRouteImport } from './routes/app.print-history'
 import { Route as AppPricesRouteImport } from './routes/app.prices'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
+import { Route as AppMessageTemplatesRouteImport } from './routes/app.message-templates'
 import { Route as AppLayoutsRouteImport } from './routes/app.layouts'
 import { Route as AppLayoutFormatsRouteImport } from './routes/app.layout-formats'
 import { Route as AppLayoutCategoriesRouteImport } from './routes/app.layout-categories'
+import { Route as AppIntegrationsRouteImport } from './routes/app.integrations'
 import { Route as AppIngredientsRouteImport } from './routes/app.ingredients'
 import { Route as AppCompaniesRouteImport } from './routes/app.companies'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
@@ -37,6 +39,7 @@ import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AppAllergensRouteImport } from './routes/app.allergens'
 import { Route as AppPrintHistoryIdRouteImport } from './routes/app.print-history.$id'
 import { Route as AppLayoutsIdRouteImport } from './routes/app.layouts.$id'
+import { Route as AppIntegrationsIdRouteImport } from './routes/app.integrations.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -118,6 +121,11 @@ const AppNutritionRoute = AppNutritionRouteImport.update({
   path: '/nutrition',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMessageTemplatesRoute = AppMessageTemplatesRouteImport.update({
+  id: '/message-templates',
+  path: '/message-templates',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLayoutsRoute = AppLayoutsRouteImport.update({
   id: '/layouts',
   path: '/layouts',
@@ -131,6 +139,11 @@ const AppLayoutFormatsRoute = AppLayoutFormatsRouteImport.update({
 const AppLayoutCategoriesRoute = AppLayoutCategoriesRouteImport.update({
   id: '/layout-categories',
   path: '/layout-categories',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppIntegrationsRoute = AppIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIngredientsRoute = AppIngredientsRouteImport.update({
@@ -178,6 +191,11 @@ const AppLayoutsIdRoute = AppLayoutsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppLayoutsRoute,
 } as any)
+const AppIntegrationsIdRoute = AppIntegrationsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppIntegrationsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -190,9 +208,11 @@ export interface FileRoutesByFullPath {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/integrations': typeof AppIntegrationsRouteWithChildren
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
+  '/app/message-templates': typeof AppMessageTemplatesRoute
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
@@ -206,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
+  '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
@@ -219,9 +240,11 @@ export interface FileRoutesByTo {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/integrations': typeof AppIntegrationsRouteWithChildren
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
+  '/app/message-templates': typeof AppMessageTemplatesRoute
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
@@ -235,6 +258,7 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app': typeof AppIndexRoute
+  '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
@@ -250,9 +274,11 @@ export interface FileRoutesById {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/integrations': typeof AppIntegrationsRouteWithChildren
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
+  '/app/message-templates': typeof AppMessageTemplatesRoute
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
@@ -266,6 +292,7 @@ export interface FileRoutesById {
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
+  '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
@@ -282,9 +309,11 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/integrations'
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
+    | '/app/message-templates'
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
@@ -298,6 +327,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/users'
     | '/app/'
+    | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -311,9 +341,11 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/integrations'
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
+    | '/app/message-templates'
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
@@ -327,6 +359,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/users'
     | '/app'
+    | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
   id:
@@ -341,9 +374,11 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/integrations'
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
+    | '/app/message-templates'
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
@@ -357,6 +392,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/users'
     | '/app/'
+    | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
   fileRoutesById: FileRoutesById
@@ -481,6 +517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNutritionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/message-templates': {
+      id: '/app/message-templates'
+      path: '/message-templates'
+      fullPath: '/app/message-templates'
+      preLoaderRoute: typeof AppMessageTemplatesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/layouts': {
       id: '/app/layouts'
       path: '/layouts'
@@ -500,6 +543,13 @@ declare module '@tanstack/react-router' {
       path: '/layout-categories'
       fullPath: '/app/layout-categories'
       preLoaderRoute: typeof AppLayoutCategoriesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/integrations': {
+      id: '/app/integrations'
+      path: '/integrations'
+      fullPath: '/app/integrations'
+      preLoaderRoute: typeof AppIntegrationsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/ingredients': {
@@ -565,8 +615,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutsIdRouteImport
       parentRoute: typeof AppLayoutsRoute
     }
+    '/app/integrations/$id': {
+      id: '/app/integrations/$id'
+      path: '/$id'
+      fullPath: '/app/integrations/$id'
+      preLoaderRoute: typeof AppIntegrationsIdRouteImport
+      parentRoute: typeof AppIntegrationsRoute
+    }
   }
 }
+
+interface AppIntegrationsRouteChildren {
+  AppIntegrationsIdRoute: typeof AppIntegrationsIdRoute
+}
+
+const AppIntegrationsRouteChildren: AppIntegrationsRouteChildren = {
+  AppIntegrationsIdRoute: AppIntegrationsIdRoute,
+}
+
+const AppIntegrationsRouteWithChildren = AppIntegrationsRoute._addFileChildren(
+  AppIntegrationsRouteChildren,
+)
 
 interface AppLayoutsRouteChildren {
   AppLayoutsIdRoute: typeof AppLayoutsIdRoute
@@ -600,9 +669,11 @@ interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppIngredientsRoute: typeof AppIngredientsRoute
+  AppIntegrationsRoute: typeof AppIntegrationsRouteWithChildren
   AppLayoutCategoriesRoute: typeof AppLayoutCategoriesRoute
   AppLayoutFormatsRoute: typeof AppLayoutFormatsRoute
   AppLayoutsRoute: typeof AppLayoutsRouteWithChildren
+  AppMessageTemplatesRoute: typeof AppMessageTemplatesRoute
   AppNutritionRoute: typeof AppNutritionRoute
   AppPendingRoute: typeof AppPendingRoute
   AppPricesRoute: typeof AppPricesRoute
@@ -626,9 +697,11 @@ const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppCompaniesRoute: AppCompaniesRoute,
   AppIngredientsRoute: AppIngredientsRoute,
+  AppIntegrationsRoute: AppIntegrationsRouteWithChildren,
   AppLayoutCategoriesRoute: AppLayoutCategoriesRoute,
   AppLayoutFormatsRoute: AppLayoutFormatsRoute,
   AppLayoutsRoute: AppLayoutsRouteWithChildren,
+  AppMessageTemplatesRoute: AppMessageTemplatesRoute,
   AppNutritionRoute: AppNutritionRoute,
   AppPendingRoute: AppPendingRoute,
   AppPricesRoute: AppPricesRoute,
