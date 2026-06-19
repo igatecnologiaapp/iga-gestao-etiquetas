@@ -2,6 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
+  LayoutTemplate, Ruler, FolderKanban, Printer,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -19,6 +20,10 @@ const nav: NavItem[] = [
   { to: "/app/allergens", label: "Alergênicos", icon: AlertCircle, group: "Cadastros" },
   { to: "/app/nutrition", label: "Inf. Nutricionais", icon: Activity, group: "Cadastros" },
   { to: "/app/pending", label: "Pendências Regulatórias", icon: AlertCircle, group: "Cadastros" },
+  { to: "/app/layouts", label: "Central de Layouts", icon: LayoutTemplate, group: "Layouts" },
+  { to: "/app/layout-categories", label: "Categorias de Layout", icon: FolderKanban, group: "Layouts" },
+  { to: "/app/layout-formats", label: "Formatos", icon: Ruler, group: "Layouts" },
+  { to: "/app/printers", label: "Impressoras", icon: Printer, group: "Layouts" },
   { to: "/app/companies", label: "Empresas", icon: Building2, group: "Administração" },
   { to: "/app/branches", label: "Filiais", icon: Store, group: "Administração" },
   { to: "/app/users", label: "Usuários", icon: Users, group: "Administração" },
@@ -27,7 +32,7 @@ const nav: NavItem[] = [
   { to: "/app/settings", label: "Configurações", icon: Settings, group: "Administração" },
 ];
 
-const groups = ["Geral", "Cadastros", "Administração"] as const;
+const groups = ["Geral", "Cadastros", "Layouts", "Administração"] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();

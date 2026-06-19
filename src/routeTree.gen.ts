@@ -17,8 +17,12 @@ import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppRolesRouteImport } from './routes/app.roles'
 import { Route as AppProductsRouteImport } from './routes/app.products'
+import { Route as AppPrintersRouteImport } from './routes/app.printers'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
+import { Route as AppLayoutsRouteImport } from './routes/app.layouts'
+import { Route as AppLayoutFormatsRouteImport } from './routes/app.layout-formats'
+import { Route as AppLayoutCategoriesRouteImport } from './routes/app.layout-categories'
 import { Route as AppIngredientsRouteImport } from './routes/app.ingredients'
 import { Route as AppCompaniesRouteImport } from './routes/app.companies'
 import { Route as AppCategoriesRouteImport } from './routes/app.categories'
@@ -26,6 +30,7 @@ import { Route as AppBrandsRouteImport } from './routes/app.brands'
 import { Route as AppBranchesRouteImport } from './routes/app.branches'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AppAllergensRouteImport } from './routes/app.allergens'
+import { Route as AppLayoutsIdRouteImport } from './routes/app.layouts.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -67,6 +72,11 @@ const AppProductsRoute = AppProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPrintersRoute = AppPrintersRouteImport.update({
+  id: '/printers',
+  path: '/printers',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPendingRoute = AppPendingRouteImport.update({
   id: '/pending',
   path: '/pending',
@@ -75,6 +85,21 @@ const AppPendingRoute = AppPendingRouteImport.update({
 const AppNutritionRoute = AppNutritionRouteImport.update({
   id: '/nutrition',
   path: '/nutrition',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLayoutsRoute = AppLayoutsRouteImport.update({
+  id: '/layouts',
+  path: '/layouts',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLayoutFormatsRoute = AppLayoutFormatsRouteImport.update({
+  id: '/layout-formats',
+  path: '/layout-formats',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLayoutCategoriesRoute = AppLayoutCategoriesRouteImport.update({
+  id: '/layout-categories',
+  path: '/layout-categories',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIngredientsRoute = AppIngredientsRouteImport.update({
@@ -112,6 +137,11 @@ const AppAllergensRoute = AppAllergensRouteImport.update({
   path: '/allergens',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLayoutsIdRoute = AppLayoutsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppLayoutsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,13 +154,18 @@ export interface FileRoutesByFullPath {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/layout-categories': typeof AppLayoutCategoriesRoute
+  '/app/layout-formats': typeof AppLayoutFormatsRoute
+  '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
+  '/app/layouts/$id': typeof AppLayoutsIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -142,13 +177,18 @@ export interface FileRoutesByTo {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/layout-categories': typeof AppLayoutCategoriesRoute
+  '/app/layout-formats': typeof AppLayoutFormatsRoute
+  '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app': typeof AppIndexRoute
+  '/app/layouts/$id': typeof AppLayoutsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -162,13 +202,18 @@ export interface FileRoutesById {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/layout-categories': typeof AppLayoutCategoriesRoute
+  '/app/layout-formats': typeof AppLayoutFormatsRoute
+  '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
+  '/app/layouts/$id': typeof AppLayoutsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -183,13 +228,18 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/layout-categories'
+    | '/app/layout-formats'
+    | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/printers'
     | '/app/products'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
     | '/app/'
+    | '/app/layouts/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -201,13 +251,18 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/layout-categories'
+    | '/app/layout-formats'
+    | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/printers'
     | '/app/products'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
     | '/app'
+    | '/app/layouts/$id'
   id:
     | '__root__'
     | '/'
@@ -220,13 +275,18 @@ export interface FileRouteTypes {
     | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/layout-categories'
+    | '/app/layout-formats'
+    | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/printers'
     | '/app/products'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
     | '/app/'
+    | '/app/layouts/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -293,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppProductsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/printers': {
+      id: '/app/printers'
+      path: '/printers'
+      fullPath: '/app/printers'
+      preLoaderRoute: typeof AppPrintersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/pending': {
       id: '/app/pending'
       path: '/pending'
@@ -305,6 +372,27 @@ declare module '@tanstack/react-router' {
       path: '/nutrition'
       fullPath: '/app/nutrition'
       preLoaderRoute: typeof AppNutritionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/layouts': {
+      id: '/app/layouts'
+      path: '/layouts'
+      fullPath: '/app/layouts'
+      preLoaderRoute: typeof AppLayoutsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/layout-formats': {
+      id: '/app/layout-formats'
+      path: '/layout-formats'
+      fullPath: '/app/layout-formats'
+      preLoaderRoute: typeof AppLayoutFormatsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/layout-categories': {
+      id: '/app/layout-categories'
+      path: '/layout-categories'
+      fullPath: '/app/layout-categories'
+      preLoaderRoute: typeof AppLayoutCategoriesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/ingredients': {
@@ -356,8 +444,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAllergensRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/layouts/$id': {
+      id: '/app/layouts/$id'
+      path: '/$id'
+      fullPath: '/app/layouts/$id'
+      preLoaderRoute: typeof AppLayoutsIdRouteImport
+      parentRoute: typeof AppLayoutsRoute
+    }
   }
 }
+
+interface AppLayoutsRouteChildren {
+  AppLayoutsIdRoute: typeof AppLayoutsIdRoute
+}
+
+const AppLayoutsRouteChildren: AppLayoutsRouteChildren = {
+  AppLayoutsIdRoute: AppLayoutsIdRoute,
+}
+
+const AppLayoutsRouteWithChildren = AppLayoutsRoute._addFileChildren(
+  AppLayoutsRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAllergensRoute: typeof AppAllergensRoute
@@ -367,8 +474,12 @@ interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppIngredientsRoute: typeof AppIngredientsRoute
+  AppLayoutCategoriesRoute: typeof AppLayoutCategoriesRoute
+  AppLayoutFormatsRoute: typeof AppLayoutFormatsRoute
+  AppLayoutsRoute: typeof AppLayoutsRouteWithChildren
   AppNutritionRoute: typeof AppNutritionRoute
   AppPendingRoute: typeof AppPendingRoute
+  AppPrintersRoute: typeof AppPrintersRoute
   AppProductsRoute: typeof AppProductsRoute
   AppRolesRoute: typeof AppRolesRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -384,8 +495,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppCompaniesRoute: AppCompaniesRoute,
   AppIngredientsRoute: AppIngredientsRoute,
+  AppLayoutCategoriesRoute: AppLayoutCategoriesRoute,
+  AppLayoutFormatsRoute: AppLayoutFormatsRoute,
+  AppLayoutsRoute: AppLayoutsRouteWithChildren,
   AppNutritionRoute: AppNutritionRoute,
   AppPendingRoute: AppPendingRoute,
+  AppPrintersRoute: AppPrintersRoute,
   AppProductsRoute: AppProductsRoute,
   AppRolesRoute: AppRolesRoute,
   AppSettingsRoute: AppSettingsRoute,
