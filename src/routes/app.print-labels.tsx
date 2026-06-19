@@ -137,6 +137,36 @@ function PrintLabelsPage() {
     },
   });
 
+  // Ingredients selected for the product (joined with name)
+  const productIngredients = useQuery({
+    queryKey: ["em-prod-ingredients", productId],
+    enabled: !!productId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_ingredients")
+        .select("position, ingredients(name)")
+        .eq("product_id", productId)
+        .order("position");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+  // Allergens selected for the product (joined with name)
+  const productAllergens = useQuery({
+    queryKey: ["em-prod-allergens", productId],
+    enabled: !!productId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_allergens")
+        .select("allergens(name, code)")
+        .eq("product_id", productId);
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
+
   // Phase 6 — product price (regular/wholesale) for the product+branch
   const productPrice = useQuery({
     queryKey: ["em-price", companyId, productId, branchId],
