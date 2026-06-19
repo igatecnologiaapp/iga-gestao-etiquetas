@@ -84,6 +84,29 @@ function Page() {
   })();
   const previewElements: PreviewElement[] = snapshot.data?.layout_snapshot?.elements ?? [];
 
+  async function generatePdf(action: "download" | "preview") {
+    if (!snapshot.data || !batch.data || !labels.data) return;
+    const fmt = buildFormatFromSnapshot(snapshot.data.layout_snapshot);
+    const elements = (snapshot.data.layout_snapshot?.elements ?? []) as any[];
+    if (!fmt) { toast.error("Snapshot sem formato"); return; }
+    const labelData = labels.data.filter((l) => l.status !== "cancelled").map((l) =>
+      buildLabelDataFromSnapshot(snapshot.data, { unique_label_code: l.unique_label_code, sequential: l.sequential_number }),
+    );
+    const blob = await buildLabelsPdf({ format: fmt as any, elements, labels: labelData });
+    const fname = `lote-${batch.data.id.slice(0, 8)}.pdf`;
+    if (action === "download") downloadBlob(blob, fname); else openBlob(blob);
+    const { data: u } = await supabase.auth.getUser();
+    await (supabase.from("print_events" as any) as any).insert({
+      company_id: batch.data.company_id, branch_id: batch.data.branch_id,
+      print_batch_id: batch.data.id,
+      event_type: action === "download" ? "pdf_downloaded" : "pdf_generated",
+      event_notes: `${labelData.length} etiqueta(s)`,
+      metadata: { filename: fname }, created_by: u.user?.id ?? null,
+    });
+    qc.invalidateQueries({ queryKey: ["pe", id] });
+  }
+
+
   const cancel = useMutation({
     mutationFn: async () => {
       if (!batch.data) return;
