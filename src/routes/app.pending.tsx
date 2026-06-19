@@ -91,15 +91,68 @@ function PendingPage() {
       <PageHeader title="Pendências Regulatórias"
         description="Produtos com informações incompletas ou que requerem revisão antes da emissão de etiquetas."
         actions={<Link to="/app/products" className="text-sm text-primary hover:underline">Ir para Produtos →</Link>} />
+
+      <Card className="mb-4">
+        <CardContent className="p-4 grid gap-3 md:grid-cols-5">
+          <div>
+            <Label className="text-xs">Buscar</Label>
+            <Input placeholder="Nome do produto" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <div>
+            <Label className="text-xs">Categoria</Label>
+            <Select value={categoryId} onValueChange={setCategoryId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todas</SelectItem>
+                {categories?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Marca</Label>
+            <Select value={brandId} onValueChange={setBrandId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todas</SelectItem>
+                {brands?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Tipo de pendência</Label>
+            <Select value={issueFilter} onValueChange={setIssueFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todas</SelectItem>
+                {issueLabels.map(([k, l]) => <SelectItem key={k as string} value={k as string}>{l}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">Status</Label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos</SelectItem>
+                <SelectItem value="ativo">Ativo</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="revisao">Revisão</SelectItem>
+                <SelectItem value="inativo">Inativo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="p-4">
         {isLoading && <div className="py-8 text-center text-muted-foreground">Carregando…</div>}
-        {!isLoading && (data?.length ?? 0) === 0 && (
+        {!isLoading && filtered.length === 0 && (
           <div className="py-12 text-center text-muted-foreground flex flex-col items-center gap-2">
             <AlertCircle className="size-8 text-emerald-500" />
-            Nenhuma pendência encontrada nesta empresa.
+            Nenhuma pendência encontrada com os filtros atuais.
           </div>
         )}
-        {!isLoading && (data?.length ?? 0) > 0 && (
+        {!isLoading && filtered.length > 0 && (
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -110,7 +163,7 @@ function PendingPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data!.map((row) => (
+                {filtered.map((row) => (
                   <TableRow key={row.product_id}>
                     <TableCell className="font-medium">{row.name}</TableCell>
                     <TableCell><StatusBadge status={row.status} /></TableCell>
@@ -133,3 +186,4 @@ function PendingPage() {
     </>
   );
 }
+
