@@ -77,7 +77,7 @@ export async function logExport(params: {
       _table_name: "report_export",
       _record_id: params.reportName,
       _company_id: params.companyId,
-      _branch_id: null,
+      _branch_id: null as any,
       _old: null,
       _new: { report: params.reportName, format: params.format, rows: params.rowCount, filters: params.filters ?? {} } as any,
       _reason: `Export ${params.format.toUpperCase()} (${params.rowCount} linhas)`,
