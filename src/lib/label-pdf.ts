@@ -163,38 +163,40 @@ function renderNutritionTable(
   doc.line(x, cy, x + w, cy);
   cy += 0.5;
 
-  const rows: Array<[string, string, string]> = [
-    ["Valor energético", `${fmtNum(n?.energy_kcal, 0)} kcal`, dv(n, "energy_kcal", 200)],
-    ["Carboidratos", `${fmtNum(n?.carbs_g)} g`, dv(n, "carbs_g", 50)],
-    ["  Açúcares totais", `${fmtNum(n?.total_sugars_g)} g`, ""],
-    ["  Açúcares adicionados", `${fmtNum(n?.added_sugars_g)} g`, dv(n, "added_sugars_g", 50)],
-    ["Proteínas", `${fmtNum(n?.protein_g)} g`, dv(n, "protein_g", 50)],
-    ["Gorduras totais", `${fmtNum(n?.total_fat_g)} g`, dv(n, "total_fat_g", 55)],
-    ["  Saturadas", `${fmtNum(n?.saturated_fat_g)} g`, dv(n, "saturated_fat_g", 22)],
-    ["  Trans", `${fmtNum(n?.trans_fat_g)} g`, ""],
-    ["Fibra alimentar", `${fmtNum(n?.fiber_g)} g`, dv(n, "fiber_g", 25)],
-    ["Sódio", `${fmtNum(n?.sodium_mg, 0)} mg`, dv(n, "sodium_mg", 2000)],
+  const rows: Array<{ label: string; qty: string; vd: string; indent?: boolean }> = [
+    { label: "Valor energético", qty: `${fmtNum(n?.energy_kcal, 0)} kcal`, vd: dv(n, "energy_kcal", 200) },
+    { label: "Carboidratos", qty: `${fmtNum(n?.carbs_g)} g`, vd: dv(n, "carbs_g", 50) },
+    { label: "Açúcares totais", qty: `${fmtNum(n?.total_sugars_g)} g`, vd: "", indent: true },
+    { label: "Açúcares adicionados", qty: `${fmtNum(n?.added_sugars_g)} g`, vd: dv(n, "added_sugars_g", 50), indent: true },
+    { label: "Proteínas", qty: `${fmtNum(n?.protein_g)} g`, vd: dv(n, "protein_g", 50) },
+    { label: "Gorduras totais", qty: `${fmtNum(n?.total_fat_g)} g`, vd: dv(n, "total_fat_g", 55) },
+    { label: "Saturadas", qty: `${fmtNum(n?.saturated_fat_g)} g`, vd: dv(n, "saturated_fat_g", 22), indent: true },
+    { label: "Trans", qty: `${fmtNum(n?.trans_fat_g)} g`, vd: "", indent: true },
+    { label: "Fibra alimentar", qty: `${fmtNum(n?.fiber_g)} g`, vd: dv(n, "fiber_g", 25) },
+    { label: "Sódio", qty: `${fmtNum(n?.sodium_mg, 0)} mg`, vd: dv(n, "sodium_mg", 2000) },
   ];
   const rowH = Math.max(0.9, baseSize * 0.55);
   const col1 = x + 1;
+  const col1Indent = x + 1 + Math.max(1, baseSize * 0.25);
   const col2 = x + w * 0.55;
   const col3 = x + w * 0.78;
 
   doc.setFont("helvetica", "bold");
-  doc.text("Nutriente", col1, cy + rowH * 0.7);
-  doc.text("Qtd.", col2, cy + rowH * 0.7);
-  doc.text("%VD*", col3, cy + rowH * 0.7);
+  doc.text("Nutriente", col1, cy + rowH * 0.7, { align: "left" });
+  doc.text("Qtd.", col2, cy + rowH * 0.7, { align: "left" });
+  doc.text("%VD*", col3, cy + rowH * 0.7, { align: "left" });
   cy += rowH;
   doc.line(x, cy, x + w, cy);
 
   doc.setFont("helvetica", "normal");
-  for (const [lbl, qty, vd] of rows) {
+  for (const r of rows) {
     if (cy + rowH > y + h) break;
-    doc.text(lbl, col1, cy + rowH * 0.7);
-    doc.text(qty, col2, cy + rowH * 0.7);
-    doc.text(vd, col3, cy + rowH * 0.7);
+    doc.text(r.label, r.indent ? col1Indent : col1, cy + rowH * 0.7, { align: "left" });
+    doc.text(r.qty, col2, cy + rowH * 0.7, { align: "left" });
+    doc.text(r.vd, col3, cy + rowH * 0.7, { align: "left" });
     cy += rowH;
   }
+
   doc.setFontSize(baseSize - 1);
   if (cy + rowH < y + h) {
     doc.text("*% Valores diários de referência com base em uma dieta de 2.000 kcal.", x + 1, y + h - 0.6, { maxWidth: w - 2 });
