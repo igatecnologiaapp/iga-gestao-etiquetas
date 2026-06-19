@@ -65,6 +65,17 @@ export function blockingIssuesForNutritional(p: PendingFlags | null | undefined)
   return out;
 }
 
+export const SHELF_LABEL_TYPES: readonly LabelType[] = ["gondola", "promocional"] as const;
+export function isShelfLabel(t: LabelType): boolean { return SHELF_LABEL_TYPES.includes(t); }
+
+export const SHELF_MODELS = [
+  { value: "simples", label: "Gôndola Simples" },
+  { value: "promocional", label: "Gôndola Promocional" },
+  { value: "atacado", label: "Gôndola Atacado" },
+  { value: "personalizada", label: "Gôndola Personalizada" },
+] as const;
+export type ShelfModel = (typeof SHELF_MODELS)[number]["value"];
+
 export function computeExpiration(manufactureISO: string | null, shelfLifeDays: number | null): string | null {
   if (!manufactureISO || !shelfLifeDays) return null;
   const d = new Date(manufactureISO);
