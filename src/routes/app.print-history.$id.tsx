@@ -257,7 +257,7 @@ function Page() {
         <Card className="p-5 space-y-2">
           <div className="font-semibold">Pré-visualização (snapshot)</div>
           {previewFormat ? (
-            <div className="overflow-auto"><LabelPreview format={previewFormat} elements={previewElements} zoom={2} /></div>
+            <div className="overflow-auto"><LabelPreview format={previewFormat} elements={previewElements} zoom={2} data={buildLabelDataFromSnapshot(snapshot.data, { unique_label_code: labels.data?.[0]?.unique_label_code, sequential: 1 }) as any} /></div>
           ) : <div className="text-sm text-muted-foreground">Sem snapshot disponível.</div>}
         </Card>
       </div>
