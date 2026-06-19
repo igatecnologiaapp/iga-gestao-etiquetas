@@ -311,9 +311,12 @@ function PrintLabelsPage() {
         const list = (productAllergens.data ?? [])
           .map((r: any) => r?.allergens?.name)
           .filter(Boolean);
-        if (list.length) return `Contém: ${list.join(", ")}`;
-        if (product?.contains_lactose) return "Contém lactose.";
-        return undefined;
+        const parts: string[] = [];
+        if (list.length) parts.push(`Contém: ${list.join(", ")}`);
+        if (product?.contains_gluten) parts.push("CONTÉM GLÚTEN");
+        else if (product) parts.push("NÃO CONTÉM GLÚTEN");
+        if (product?.contains_lactose) parts.push("Contém lactose");
+        return parts.length ? parts.join(" · ") : undefined;
       })(),
       gluten: product
         ? (product.contains_gluten ? "CONTÉM GLÚTEN" : "NÃO CONTÉM GLÚTEN")
