@@ -35,10 +35,12 @@ const nav: NavItem[] = [
   { to: "/app/users", label: "Usuários", icon: Users, group: "Administração" },
   { to: "/app/roles", label: "Perfis", icon: ShieldCheck, group: "Administração" },
   { to: "/app/audit", label: "Auditoria", icon: FileText, group: "Administração" },
+  { to: "/app/integrations", label: "Integrações", icon: Plug, group: "Integrações" },
+  { to: "/app/message-templates", label: "Templates de Mensagens", icon: MessageSquare, group: "Integrações" },
   { to: "/app/settings", label: "Configurações", icon: Settings, group: "Administração" },
 ];
 
-const groups = ["Geral", "Emissão", "Cadastros", "Layouts", "Administração"] as const;
+const groups = ["Geral", "Emissão", "Cadastros", "Layouts", "Administração", "Integrações"] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
