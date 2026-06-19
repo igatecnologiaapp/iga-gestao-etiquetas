@@ -513,7 +513,7 @@ function PrintLabelsPage() {
               <Select value={branchId} onValueChange={setBranchId}>
                 <SelectTrigger><SelectValue placeholder="(todas)" /></SelectTrigger>
                 <SelectContent>
-                  {branches.data?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  {branches.data?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name.replace(/Filial/gi, "Unidade")}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
