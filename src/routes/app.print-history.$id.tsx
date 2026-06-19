@@ -14,7 +14,11 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { LabelPreview, type PreviewElement, type PreviewFormat } from "@/components/label-preview";
 import { toast } from "sonner";
 import { uniqueLabelCode } from "@/lib/label-emission";
-import { ArrowLeft, RotateCcw, Ban } from "lucide-react";
+import { ArrowLeft, RotateCcw, Ban, FileDown, Eye } from "lucide-react";
+import {
+  buildLabelsPdf, buildFormatFromSnapshot, buildLabelDataFromSnapshot,
+  downloadBlob, openBlob,
+} from "@/lib/label-pdf";
 
 export const Route = createFileRoute("/app/print-history/$id")({ component: Page });
 
