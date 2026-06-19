@@ -41,10 +41,10 @@ Cada evento grava em `audit_logs`: `user_id`, `action`, `table_name`,
 `created_at`.
 
 ## Políticas RLS (resumo)
-- **companies**: SELECT para membros (qualquer perfil); UPDATE/DELETE só Administrador da empresa; INSERT por qualquer autenticado (o criador é imediatamente vinculado como Administrador pelo frontend).
+- **companies**: SELECT para membros; UPDATE/DELETE apenas Administrador da empresa; **INSERT somente para Administrador já existente** (policy `companies insert global admin only`, `WITH CHECK is_global_admin(auth.uid())`). Usuários comuns **não conseguem criar empresa** nem se auto-promover.
 - **branches**: SELECT membros; INSERT/UPDATE/DELETE Administrador ou Supervisor da empresa.
 - **user_profiles**: SELECT próprio + usuários da mesma empresa; UPDATE/INSERT só do próprio registro.
-- **user_company_roles**: SELECT próprio ou Admin/Supervisor da empresa; gerenciar apenas Administrador.
+- **user_company_roles**: SELECT próprio ou Admin/Supervisor da empresa; **INSERT/UPDATE/DELETE apenas Administrador da empresa** — impede auto-atribuição do papel `administrador`.
 - **user_branch_access**: SELECT próprio ou Admin/Supervisor da empresa da filial; gerenciar Admin/Supervisor.
 - **permissions / role_permissions**: SELECT livre para autenticados (catálogo).
 - **system_settings**: SELECT membros (incluindo configs globais); gerenciar apenas Administrador da empresa.
@@ -65,26 +65,52 @@ Todas as tabelas operacionais: `SELECT, INSERT, UPDATE, DELETE` para `authentica
 - `src/components/app-shell.tsx` — layout administrativo com sidebar.
 - Rotas: `/auth`, `/app`, `/app/companies`, `/app/branches`, `/app/users`, `/app/roles`, `/app/audit`, `/app/settings`.
 
-## Como definir o primeiro Administrador (seed manual)
-1. **Crie o usuário em Cloud → Users → Add user** (defina e-mail e senha).
-2. Após o trigger `handle_new_user`, um registro aparecerá em `public.user_profiles`. Pegue o `id` (= `auth.users.id`).
-3. Crie a primeira empresa via SQL (Cloud → SQL):
+## Como definir o primeiro Administrador (seed manual — ÚNICO caminho)
+**Não existe auto-promoção.** A primeira criação de empresa + perfil `administrador` precisa ser feita por SQL pelo dono da plataforma. Depois disso, todos os demais usuários são criados/convidados pelo Administrador via UI (`/app/users`).
+
+### Administrador principal da plataforma (definido)
+- **E-mail:** `igacomercial.sp@gmail.com`
+- **Senha inicial:** definida manualmente pelo dono da plataforma no painel (**não é armazenada em código, .env, repositório, README ou frontend**). Após o primeiro login, recomenda-se trocar a senha.
+
+### Passo a passo (executar uma única vez)
+1. **Criar a conta de autenticação** em *Cloud → Users → Add user*:
+   - E-mail: `igacomercial.sp@gmail.com`
+   - Senha: digite a senha inicial diretamente no campo do painel (não cole em código).
+   - Marque "Auto Confirm User" para dispensar verificação de e-mail.
+   - O trigger `handle_new_user` cria automaticamente um registro em `public.user_profiles` com o mesmo `id`.
+2. **Criar a primeira empresa** em *Cloud → SQL Editor* (rode autenticado como dono — bypass de RLS no SQL Editor):
    ```sql
    INSERT INTO public.companies (name, legal_name, tax_id)
-   VALUES ('Minha Empresa', 'Minha Empresa LTDA', '00.000.000/0001-00')
+   VALUES ('IGA Comercial', 'IGA Comercial LTDA', NULL)
    RETURNING id;
    ```
-4. Vincule o usuário como Administrador:
+3. **Vincular o usuário como Administrador** da empresa criada:
    ```sql
    INSERT INTO public.user_company_roles (user_id, company_id, role)
-   VALUES ('<UUID_DO_USUARIO>', '<UUID_DA_EMPRESA>', 'administrador');
+   SELECT u.id, c.id, 'administrador'::public.app_role
+   FROM auth.users u, public.companies c
+   WHERE u.email = 'igacomercial.sp@gmail.com'
+     AND c.name  = 'IGA Comercial';
    ```
-5. (Opcional) Crie uma filial e registre acesso:
+4. **(Opcional) Criar a filial matriz:**
    ```sql
    INSERT INTO public.branches (company_id, name, code)
-   VALUES ('<UUID_DA_EMPRESA>', 'Matriz', 'MAT');
+   SELECT id, 'Matriz', 'MAT' FROM public.companies WHERE name = 'IGA Comercial';
    ```
-A partir daí, o Administrador faz login em `/auth` e gerencia tudo pela UI. **Alternativa**: o próprio usuário pode criar a primeira empresa pela tela `/app/companies` — o frontend o promove automaticamente a Administrador via `user_company_roles`. O passo 1 ainda é necessário (criar a conta `auth.users`).
+5. **Registrar manualmente em `audit_logs`** (os triggers já registram os INSERTs acima como `user_id = NULL` quando executados no SQL Editor; este passo deixa a promoção explícita):
+   ```sql
+   SELECT public.log_audit(
+     'PERMISSION_CHANGE'::public.audit_action,
+     'user_company_roles',
+     NULL,
+     (SELECT id FROM public.companies WHERE name = 'IGA Comercial'),
+     NULL, NULL, NULL,
+     'Seed manual do Administrador principal da plataforma'
+   );
+   ```
+6. Faça login em `/auth` com o e-mail acima. O guard de `/app` valida que o usuário possui pelo menos um vínculo em `user_company_roles` — usuários sem vínculo são devolvidos para `/auth`.
+
+A partir daqui, **somente este Administrador** pode criar novas empresas, filiais e usuários pela UI (botão "Nova empresa" só aparece para Administradores; RLS bloqueia o restante).
 
 ## Fluxos testados (manuais recomendados)
 - Login com usuário válido → redireciona para `/app`.
