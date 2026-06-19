@@ -34,6 +34,22 @@ function CompaniesPage() {
     },
   });
 
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-global-admin"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return false;
+      const { data, error } = await supabase
+        .from("user_company_roles")
+        .select("role")
+        .eq("user_id", u.user.id)
+        .eq("role", "administrador")
+        .limit(1);
+      if (error) throw error;
+      return (data?.length ?? 0) > 0;
+    },
+  });
+
   const createMut = useMutation({
     mutationFn: async () => {
       const { data: userRes } = await supabase.auth.getUser();
@@ -50,10 +66,6 @@ function CompaniesPage() {
         })
         .select().single();
       if (error) throw error;
-      const { error: roleErr } = await supabase
-        .from("user_company_roles")
-        .insert({ user_id: uid, company_id: created.id, role: "administrador", created_by: uid });
-      if (roleErr) throw roleErr;
       return created;
     },
     onSuccess: () => {
