@@ -274,11 +274,12 @@ export const bootstrapPrincipalAdmin = createServerFn({ method: "POST" })
       type: "recovery", email: NEW_EMAIL,
     });
 
-    // 4) Rebaixar IGA → consulta + inativo (mantém histórico)
+    // 4) Rebaixar IGA → consulta + inativo (mantém histórico).
+    //    Permite que o próprio caller (IGA) se rebaixe, pois Souza já é admin ativo.
     const { data: igaProf } = await supabaseAdmin
       .from("user_profiles").select("id").eq("email", OLD_EMAIL).maybeSingle();
-    if (igaProf?.id && igaProf.id !== context.userId) {
-      // (não rebaixa a si mesmo na mesma chamada — garante que ainda haja admin)
+    let igaDemoted = false;
+    if (igaProf?.id && igaProf.id !== souzaId) {
       for (const c of adminCompanies) {
         await supabaseAdmin.from("user_company_roles")
           .delete().eq("user_id", igaProf.id).eq("company_id", c.company_id);
@@ -287,6 +288,7 @@ export const bootstrapPrincipalAdmin = createServerFn({ method: "POST" })
       }
       await supabaseAdmin.from("user_profiles")
         .update({ status: "inativo", full_name: "IGA Comercial (histórico)" }).eq("id", igaProf.id);
+      igaDemoted = true;
     }
 
     // Auditoria
