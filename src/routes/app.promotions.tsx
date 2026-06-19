@@ -87,13 +87,15 @@ function PromotionsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Promoções" description="Cadastre promoções, vincule produtos e gerencie preços promocionais e de atacado.">
-        {!isReadOnly && canWrite && (
+      <PageHeader
+        title="Promoções"
+        description="Cadastre promoções, vincule produtos e gerencie preços promocionais e de atacado."
+        actions={!isReadOnly && canWrite ? (
           <Button onClick={() => { setEditing({ status: "draft", start_date: new Date().toISOString().slice(0, 16), end_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 16) }); setOpen(true); }}>
             <Plus className="size-4 mr-1" /> Nova promoção
           </Button>
-        )}
-      </PageHeader>
+        ) : null}
+      />
 
       <Card className="p-4">
         <Table>
