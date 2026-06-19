@@ -41,10 +41,10 @@ Cada evento grava em `audit_logs`: `user_id`, `action`, `table_name`,
 `created_at`.
 
 ## Políticas RLS (resumo)
-- **companies**: SELECT para membros (qualquer perfil); UPDATE/DELETE só Administrador da empresa; INSERT por qualquer autenticado (o criador é imediatamente vinculado como Administrador pelo frontend).
+- **companies**: SELECT para membros; UPDATE/DELETE apenas Administrador da empresa; **INSERT somente para Administrador já existente** (policy `companies insert global admin only`, `WITH CHECK is_global_admin(auth.uid())`). Usuários comuns **não conseguem criar empresa** nem se auto-promover.
 - **branches**: SELECT membros; INSERT/UPDATE/DELETE Administrador ou Supervisor da empresa.
 - **user_profiles**: SELECT próprio + usuários da mesma empresa; UPDATE/INSERT só do próprio registro.
-- **user_company_roles**: SELECT próprio ou Admin/Supervisor da empresa; gerenciar apenas Administrador.
+- **user_company_roles**: SELECT próprio ou Admin/Supervisor da empresa; **INSERT/UPDATE/DELETE apenas Administrador da empresa** — impede auto-atribuição do papel `administrador`.
 - **user_branch_access**: SELECT próprio ou Admin/Supervisor da empresa da filial; gerenciar Admin/Supervisor.
 - **permissions / role_permissions**: SELECT livre para autenticados (catálogo).
 - **system_settings**: SELECT membros (incluindo configs globais); gerenciar apenas Administrador da empresa.
