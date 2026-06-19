@@ -16,9 +16,12 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppRolesRouteImport } from './routes/app.roles'
+import { Route as AppIngredientsRouteImport } from './routes/app.ingredients'
 import { Route as AppCompaniesRouteImport } from './routes/app.companies'
+import { Route as AppBrandsRouteImport } from './routes/app.brands'
 import { Route as AppBranchesRouteImport } from './routes/app.branches'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
+import { Route as AppAllergensRouteImport } from './routes/app.allergens'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -55,9 +58,19 @@ const AppRolesRoute = AppRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AppRoute,
 } as any)
+const AppIngredientsRoute = AppIngredientsRouteImport.update({
+  id: '/ingredients',
+  path: '/ingredients',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCompaniesRoute = AppCompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBrandsRoute = AppBrandsRouteImport.update({
+  id: '/brands',
+  path: '/brands',
   getParentRoute: () => AppRoute,
 } as any)
 const AppBranchesRoute = AppBranchesRouteImport.update({
@@ -70,14 +83,22 @@ const AppAuditRoute = AppAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAllergensRoute = AppAllergensRouteImport.update({
+  id: '/allergens',
+  path: '/allergens',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
+  '/app/brands': typeof AppBrandsRoute
   '/app/companies': typeof AppCompaniesRoute
+  '/app/ingredients': typeof AppIngredientsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -86,9 +107,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
+  '/app/brands': typeof AppBrandsRoute
   '/app/companies': typeof AppCompaniesRoute
+  '/app/ingredients': typeof AppIngredientsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -99,9 +123,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
+  '/app/brands': typeof AppBrandsRoute
   '/app/companies': typeof AppCompaniesRoute
+  '/app/ingredients': typeof AppIngredientsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -113,9 +140,12 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/allergens'
     | '/app/audit'
     | '/app/branches'
+    | '/app/brands'
     | '/app/companies'
+    | '/app/ingredients'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -124,9 +154,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/app/allergens'
     | '/app/audit'
     | '/app/branches'
+    | '/app/brands'
     | '/app/companies'
+    | '/app/ingredients'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -136,9 +169,12 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/app/allergens'
     | '/app/audit'
     | '/app/branches'
+    | '/app/brands'
     | '/app/companies'
+    | '/app/ingredients'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -202,11 +238,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRolesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/ingredients': {
+      id: '/app/ingredients'
+      path: '/ingredients'
+      fullPath: '/app/ingredients'
+      preLoaderRoute: typeof AppIngredientsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/companies': {
       id: '/app/companies'
       path: '/companies'
       fullPath: '/app/companies'
       preLoaderRoute: typeof AppCompaniesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/brands': {
+      id: '/app/brands'
+      path: '/brands'
+      fullPath: '/app/brands'
+      preLoaderRoute: typeof AppBrandsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/branches': {
@@ -223,13 +273,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuditRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/allergens': {
+      id: '/app/allergens'
+      path: '/allergens'
+      fullPath: '/app/allergens'
+      preLoaderRoute: typeof AppAllergensRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAllergensRoute: typeof AppAllergensRoute
   AppAuditRoute: typeof AppAuditRoute
   AppBranchesRoute: typeof AppBranchesRoute
+  AppBrandsRoute: typeof AppBrandsRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
+  AppIngredientsRoute: typeof AppIngredientsRoute
   AppRolesRoute: typeof AppRolesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppUsersRoute: typeof AppUsersRoute
@@ -237,9 +297,12 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAllergensRoute: AppAllergensRoute,
   AppAuditRoute: AppAuditRoute,
   AppBranchesRoute: AppBranchesRoute,
+  AppBrandsRoute: AppBrandsRoute,
   AppCompaniesRoute: AppCompaniesRoute,
+  AppIngredientsRoute: AppIngredientsRoute,
   AppRolesRoute: AppRolesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppUsersRoute: AppUsersRoute,
