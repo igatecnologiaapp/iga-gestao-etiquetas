@@ -207,6 +207,29 @@ function PrintLabelsPage() {
     };
   }, [layout.data]);
 
+  const previewData = useMemo(() => ({
+    product_name: product?.name,
+    brand: undefined as string | undefined,
+    internal_code: product?.internal_code,
+    sku: product?.sku,
+    ean: product?.ean,
+    ingredients: product?.commercial_description,
+    allergens: product?.contains_gluten || product?.contains_lactose
+      ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
+      : undefined,
+    gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
+    lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
+    preservation: product?.preservation,
+    lot: batchCode,
+    manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
+    expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
+    weight: weight ? `${weight} kg` : (product?.standard_weight ? `${product.standard_weight} ${product.unit_of_measure ?? ""}` : undefined),
+    nutrition: nutrition.data,
+    qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId },
+    barcode_value: product?.ean || product?.internal_code,
+  }), [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId]);
+
+
   // Validations
   const blocking = useMemo(() => {
     const errs: string[] = [];
