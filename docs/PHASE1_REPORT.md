@@ -68,49 +68,68 @@ Todas as tabelas operacionais: `SELECT, INSERT, UPDATE, DELETE` para `authentica
 ## Como definir o primeiro Administrador (seed manual — ÚNICO caminho)
 **Não existe auto-promoção.** A primeira criação de empresa + perfil `administrador` precisa ser feita por SQL pelo dono da plataforma. Depois disso, todos os demais usuários são criados/convidados pelo Administrador via UI (`/app/users`).
 
-### Administrador principal da plataforma (definido)
+### Administrador principal da plataforma (PROVISIONADO)
 - **E-mail:** `igacomercial.sp@gmail.com`
-- **Senha inicial:** definida manualmente pelo dono da plataforma no painel (**não é armazenada em código, .env, repositório, README ou frontend**). Após o primeiro login, recomenda-se trocar a senha.
+- **Status:** já criado no Supabase Auth, com e-mail confirmado, vinculado à empresa **IGA Comercial** (filial **Matriz**) com perfil **administrador**.
+- **Senha inicial:** entregue ao dono da plataforma fora deste repositório. **Não fica armazenada em código, `.env`, README, frontend ou qualquer arquivo público.** Trocar a senha em *Cloud → Users* após o primeiro login.
+- **Sign-up público:** desativado (`disable_signup = true`). Novos usuários só pelo Administrador via `/app/users`.
 
-### Passo a passo (executar uma única vez)
-1. **Criar a conta de autenticação** em *Cloud → Users → Add user*:
-   - E-mail: `igacomercial.sp@gmail.com`
-   - Senha: digite a senha inicial diretamente no campo do painel (não cole em código).
-   - Marque "Auto Confirm User" para dispensar verificação de e-mail.
-   - O trigger `handle_new_user` cria automaticamente um registro em `public.user_profiles` com o mesmo `id`.
-2. **Criar a primeira empresa** em *Cloud → SQL Editor* (rode autenticado como dono — bypass de RLS no SQL Editor):
-   ```sql
-   INSERT INTO public.companies (name, legal_name, tax_id)
-   VALUES ('IGA Comercial', 'IGA Comercial LTDA', NULL)
-   RETURNING id;
-   ```
-3. **Vincular o usuário como Administrador** da empresa criada:
-   ```sql
-   INSERT INTO public.user_company_roles (user_id, company_id, role)
-   SELECT u.id, c.id, 'administrador'::public.app_role
-   FROM auth.users u, public.companies c
-   WHERE u.email = 'igacomercial.sp@gmail.com'
-     AND c.name  = 'IGA Comercial';
-   ```
-4. **(Opcional) Criar a filial matriz:**
-   ```sql
-   INSERT INTO public.branches (company_id, name, code)
-   SELECT id, 'Matriz', 'MAT' FROM public.companies WHERE name = 'IGA Comercial';
-   ```
-5. **Registrar manualmente em `audit_logs`** (os triggers já registram os INSERTs acima como `user_id = NULL` quando executados no SQL Editor; este passo deixa a promoção explícita):
-   ```sql
-   SELECT public.log_audit(
-     'PERMISSION_CHANGE'::public.audit_action,
-     'user_company_roles',
-     NULL,
-     (SELECT id FROM public.companies WHERE name = 'IGA Comercial'),
-     NULL, NULL, NULL,
-     'Seed manual do Administrador principal da plataforma'
-   );
-   ```
-6. Faça login em `/auth` com o e-mail acima. O guard de `/app` valida que o usuário possui pelo menos um vínculo em `user_company_roles` — usuários sem vínculo são devolvidos para `/auth`.
+### Como recriar / corrigir o acesso (se necessário)
+Se o usuário for excluído ou perder o vínculo, recrie pelo painel:
+
+1. *Cloud → Users → Add user*: e-mail `igacomercial.sp@gmail.com`, senha digitada diretamente no campo, marque **Auto Confirm User**.  
+2. *Cloud → SQL Editor* — rode os blocos abaixo (idempotentes):
+
+
+### Passo a passo SQL (idempotente)
+```sql
+-- empresa
+INSERT INTO public.companies (name, legal_name, status)
+SELECT 'IGA Comercial', 'IGA Comercial LTDA', 'ativo'
+WHERE NOT EXISTS (SELECT 1 FROM public.companies WHERE name = 'IGA Comercial');
+
+-- filial matriz
+INSERT INTO public.branches (company_id, name, code, status)
+SELECT c.id, 'Matriz', 'MAT', 'ativo' FROM public.companies c
+WHERE c.name='IGA Comercial'
+  AND NOT EXISTS (SELECT 1 FROM public.branches b WHERE b.company_id=c.id AND b.code='MAT');
+
+-- vínculo administrador
+INSERT INTO public.user_company_roles (user_id, company_id, role)
+SELECT u.id, c.id, 'administrador'::public.app_role
+FROM auth.users u, public.companies c
+WHERE u.email='igacomercial.sp@gmail.com' AND c.name='IGA Comercial'
+  AND NOT EXISTS (
+    SELECT 1 FROM public.user_company_roles ucr
+    WHERE ucr.user_id=u.id AND ucr.company_id=c.id AND ucr.role='administrador'
+  );
+
+-- acesso à filial
+INSERT INTO public.user_branch_access (user_id, branch_id)
+SELECT u.id, b.id
+FROM auth.users u
+JOIN public.companies c ON c.name='IGA Comercial'
+JOIN public.branches  b ON b.company_id=c.id AND b.code='MAT'
+WHERE u.email='igacomercial.sp@gmail.com'
+  AND NOT EXISTS (
+    SELECT 1 FROM public.user_branch_access uba
+    WHERE uba.user_id=u.id AND uba.branch_id=b.id
+  );
+
+-- auditoria explícita
+INSERT INTO public.audit_logs (company_id, user_id, action, table_name, record_id, new_values, reason)
+SELECT c.id, u.id, 'PERMISSION_CHANGE'::public.audit_action, 'user_company_roles',
+       u.id::text,
+       jsonb_build_object('email', u.email, 'role', 'administrador'),
+       'Seed/Recriação do Administrador principal'
+FROM auth.users u, public.companies c
+WHERE u.email='igacomercial.sp@gmail.com' AND c.name='IGA Comercial';
+```
+
+3. Faça login em `/auth`. O guard de `/app` valida que o usuário possui pelo menos um vínculo em `user_company_roles` — usuários sem vínculo são devolvidos para `/auth`.
 
 A partir daqui, **somente este Administrador** pode criar novas empresas, filiais e usuários pela UI (botão "Nova empresa" só aparece para Administradores; RLS bloqueia o restante).
+
 
 ## Fluxos testados (manuais recomendados)
 - Login com usuário válido → redireciona para `/app`.
