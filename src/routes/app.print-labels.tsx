@@ -17,12 +17,16 @@ import { toast } from "sonner";
 import {
   LABEL_TYPES,
   SUGGESTION_SOURCE_LABEL,
+  SHELF_MODELS,
   blockingIssuesForNutritional,
   computeExpiration,
+  isShelfLabel,
   suggestLayout,
   uniqueLabelCode,
   type LabelType,
+  type ShelfModel,
 } from "@/lib/label-emission";
+import { formatBRL } from "@/lib/label-pdf";
 
 export const Route = createFileRoute("/app/print-labels")({ component: PrintLabelsPage });
 
