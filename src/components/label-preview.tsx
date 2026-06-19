@@ -144,33 +144,37 @@ function BarcodeImage({ value, width, height }: { value: string; width: number; 
 }
 
 function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: number }) {
-  const rows: Array<[string, string, string]> = [];
+  const rows: Array<{ label: string; qty: string; indent?: boolean }> = [];
   const fmt = (v: any, d = 1) => v == null || isNaN(Number(v)) ? "—" : (Number.isInteger(Number(v)) ? String(v) : Number(v).toFixed(d));
-  rows.push(["Valor energético", `${fmt(n?.energy_kcal, 0)} kcal`, ""]);
-  rows.push(["Carboidratos", `${fmt(n?.carbs_g)} g`, ""]);
-  rows.push(["  Açúcares totais", `${fmt(n?.total_sugars_g)} g`, ""]);
-  rows.push(["  Adicionados", `${fmt(n?.added_sugars_g)} g`, ""]);
-  rows.push(["Proteínas", `${fmt(n?.protein_g)} g`, ""]);
-  rows.push(["Gorduras totais", `${fmt(n?.total_fat_g)} g`, ""]);
-  rows.push(["  Saturadas", `${fmt(n?.saturated_fat_g)} g`, ""]);
-  rows.push(["  Trans", `${fmt(n?.trans_fat_g)} g`, ""]);
-  rows.push(["Fibra", `${fmt(n?.fiber_g)} g`, ""]);
-  rows.push(["Sódio", `${fmt(n?.sodium_mg, 0)} mg`, ""]);
+  rows.push({ label: "Valor energético", qty: `${fmt(n?.energy_kcal, 0)} kcal` });
+  rows.push({ label: "Carboidratos", qty: `${fmt(n?.carbs_g)} g` });
+  rows.push({ label: "Açúcares totais", qty: `${fmt(n?.total_sugars_g)} g`, indent: true });
+  rows.push({ label: "Açúcares adicionados", qty: `${fmt(n?.added_sugars_g)} g`, indent: true });
+  rows.push({ label: "Proteínas", qty: `${fmt(n?.protein_g)} g` });
+  rows.push({ label: "Gorduras totais", qty: `${fmt(n?.total_fat_g)} g` });
+  rows.push({ label: "Saturadas", qty: `${fmt(n?.saturated_fat_g)} g`, indent: true });
+  rows.push({ label: "Trans", qty: `${fmt(n?.trans_fat_g)} g`, indent: true });
+  rows.push({ label: "Fibra alimentar", qty: `${fmt(n?.fiber_g)} g` });
+  rows.push({ label: "Sódio", qty: `${fmt(n?.sodium_mg, 0)} mg` });
   return (
-    <div style={{ fontSize: fontPx, lineHeight: 1.1, padding: 1, height: "100%", overflow: "hidden" }}>
+    <div style={{ fontSize: fontPx, lineHeight: 1.1, padding: 1, height: "100%", overflow: "hidden", textAlign: "left" }}>
       <div style={{ fontWeight: 700, textAlign: "center", borderBottom: "1px solid #000" }}>INFORMAÇÃO NUTRICIONAL</div>
-      <div style={{ fontSize: fontPx * 0.9 }}>Porções por embalagem: Variável</div>
-      <div style={{ fontSize: fontPx * 0.9 }}>{n?.serving_size_g ? `Porção: ${n.serving_size_g} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —"}</div>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: fontPx * 0.9 }}>
+      <div style={{ fontSize: fontPx * 0.9, textAlign: "left" }}>Porções por embalagem: Variável</div>
+      <div style={{ fontSize: fontPx * 0.9, textAlign: "left" }}>{n?.serving_size_g ? `Porção: ${n.serving_size_g} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —"}</div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: fontPx * 0.9, tableLayout: "fixed" }}>
         <tbody>
-          {rows.map(([a, b]) => (
-            <tr key={a}><td style={{ padding: "0 1px" }}>{a}</td><td style={{ textAlign: "right", padding: "0 1px" }}>{b}</td></tr>
+          {rows.map((r) => (
+            <tr key={r.label}>
+              <td style={{ textAlign: "left", padding: "0 1px", paddingLeft: r.indent ? 6 : 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</td>
+              <td style={{ textAlign: "right", padding: "0 1px", width: "32%" }}>{r.qty}</td>
+            </tr>
           ))}
         </tbody>
       </table>
     </div>
   );
 }
+
 
 export function LabelPreview({
   format,
