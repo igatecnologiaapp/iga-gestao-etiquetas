@@ -68,9 +68,18 @@ Todas as tabelas operacionais: `SELECT, INSERT, UPDATE, DELETE` para `authentica
 ## Como definir o primeiro Administrador (seed manual — ÚNICO caminho)
 **Não existe auto-promoção.** A primeira criação de empresa + perfil `administrador` precisa ser feita por SQL pelo dono da plataforma. Depois disso, todos os demais usuários são criados/convidados pelo Administrador via UI (`/app/users`).
 
-### Administrador principal da plataforma (definido)
+### Administrador principal da plataforma (PROVISIONADO)
 - **E-mail:** `igacomercial.sp@gmail.com`
-- **Senha inicial:** definida manualmente pelo dono da plataforma no painel (**não é armazenada em código, .env, repositório, README ou frontend**). Após o primeiro login, recomenda-se trocar a senha.
+- **Status:** já criado no Supabase Auth, com e-mail confirmado, vinculado à empresa **IGA Comercial** (filial **Matriz**) com perfil **administrador**.
+- **Senha inicial:** entregue ao dono da plataforma fora deste repositório. **Não fica armazenada em código, `.env`, README, frontend ou qualquer arquivo público.** Trocar a senha em *Cloud → Users* após o primeiro login.
+- **Sign-up público:** desativado (`disable_signup = true`). Novos usuários só pelo Administrador via `/app/users`.
+
+### Como recriar / corrigir o acesso (se necessário)
+Se o usuário for excluído ou perder o vínculo, recrie pelo painel:
+
+1. *Cloud → Users → Add user*: e-mail `igacomercial.sp@gmail.com`, senha digitada diretamente no campo, marque **Auto Confirm User**.  
+2. *Cloud → SQL Editor* — rode os blocos abaixo (idempotentes):
+
 
 ### Passo a passo (executar uma única vez)
 1. **Criar a conta de autenticação** em *Cloud → Users → Add user*:
