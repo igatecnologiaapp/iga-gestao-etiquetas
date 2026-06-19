@@ -340,7 +340,7 @@ function PrintLabelsPage() {
       qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId, label_type: labelType },
       barcode_value: product?.ean || product?.internal_code,
     };
-  }, [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId, labelType, productPrice.data, activePromo, shelfModel]);
+  }, [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId, labelType, productPrice.data, activePromo, shelfModel, productIngredients.data, productAllergens.data]);
 
 
   // Validations
