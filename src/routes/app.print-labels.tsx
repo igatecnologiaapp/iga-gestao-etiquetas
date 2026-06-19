@@ -509,7 +509,7 @@ function PrintLabelsPage() {
         <Card className="p-5 space-y-4 lg:col-span-2">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <Label>Filial</Label>
+              <Label>Unidade</Label>
               <Select value={branchId} onValueChange={setBranchId}>
                 <SelectTrigger><SelectValue placeholder="(todas)" /></SelectTrigger>
                 <SelectContent>
