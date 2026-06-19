@@ -400,12 +400,13 @@ export function buildLabelDataFromSnapshot(snapshot: any, opts?: { unique_label_
   const al = (snapshot?.allergens_snapshot ?? []) as any[];
   const ingText = Array.isArray(ing) && ing.length
     ? ing.map((i: any) => i?.name ?? i).join(", ")
-    : (p.commercial_description ? "" : "");
-  const alText = Array.isArray(al) && al.length
-    ? `Contém: ${al.map((a: any) => a?.name ?? a).join(", ")}`
-    : (p.contains_gluten || p.contains_lactose
-        ? `${p.contains_gluten ? "Contém glúten. " : ""}${p.contains_lactose ? "Contém lactose." : ""}`
-        : "");
+    : (p.commercial_description ?? "");
+  const alParts: string[] = [];
+  if (Array.isArray(al) && al.length) alParts.push(`Contém: ${al.map((a: any) => a?.name ?? a).join(", ")}`);
+  if (p.contains_gluten) alParts.push("CONTÉM GLÚTEN");
+  else if (p && Object.keys(p).length) alParts.push("NÃO CONTÉM GLÚTEN");
+  if (p.contains_lactose) alParts.push("Contém lactose");
+  const alText = alParts.join(" · ");
   return {
     product_name: p.name,
     brand: p.brand_name ?? undefined,
