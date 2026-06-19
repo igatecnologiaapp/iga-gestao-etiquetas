@@ -303,7 +303,7 @@ export const bootstrapPrincipalAdmin = createServerFn({ method: "POST" })
       ok: true,
       newAdminEmail: NEW_EMAIL,
       recoveryLink: linkData?.properties?.action_link ?? null,
-      oldAdminDemoted: !!(igaProf?.id && igaProf.id !== context.userId),
-      callerIsOldAdmin: igaProf?.id === context.userId,
+      oldAdminDemoted: igaDemoted,
+      callerWasOldAdmin: igaProf?.id === context.userId,
     };
   });
