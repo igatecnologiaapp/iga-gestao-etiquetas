@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
-  LayoutTemplate, Ruler, FolderKanban, Printer,
+  LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -13,6 +13,8 @@ import { CompanySwitcher } from "@/components/company-switcher";
 type NavItem = { to: string; label: string; icon: any; exact?: boolean; group: string };
 const nav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true, group: "Geral" },
+  { to: "/app/print-labels", label: "Emissão de Etiquetas", icon: PrinterCheck, group: "Emissão" },
+  { to: "/app/print-history", label: "Histórico de Emissões", icon: History, group: "Emissão" },
   { to: "/app/products", label: "Produtos", icon: Package, group: "Cadastros" },
   { to: "/app/categories", label: "Categorias", icon: FolderTree, group: "Cadastros" },
   { to: "/app/brands", label: "Marcas", icon: Bookmark, group: "Cadastros" },
@@ -32,7 +34,7 @@ const nav: NavItem[] = [
   { to: "/app/settings", label: "Configurações", icon: Settings, group: "Administração" },
 ];
 
-const groups = ["Geral", "Cadastros", "Layouts", "Administração"] as const;
+const groups = ["Geral", "Emissão", "Cadastros", "Layouts", "Administração"] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
