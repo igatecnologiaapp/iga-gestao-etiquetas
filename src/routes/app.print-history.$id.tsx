@@ -210,7 +210,8 @@ function Page() {
         description={`Emitido em ${new Date(b.created_at).toLocaleString("pt-BR")}`}
         actions={
           <div className="flex gap-2">
-            <Button asChild variant="outline"><Link to="/app/print-history"><ArrowLeft className="size-4 mr-1" />Voltar</Link></Button>
+            <Button variant="outline" onClick={() => generatePdf("preview")} disabled={!snapshot.data}><Eye className="size-4 mr-1" />Visualizar PDF</Button>
+            <Button variant="outline" onClick={() => generatePdf("download")} disabled={!snapshot.data}><FileDown className="size-4 mr-1" />Baixar PDF</Button>
             {canReprint && b.status !== "cancelled" && (
               <Dialog open={reprintOpen} onOpenChange={setReprintOpen}>
                 <DialogTrigger asChild><Button variant="outline"><RotateCcw className="size-4 mr-1" />Reimprimir</Button></DialogTrigger>
