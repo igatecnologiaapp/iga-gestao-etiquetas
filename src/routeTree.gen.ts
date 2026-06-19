@@ -25,6 +25,7 @@ import { Route as AppPrintHistoryRouteImport } from './routes/app.print-history'
 import { Route as AppPricesRouteImport } from './routes/app.prices'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
+import { Route as AppMessageTemplatesRouteImport } from './routes/app.message-templates'
 import { Route as AppLayoutsRouteImport } from './routes/app.layouts'
 import { Route as AppLayoutFormatsRouteImport } from './routes/app.layout-formats'
 import { Route as AppLayoutCategoriesRouteImport } from './routes/app.layout-categories'
@@ -120,6 +121,11 @@ const AppNutritionRoute = AppNutritionRouteImport.update({
   path: '/nutrition',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMessageTemplatesRoute = AppMessageTemplatesRouteImport.update({
+  id: '/message-templates',
+  path: '/message-templates',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLayoutsRoute = AppLayoutsRouteImport.update({
   id: '/layouts',
   path: '/layouts',
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
+  '/app/message-templates': typeof AppMessageTemplatesRoute
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
+  '/app/message-templates': typeof AppMessageTemplatesRoute
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
+  '/app/message-templates': typeof AppMessageTemplatesRoute
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
@@ -304,6 +313,7 @@ export interface FileRouteTypes {
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
+    | '/app/message-templates'
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
+    | '/app/message-templates'
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/app/layout-categories'
     | '/app/layout-formats'
     | '/app/layouts'
+    | '/app/message-templates'
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
@@ -503,6 +515,13 @@ declare module '@tanstack/react-router' {
       path: '/nutrition'
       fullPath: '/app/nutrition'
       preLoaderRoute: typeof AppNutritionRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/message-templates': {
+      id: '/app/message-templates'
+      path: '/message-templates'
+      fullPath: '/app/message-templates'
+      preLoaderRoute: typeof AppMessageTemplatesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/layouts': {
@@ -654,6 +673,7 @@ interface AppRouteChildren {
   AppLayoutCategoriesRoute: typeof AppLayoutCategoriesRoute
   AppLayoutFormatsRoute: typeof AppLayoutFormatsRoute
   AppLayoutsRoute: typeof AppLayoutsRouteWithChildren
+  AppMessageTemplatesRoute: typeof AppMessageTemplatesRoute
   AppNutritionRoute: typeof AppNutritionRoute
   AppPendingRoute: typeof AppPendingRoute
   AppPricesRoute: typeof AppPricesRoute
@@ -681,6 +701,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppLayoutCategoriesRoute: AppLayoutCategoriesRoute,
   AppLayoutFormatsRoute: AppLayoutFormatsRoute,
   AppLayoutsRoute: AppLayoutsRouteWithChildren,
+  AppMessageTemplatesRoute: AppMessageTemplatesRoute,
   AppNutritionRoute: AppNutritionRoute,
   AppPendingRoute: AppPendingRoute,
   AppPricesRoute: AppPricesRoute,
