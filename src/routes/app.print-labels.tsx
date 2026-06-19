@@ -540,6 +540,40 @@ function PrintLabelsPage() {
               </Select>
             </div>
 
+            {isShelf && (
+              <>
+                <div>
+                  <Label>Modelo de gôndola</Label>
+                  <Select value={shelfModel} onValueChange={(v) => setShelfModel(v as ShelfModel)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SHELF_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Promoção ativa {activePromotions.data?.length ? `(${activePromotions.data.length})` : ""}</Label>
+                  <Select value={promotionId} onValueChange={setPromotionId} disabled={!activePromotions.data?.length}>
+                    <SelectTrigger><SelectValue placeholder="(nenhuma)" /></SelectTrigger>
+                    <SelectContent>
+                      {activePromotions.data?.map((p: any) => (
+                        <SelectItem key={p.promotion_id} value={p.promotion_id}>
+                          {p.promotions?.name} {p.promotional_price != null ? `· ${formatBRL(Number(p.promotional_price))}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Preço normal</div><div className="font-semibold">{productPrice.data?.regular_price != null ? formatBRL(Number(productPrice.data.regular_price)) : "—"}</div></div>
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Promocional</div><div className="font-semibold">{activePromo?.promotional_price != null ? formatBRL(Number(activePromo.promotional_price)) : "—"}</div></div>
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Atacado</div><div className="font-semibold">{(activePromo?.wholesale_price ?? productPrice.data?.wholesale_price) != null ? formatBRL(Number(activePromo?.wholesale_price ?? productPrice.data?.wholesale_price)) : "—"}</div></div>
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Qtd. mín.</div><div className="font-semibold">{activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity ?? "—"}</div></div>
+                </div>
+              </>
+            )}
+
+
             <div className="sm:col-span-2">
               <Label className="flex items-center gap-2">
                 Layout {layoutSource && layoutSource !== "none" && (
