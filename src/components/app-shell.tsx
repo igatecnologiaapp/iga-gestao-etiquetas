@@ -3,9 +3,9 @@ import {
   LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
   LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History, DollarSign, Percent,
-  BarChart3, Plug, MessageSquare,
+  BarChart3, Plug, MessageSquare, PanelLeftClose, PanelLeftOpen, Menu,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,67 +47,148 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("sidebar:collapsed") === "1";
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("sidebar:collapsed", collapsed ? "1" : "0");
+    }
+  }, [collapsed]);
+
+  // close mobile drawer on route change
+  useEffect(() => { setMobileOpen(false); }, [path]);
+
   async function handleSignOut() {
     await signOut();
     navigate({ to: "/auth", replace: true });
   }
 
+  const renderNav = (isCollapsed: boolean) => (
+    <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
+      {groups.map((g) => (
+        <div key={g} className="space-y-1">
+          {!isCollapsed && (
+            <div className="px-3 pt-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{g}</div>
+          )}
+          {nav.filter((i) => i.group === g).map((item) => {
+            const active = item.exact ? path === item.to : path.startsWith(item.to);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                title={isCollapsed ? item.label : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  isCollapsed && "justify-center px-2",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}
+              >
+                <item.icon className="size-4 shrink-0" />
+                {!isCollapsed && <span className="truncate">{item.label}</span>}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
+    </nav>
+  );
+
   return (
     <div className="min-h-screen flex bg-muted/30">
-      <aside className="hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-        <div className="h-16 flex items-center gap-2 px-5 border-b border-sidebar-border">
-          <div className="size-9 rounded-md bg-primary text-primary-foreground grid place-items-center">
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          "hidden md:flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200",
+          collapsed ? "w-16" : "w-64",
+        )}
+      >
+        <div className={cn("h-16 flex items-center gap-2 border-b border-sidebar-border", collapsed ? "px-2 justify-center" : "px-5")}>
+          <div className="size-9 rounded-md bg-primary text-primary-foreground grid place-items-center shrink-0">
             <Tag className="size-5" />
           </div>
-          <div className="leading-tight">
-            <div className="font-semibold">Etiquetas</div>
-            <div className="text-xs text-muted-foreground">Painel admin</div>
-          </div>
-        </div>
-        <nav className="flex-1 p-3 space-y-4 overflow-y-auto">
-          {groups.map((g) => (
-            <div key={g} className="space-y-1">
-              <div className="px-3 pt-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">{g}</div>
-              {nav.filter((i) => i.group === g).map((item) => {
-                const active = item.exact ? path === item.to : path.startsWith(item.to);
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                    )}
-                  >
-                    <item.icon className="size-4" />
-                    {item.label}
-                  </Link>
-                );
-              })}
+          {!collapsed && (
+            <div className="leading-tight min-w-0">
+              <div className="font-semibold truncate">Etiquetas</div>
+              <div className="text-xs text-muted-foreground truncate">Painel admin</div>
             </div>
-          ))}
-        </nav>
-        <div className="border-t border-sidebar-border p-3">
-          <div className="px-2 pb-2 text-xs text-muted-foreground truncate">
-            {user?.email}
-          </div>
-          <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={handleSignOut}>
-            <LogOut className="size-4" /> Sair
+          )}
+        </div>
+        {renderNav(collapsed)}
+        <div className="border-t border-sidebar-border p-3 space-y-2">
+          {!collapsed && (
+            <div className="px-2 text-xs text-muted-foreground truncate">{user?.email}</div>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("w-full gap-2", collapsed ? "justify-center px-0" : "justify-start")}
+            onClick={handleSignOut}
+            title={collapsed ? "Sair" : undefined}
+          >
+            <LogOut className="size-4" /> {!collapsed && "Sair"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("w-full gap-2", collapsed ? "justify-center px-0" : "justify-start")}
+            onClick={() => setCollapsed((v) => !v)}
+            title={collapsed ? "Expandir menu" : "Recolher menu"}
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+          >
+            {collapsed ? <PanelLeftOpen className="size-4" /> : <><PanelLeftClose className="size-4" /> Recolher</>}
           </Button>
         </div>
       </aside>
 
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-40">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-64 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+            <div className="h-16 flex items-center gap-2 px-5 border-b border-sidebar-border">
+              <div className="size-9 rounded-md bg-primary text-primary-foreground grid place-items-center">
+                <Tag className="size-5" />
+              </div>
+              <div className="leading-tight">
+                <div className="font-semibold">Etiquetas</div>
+                <div className="text-xs text-muted-foreground">Painel admin</div>
+              </div>
+            </div>
+            {renderNav(false)}
+            <div className="border-t border-sidebar-border p-3">
+              <div className="px-2 pb-2 text-xs text-muted-foreground truncate">{user?.email}</div>
+              <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={handleSignOut}>
+                <LogOut className="size-4" /> Sair
+              </Button>
+            </div>
+          </aside>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 flex items-center justify-between gap-2 border-b bg-background px-4 md:px-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menu"
+          >
+            <Menu className="size-5" />
+          </Button>
           <div className="md:hidden flex items-center gap-2 font-semibold">
             <Tag className="size-5 text-primary" /> Etiquetas
           </div>
           <div className="flex-1 flex justify-end md:justify-start">
             <CompanySwitcher />
           </div>
-          <Button variant="ghost" size="sm" className="md:hidden" onClick={handleSignOut}>
+          <Button variant="ghost" size="sm" className="md:hidden" onClick={handleSignOut} aria-label="Sair">
             <LogOut className="size-4" />
           </Button>
         </header>
