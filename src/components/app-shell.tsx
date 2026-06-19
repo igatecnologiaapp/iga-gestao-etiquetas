@@ -15,7 +15,8 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const nav = [
+type NavItem = { to: string; label: string; icon: any; exact?: boolean };
+const nav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/app/companies", label: "Empresas", icon: Building2 },
   { to: "/app/branches", label: "Filiais", icon: Store },
@@ -23,7 +24,7 @@ const nav = [
   { to: "/app/roles", label: "Perfis", icon: ShieldCheck },
   { to: "/app/audit", label: "Auditoria", icon: FileText },
   { to: "/app/settings", label: "Configurações", icon: Settings },
-] as const;
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
