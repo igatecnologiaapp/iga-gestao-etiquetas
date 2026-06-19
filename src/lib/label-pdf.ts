@@ -224,7 +224,7 @@ function elementValue(el: PdfElement, d: PdfLabelData): string {
     case "allergens": return d.allergens ?? "";
     case "gluten": return d.gluten ?? "";
     case "lactose": return d.lactose ?? "";
-    case "preservation": return d.preservation ? `Conservar: ${d.preservation}` : "";
+    case "preservation": return d.preservation ? `Conservação: ${d.preservation}` : "";
     case "preparation": return d.preparation ?? "";
     case "lot": return d.lot ? `Lote: ${d.lot}` : "";
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
