@@ -38,6 +38,7 @@ import { Route as AppAuditRouteImport } from './routes/app.audit'
 import { Route as AppAllergensRouteImport } from './routes/app.allergens'
 import { Route as AppPrintHistoryIdRouteImport } from './routes/app.print-history.$id'
 import { Route as AppLayoutsIdRouteImport } from './routes/app.layouts.$id'
+import { Route as AppIntegrationsIdRouteImport } from './routes/app.integrations.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -184,6 +185,11 @@ const AppLayoutsIdRoute = AppLayoutsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppLayoutsRoute,
 } as any)
+const AppIntegrationsIdRoute = AppIntegrationsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppIntegrationsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -196,7 +202,7 @@ export interface FileRoutesByFullPath {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
-  '/app/integrations': typeof AppIntegrationsRoute
+  '/app/integrations': typeof AppIntegrationsRouteWithChildren
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
+  '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
@@ -226,7 +233,7 @@ export interface FileRoutesByTo {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
-  '/app/integrations': typeof AppIntegrationsRoute
+  '/app/integrations': typeof AppIntegrationsRouteWithChildren
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app': typeof AppIndexRoute
+  '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
@@ -258,7 +266,7 @@ export interface FileRoutesById {
   '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
-  '/app/integrations': typeof AppIntegrationsRoute
+  '/app/integrations': typeof AppIntegrationsRouteWithChildren
   '/app/layout-categories': typeof AppLayoutCategoriesRoute
   '/app/layout-formats': typeof AppLayoutFormatsRoute
   '/app/layouts': typeof AppLayoutsRouteWithChildren
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
   '/app/': typeof AppIndexRoute
+  '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
 }
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/users'
     | '/app/'
+    | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -338,6 +348,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/users'
     | '/app'
+    | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
   id:
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/app/settings'
     | '/app/users'
     | '/app/'
+    | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
   fileRoutesById: FileRoutesById
@@ -584,8 +596,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLayoutsIdRouteImport
       parentRoute: typeof AppLayoutsRoute
     }
+    '/app/integrations/$id': {
+      id: '/app/integrations/$id'
+      path: '/$id'
+      fullPath: '/app/integrations/$id'
+      preLoaderRoute: typeof AppIntegrationsIdRouteImport
+      parentRoute: typeof AppIntegrationsRoute
+    }
   }
 }
+
+interface AppIntegrationsRouteChildren {
+  AppIntegrationsIdRoute: typeof AppIntegrationsIdRoute
+}
+
+const AppIntegrationsRouteChildren: AppIntegrationsRouteChildren = {
+  AppIntegrationsIdRoute: AppIntegrationsIdRoute,
+}
+
+const AppIntegrationsRouteWithChildren = AppIntegrationsRoute._addFileChildren(
+  AppIntegrationsRouteChildren,
+)
 
 interface AppLayoutsRouteChildren {
   AppLayoutsIdRoute: typeof AppLayoutsIdRoute
@@ -619,7 +650,7 @@ interface AppRouteChildren {
   AppCategoriesRoute: typeof AppCategoriesRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppIngredientsRoute: typeof AppIngredientsRoute
-  AppIntegrationsRoute: typeof AppIntegrationsRoute
+  AppIntegrationsRoute: typeof AppIntegrationsRouteWithChildren
   AppLayoutCategoriesRoute: typeof AppLayoutCategoriesRoute
   AppLayoutFormatsRoute: typeof AppLayoutFormatsRoute
   AppLayoutsRoute: typeof AppLayoutsRouteWithChildren
@@ -646,7 +677,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCategoriesRoute: AppCategoriesRoute,
   AppCompaniesRoute: AppCompaniesRoute,
   AppIngredientsRoute: AppIngredientsRoute,
-  AppIntegrationsRoute: AppIntegrationsRoute,
+  AppIntegrationsRoute: AppIntegrationsRouteWithChildren,
   AppLayoutCategoriesRoute: AppLayoutCategoriesRoute,
   AppLayoutFormatsRoute: AppLayoutFormatsRoute,
   AppLayoutsRoute: AppLayoutsRouteWithChildren,
