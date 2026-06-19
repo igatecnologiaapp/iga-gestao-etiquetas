@@ -675,9 +675,7 @@ function PrintLabelsPage() {
         <Card className="p-5 space-y-3">
           <div className="font-semibold">Pré-visualização</div>
           {previewFormat && elements.data ? (
-            <div className="overflow-auto">
-              <LabelPreview format={previewFormat} elements={elements.data} zoom={2} data={previewData as any} />
-            </div>
+            <FitPreview format={previewFormat} elements={elements.data} data={previewData as any} />
           ) : (
             <div className="text-sm text-muted-foreground">Selecione produto e layout para pré-visualizar.</div>
           )}
@@ -690,3 +688,42 @@ function PrintLabelsPage() {
     </div>
   );
 }
+
+const UNIT_PX: Record<string, number> = { mm: 3.78, cm: 37.8, in: 96, px: 1 };
+
+function FitPreview({
+  format,
+  elements,
+  data,
+}: {
+  format: PreviewFormat;
+  elements: PreviewElement[];
+  data: any;
+}) {
+  const containerRef = useState<HTMLDivElement | null>(null);
+  const [ref, setRef] = containerRef;
+  const [zoom, setZoom] = useState(2);
+
+  useEffect(() => {
+    if (!ref) return;
+    const baseW = format.width * (UNIT_PX[format.unit] ?? 3.78);
+    const baseH = format.height * (UNIT_PX[format.unit] ?? 3.78);
+    const compute = () => {
+      const cw = ref.clientWidth || 1;
+      const maxH = 520;
+      const z = Math.max(0.5, Math.min(6, Math.min(cw / baseW, maxH / baseH)));
+      setZoom(z);
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(ref);
+    return () => ro.disconnect();
+  }, [ref, format.width, format.height, format.unit]);
+
+  return (
+    <div ref={setRef} className="w-full flex justify-center items-start overflow-hidden">
+      <LabelPreview format={format} elements={elements} zoom={zoom} data={data} />
+    </div>
+  );
+}
+
