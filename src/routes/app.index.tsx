@@ -203,12 +203,12 @@ function Dashboard() {
       <Card>
         <CardContent className="p-4 grid gap-3 md:grid-cols-4">
           <div>
-            <Label className="text-xs">Filial</Label>
+            <Label className="text-xs">Unidade</Label>
             <Select value={branchId} onValueChange={setBranchId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="__all__">Todas as filiais</SelectItem>
-                {branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                <SelectItem value="__all__">Todas as unidades</SelectItem>
+                {branches?.map((b) => <SelectItem key={b.id} value={b.id}>{b.name.replace(/Filial/gi, "Unidade")}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
