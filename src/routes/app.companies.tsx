@@ -54,10 +54,10 @@ function CompaniesPage() {
     mutationFn: async () => {
       const { data, error } = await supabase.rpc("create_company_with_admin", {
         _name: form.name,
-        _legal_name: form.legal_name || null,
-        _tax_id: form.tax_id || null,
-        _email: form.email || null,
-        _phone: form.phone || null,
+        _legal_name: form.legal_name || undefined,
+        _tax_id: form.tax_id || undefined,
+        _email: form.email || undefined,
+        _phone: form.phone || undefined,
       });
       if (error) {
         const msg = error.message?.includes("forbidden")
