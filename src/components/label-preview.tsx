@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import QRCode from "qrcode";
+import JsBarcode from "jsbarcode";
 
 export type PreviewElement = {
   id?: string;
@@ -29,13 +31,33 @@ export type PreviewFormat = {
   orientation: string;
 };
 
-const sampleData: Record<string, string> = {
+export type PreviewData = {
+  product_name?: string;
+  brand?: string;
+  internal_code?: string;
+  sku?: string;
+  ean?: string;
+  ingredients?: string;
+  allergens?: string;
+  gluten?: string;
+  lactose?: string;
+  preservation?: string;
+  preparation?: string;
+  lot?: string;
+  manufacture_date?: string;
+  expiry?: string;
+  weight?: string;
+  price?: string;
+  qr_payload?: any;
+  barcode_value?: string;
+  nutrition?: any;
+};
+
+const fallback: PreviewData = {
   product_name: "Espeto Bovino Temperado",
   internal_code: "PRD-001",
   sku: "SKU-001",
-  barcode: "789000000001",
-  qrcode: "QR",
-  logo: "LOGO",
+  ean: "7890000000017",
   brand: "IGA",
   weight: "150 g",
   lot: "L20260619",
@@ -46,27 +68,98 @@ const sampleData: Record<string, string> = {
   allergens: "Pode conter: glúten",
   gluten: "CONTÉM GLÚTEN",
   lactose: "NÃO CONTÉM LACTOSE",
-  nutrition_facts: "Tabela nutricional",
   price: "R$ 24,90",
 };
 
-function labelOf(el: PreviewElement): string {
+function labelOf(el: PreviewElement, d: PreviewData): string {
   if (el.element_type === "fixed_text") return el.fixed_text || "Texto fixo";
   if (el.element_type === "custom_field") return el.bound_field || "Campo personalizado";
-  return sampleData[el.element_type] ?? el.element_type;
+  switch (el.element_type) {
+    case "product_name": return d.product_name ?? "";
+    case "brand": return d.brand ?? "";
+    case "internal_code": return d.internal_code ? `Cód: ${d.internal_code}` : "";
+    case "sku": return d.sku ?? "";
+    case "ingredients": return d.ingredients ? `Ingredientes: ${d.ingredients}` : "Ingredientes: —";
+    case "allergens": return d.allergens ?? "";
+    case "gluten": return d.gluten ?? "";
+    case "lactose": return d.lactose ?? "";
+    case "preservation": return d.preservation ? `Conservar: ${d.preservation}` : "";
+    case "preparation": return d.preparation ?? "";
+    case "lot": return d.lot ? `Lote: ${d.lot}` : "";
+    case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
+    case "expiry": return d.expiry ? `Val: ${d.expiry}` : "";
+    case "weight": return d.weight ? `Peso: ${d.weight}` : "";
+    case "price": return d.price ?? "";
+    default: return "";
+  }
 }
 
 const UNIT_TO_PX: Record<string, number> = { mm: 3.78, cm: 37.8, in: 96, px: 1 };
+
+function QrImage({ payload, size }: { payload: any; size: number }) {
+  const [src, setSrc] = useState<string>("");
+  useEffect(() => {
+    const text = typeof payload === "string" ? payload : JSON.stringify(payload ?? {});
+    QRCode.toDataURL(text || " ", { errorCorrectionLevel: "M", margin: 1, width: Math.max(64, Math.round(size)) })
+      .then(setSrc).catch(() => setSrc(""));
+  }, [payload, size]);
+  return src ? <img src={src} style={{ width: size, height: size }} alt="QR" /> :
+    <div style={{ width: size, height: size, background: "#000", color: "#fff", display: "grid", placeItems: "center", fontSize: 10 }}>QR</div>;
+}
+
+function BarcodeImage({ value, width, height }: { value: string; width: number; height: number }) {
+  const [src, setSrc] = useState<string>("");
+  useEffect(() => {
+    try {
+      const c = document.createElement("canvas");
+      JsBarcode(c, value || "0000000000000", { format: "CODE128", width: 1.2, height: Math.max(30, height), displayValue: true, fontSize: 12, margin: 0 });
+      setSrc(c.toDataURL("image/png"));
+    } catch { setSrc(""); }
+  }, [value, height]);
+  return src ? <img src={src} style={{ width, height, objectFit: "fill" }} alt="barcode" /> :
+    <div style={{ width, height, background: "repeating-linear-gradient(90deg,#000 0 2px,#fff 2px 4px)" }} />;
+}
+
+function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: number }) {
+  const rows: Array<[string, string, string]> = [];
+  const fmt = (v: any, d = 1) => v == null || isNaN(Number(v)) ? "—" : (Number.isInteger(Number(v)) ? String(v) : Number(v).toFixed(d));
+  rows.push(["Valor energético", `${fmt(n?.energy_kcal, 0)} kcal`, ""]);
+  rows.push(["Carboidratos", `${fmt(n?.carbs_g)} g`, ""]);
+  rows.push(["  Açúcares totais", `${fmt(n?.total_sugars_g)} g`, ""]);
+  rows.push(["  Adicionados", `${fmt(n?.added_sugars_g)} g`, ""]);
+  rows.push(["Proteínas", `${fmt(n?.protein_g)} g`, ""]);
+  rows.push(["Gorduras totais", `${fmt(n?.total_fat_g)} g`, ""]);
+  rows.push(["  Saturadas", `${fmt(n?.saturated_fat_g)} g`, ""]);
+  rows.push(["  Trans", `${fmt(n?.trans_fat_g)} g`, ""]);
+  rows.push(["Fibra", `${fmt(n?.fiber_g)} g`, ""]);
+  rows.push(["Sódio", `${fmt(n?.sodium_mg, 0)} mg`, ""]);
+  return (
+    <div style={{ fontSize: fontPx, lineHeight: 1.1, padding: 1, height: "100%", overflow: "hidden" }}>
+      <div style={{ fontWeight: 700, textAlign: "center", borderBottom: "1px solid #000" }}>INF. NUTRICIONAL</div>
+      <div style={{ fontSize: fontPx * 0.9 }}>{n?.serving_size_g ? `Porção: ${n.serving_size_g} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —"}</div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: fontPx * 0.9 }}>
+        <tbody>
+          {rows.map(([a, b]) => (
+            <tr key={a}><td style={{ padding: "0 1px" }}>{a}</td><td style={{ textAlign: "right", padding: "0 1px" }}>{b}</td></tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function LabelPreview({
   format,
   elements,
   zoom = 2,
+  data,
 }: {
   format: PreviewFormat;
   elements: PreviewElement[];
   zoom?: number;
+  data?: PreviewData;
 }) {
+  const d = { ...fallback, ...(data ?? {}) };
   const pxPerUnit = (UNIT_TO_PX[format.unit] ?? 3.78) * zoom;
 
   const usableLeft = format.margin_left * pxPerUnit;
@@ -100,7 +193,6 @@ export function LabelPreview({
         className="relative bg-white border border-slate-300 shadow-sm overflow-hidden"
         style={{ width: W, height: H }}
       >
-        {/* usable area marker */}
         <div
           className="absolute border border-dashed border-slate-300 pointer-events-none"
           style={{
@@ -130,32 +222,16 @@ export function LabelPreview({
               outlineOffset: outside ? 1 : 0,
             };
             if (el.element_type === "line") {
-              return (
-                <div
-                  key={i}
-                  style={{ ...common, background: el.color ?? "#111", height: Math.max(1, h) }}
-                />
-              );
+              return <div key={i} style={{ ...common, background: el.color ?? "#111", height: Math.max(1, h) }} />;
             }
             if (el.element_type === "box") {
-              return (
-                <div
-                  key={i}
-                  style={{ ...common, border: `1px solid ${el.color ?? "#111"}`, background: "transparent" }}
-                />
-              );
+              return <div key={i} style={{ ...common, border: `1px solid ${el.color ?? "#111"}`, background: "transparent" }} />;
             }
             if (el.element_type === "qrcode") {
-              return (
-                <div key={i} style={{ ...common, background: "#000", color: "#fff", display: "grid", placeItems: "center" }}>
-                  QR
-                </div>
-              );
+              return <div key={i} style={{ ...common, display: "grid", placeItems: "center" }}><QrImage payload={d.qr_payload ?? "QR"} size={Math.min(w, h)} /></div>;
             }
             if (el.element_type === "barcode") {
-              return (
-                <div key={i} style={{ ...common, background: "repeating-linear-gradient(90deg,#000 0 2px,#fff 2px 4px)" }} />
-              );
+              return <div key={i} style={common}><BarcodeImage value={d.barcode_value || d.ean || "0000000000000"} width={w} height={h} /></div>;
             }
             if (el.element_type === "image" || el.element_type === "logo") {
               return (
@@ -164,9 +240,12 @@ export function LabelPreview({
                 </div>
               );
             }
+            if (el.element_type === "nutrition_facts") {
+              return <div key={i} style={{ ...common, border: "1px solid #000", overflow: "hidden" }}><NutritionMini n={d.nutrition} fontPx={(el.font_size ?? 8) * zoom * 0.6} /></div>;
+            }
             return (
               <div key={i} style={{ ...common, overflow: "hidden", lineHeight: 1.1, padding: 1 }}>
-                {labelOf(el)}
+                {labelOf(el, d)}
               </div>
             );
           })}
