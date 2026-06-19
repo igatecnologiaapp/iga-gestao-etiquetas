@@ -48,6 +48,18 @@ export type PreviewData = {
   expiry?: string;
   weight?: string;
   price?: string;
+  // Shelf-label / promotion (Phase 6)
+  regular_price?: string;
+  promotional_price?: string;
+  previous_price?: string;
+  wholesale_price?: string;
+  wholesale_min_quantity?: string;
+  promotion_name?: string;
+  promotion_rules?: string;
+  promotion_start?: string;
+  promotion_end?: string;
+  promotion_period?: string;
+  sale_unit?: string;
   qr_payload?: any;
   barcode_value?: string;
   nutrition?: any;
