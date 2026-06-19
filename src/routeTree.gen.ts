@@ -16,8 +16,12 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppRolesRouteImport } from './routes/app.roles'
+import { Route as AppProductsRouteImport } from './routes/app.products'
+import { Route as AppPendingRouteImport } from './routes/app.pending'
+import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
 import { Route as AppIngredientsRouteImport } from './routes/app.ingredients'
 import { Route as AppCompaniesRouteImport } from './routes/app.companies'
+import { Route as AppCategoriesRouteImport } from './routes/app.categories'
 import { Route as AppBrandsRouteImport } from './routes/app.brands'
 import { Route as AppBranchesRouteImport } from './routes/app.branches'
 import { Route as AppAuditRouteImport } from './routes/app.audit'
@@ -58,6 +62,21 @@ const AppRolesRoute = AppRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProductsRoute = AppProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPendingRoute = AppPendingRouteImport.update({
+  id: '/pending',
+  path: '/pending',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNutritionRoute = AppNutritionRouteImport.update({
+  id: '/nutrition',
+  path: '/nutrition',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppIngredientsRoute = AppIngredientsRouteImport.update({
   id: '/ingredients',
   path: '/ingredients',
@@ -66,6 +85,11 @@ const AppIngredientsRoute = AppIngredientsRouteImport.update({
 const AppCompaniesRoute = AppCompaniesRouteImport.update({
   id: '/companies',
   path: '/companies',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCategoriesRoute = AppCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => AppRoute,
 } as any)
 const AppBrandsRoute = AppBrandsRouteImport.update({
@@ -97,8 +121,12 @@ export interface FileRoutesByFullPath {
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
   '/app/brands': typeof AppBrandsRoute
+  '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/nutrition': typeof AppNutritionRoute
+  '/app/pending': typeof AppPendingRoute
+  '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -111,8 +139,12 @@ export interface FileRoutesByTo {
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
   '/app/brands': typeof AppBrandsRoute
+  '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/nutrition': typeof AppNutritionRoute
+  '/app/pending': typeof AppPendingRoute
+  '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -127,8 +159,12 @@ export interface FileRoutesById {
   '/app/audit': typeof AppAuditRoute
   '/app/branches': typeof AppBranchesRoute
   '/app/brands': typeof AppBrandsRoute
+  '/app/categories': typeof AppCategoriesRoute
   '/app/companies': typeof AppCompaniesRoute
   '/app/ingredients': typeof AppIngredientsRoute
+  '/app/nutrition': typeof AppNutritionRoute
+  '/app/pending': typeof AppPendingRoute
+  '/app/products': typeof AppProductsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -144,8 +180,12 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/branches'
     | '/app/brands'
+    | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/nutrition'
+    | '/app/pending'
+    | '/app/products'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -158,8 +198,12 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/branches'
     | '/app/brands'
+    | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/nutrition'
+    | '/app/pending'
+    | '/app/products'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -173,8 +217,12 @@ export interface FileRouteTypes {
     | '/app/audit'
     | '/app/branches'
     | '/app/brands'
+    | '/app/categories'
     | '/app/companies'
     | '/app/ingredients'
+    | '/app/nutrition'
+    | '/app/pending'
+    | '/app/products'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -238,6 +286,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRolesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/products': {
+      id: '/app/products'
+      path: '/products'
+      fullPath: '/app/products'
+      preLoaderRoute: typeof AppProductsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/pending': {
+      id: '/app/pending'
+      path: '/pending'
+      fullPath: '/app/pending'
+      preLoaderRoute: typeof AppPendingRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/nutrition': {
+      id: '/app/nutrition'
+      path: '/nutrition'
+      fullPath: '/app/nutrition'
+      preLoaderRoute: typeof AppNutritionRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/ingredients': {
       id: '/app/ingredients'
       path: '/ingredients'
@@ -250,6 +319,13 @@ declare module '@tanstack/react-router' {
       path: '/companies'
       fullPath: '/app/companies'
       preLoaderRoute: typeof AppCompaniesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/categories': {
+      id: '/app/categories'
+      path: '/categories'
+      fullPath: '/app/categories'
+      preLoaderRoute: typeof AppCategoriesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/brands': {
@@ -288,8 +364,12 @@ interface AppRouteChildren {
   AppAuditRoute: typeof AppAuditRoute
   AppBranchesRoute: typeof AppBranchesRoute
   AppBrandsRoute: typeof AppBrandsRoute
+  AppCategoriesRoute: typeof AppCategoriesRoute
   AppCompaniesRoute: typeof AppCompaniesRoute
   AppIngredientsRoute: typeof AppIngredientsRoute
+  AppNutritionRoute: typeof AppNutritionRoute
+  AppPendingRoute: typeof AppPendingRoute
+  AppProductsRoute: typeof AppProductsRoute
   AppRolesRoute: typeof AppRolesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppUsersRoute: typeof AppUsersRoute
@@ -301,8 +381,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppAuditRoute: AppAuditRoute,
   AppBranchesRoute: AppBranchesRoute,
   AppBrandsRoute: AppBrandsRoute,
+  AppCategoriesRoute: AppCategoriesRoute,
   AppCompaniesRoute: AppCompaniesRoute,
   AppIngredientsRoute: AppIngredientsRoute,
+  AppNutritionRoute: AppNutritionRoute,
+  AppPendingRoute: AppPendingRoute,
+  AppProductsRoute: AppProductsRoute,
   AppRolesRoute: AppRolesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppUsersRoute: AppUsersRoute,

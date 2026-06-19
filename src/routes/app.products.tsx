@@ -177,12 +177,12 @@ function ProductsPage() {
       await supabase.from("product_allergens").delete().eq("product_id", productId!);
       if (form.ingredient_ids.length) {
         await supabase.from("product_ingredients").insert(
-          form.ingredient_ids.map((id, i) => ({ company_id: companyId, product_id: productId!, ingredient_id: id, position: i + 1 })),
+          form.ingredient_ids.map((id, i) => ({ company_id: companyId!, product_id: productId!, ingredient_id: id, position: i + 1 })),
         );
       }
       if (form.allergen_ids.length) {
         await supabase.from("product_allergens").insert(
-          form.allergen_ids.map((id) => ({ company_id: companyId, product_id: productId!, allergen_id: id })),
+          form.allergen_ids.map((id) => ({ company_id: companyId!, product_id: productId!, allergen_id: id })),
         );
       }
     },
