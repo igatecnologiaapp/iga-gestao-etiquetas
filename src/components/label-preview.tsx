@@ -48,6 +48,18 @@ export type PreviewData = {
   expiry?: string;
   weight?: string;
   price?: string;
+  // Shelf-label / promotion (Phase 6)
+  regular_price?: string;
+  promotional_price?: string;
+  previous_price?: string;
+  wholesale_price?: string;
+  wholesale_min_quantity?: string;
+  promotion_name?: string;
+  promotion_rules?: string;
+  promotion_start?: string;
+  promotion_end?: string;
+  promotion_period?: string;
+  sale_unit?: string;
   qr_payload?: any;
   barcode_value?: string;
   nutrition?: any;
@@ -89,7 +101,18 @@ function labelOf(el: PreviewElement, d: PreviewData): string {
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
     case "expiry": return d.expiry ? `Val: ${d.expiry}` : "";
     case "weight": return d.weight ? `Peso: ${d.weight}` : "";
-    case "price": return d.price ?? "";
+    case "price": return d.price ?? d.regular_price ?? "";
+    case "regular_price": return d.regular_price ?? "";
+    case "promotional_price": return d.promotional_price ?? "";
+    case "previous_price": return d.previous_price ? `de ${d.previous_price}` : "";
+    case "wholesale_price": return d.wholesale_price ?? "";
+    case "wholesale_min_quantity": return d.wholesale_min_quantity ? `A partir de ${d.wholesale_min_quantity} un` : "";
+    case "promotion_name": return d.promotion_name ?? "";
+    case "promotion_rules": return d.promotion_rules ?? "";
+    case "promotion_period": return d.promotion_period ?? (d.promotion_start && d.promotion_end ? `${d.promotion_start} a ${d.promotion_end}` : "");
+    case "promotion_start": return d.promotion_start ? `De: ${d.promotion_start}` : "";
+    case "promotion_end": return d.promotion_end ? `Até: ${d.promotion_end}` : "";
+    case "sale_unit": return d.sale_unit ?? "";
     default: return "";
   }
 }

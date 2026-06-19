@@ -1507,6 +1507,169 @@ export type Database = {
           },
         ]
       }
+      product_price_history: {
+        Row: {
+          branch_id: string | null
+          changed_at: string
+          changed_by: string | null
+          company_id: string
+          id: string
+          new_promotional_price: number | null
+          new_regular_price: number | null
+          new_wholesale_price: number | null
+          previous_promotional_price: number | null
+          previous_regular_price: number | null
+          previous_wholesale_price: number | null
+          product_id: string
+          reason: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          company_id: string
+          id?: string
+          new_promotional_price?: number | null
+          new_regular_price?: number | null
+          new_wholesale_price?: number | null
+          previous_promotional_price?: number | null
+          previous_regular_price?: number | null
+          previous_wholesale_price?: number | null
+          product_id: string
+          reason?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          changed_at?: string
+          changed_by?: string | null
+          company_id?: string
+          id?: string
+          new_promotional_price?: number | null
+          new_regular_price?: number | null
+          new_wholesale_price?: number | null
+          previous_promotional_price?: number | null
+          previous_regular_price?: number | null
+          previous_wholesale_price?: number | null
+          product_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_price_history_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_price_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_prices: {
+        Row: {
+          active_promotion_id: string | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          current_promotional_price: number | null
+          id: string
+          product_id: string
+          regular_price: number
+          sale_unit: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          wholesale_min_quantity: number | null
+          wholesale_price: number | null
+        }
+        Insert: {
+          active_promotion_id?: string | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          current_promotional_price?: number | null
+          id?: string
+          product_id: string
+          regular_price?: number
+          sale_unit?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          wholesale_min_quantity?: number | null
+          wholesale_price?: number | null
+        }
+        Update: {
+          active_promotion_id?: string | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          current_promotional_price?: number | null
+          id?: string
+          product_id?: string
+          regular_price?: number
+          sale_unit?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          wholesale_min_quantity?: number | null
+          wholesale_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_prices_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_prices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           branch_id: string | null
@@ -1636,6 +1799,150 @@ export type Database = {
             columns: ["subcategory_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotion_products: {
+        Row: {
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          promotion_id: string
+          promotion_rules: string | null
+          promotional_price: number | null
+          regular_price: number | null
+          status: string
+          updated_at: string
+          wholesale_min_quantity: number | null
+          wholesale_price: number | null
+        }
+        Insert: {
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          promotion_id: string
+          promotion_rules?: string | null
+          promotional_price?: number | null
+          regular_price?: number | null
+          status?: string
+          updated_at?: string
+          wholesale_min_quantity?: number | null
+          wholesale_price?: number | null
+        }
+        Update: {
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          promotion_id?: string
+          promotion_rules?: string | null
+          promotional_price?: number | null
+          regular_price?: number | null
+          status?: string
+          updated_at?: string
+          wholesale_min_quantity?: number | null
+          wholesale_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotion_products_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "promotion_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotion_products_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promotions: {
+        Row: {
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+          status: Database["public"]["Enums"]["promotion_status"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1873,6 +2180,19 @@ export type Database = {
       }
     }
     Functions: {
+      get_active_promotion_for_product: {
+        Args: { _company_id: string; _product_id: string }
+        Returns: {
+          end_date: string
+          name: string
+          promotion_id: string
+          promotion_rules: string
+          promotional_price: number
+          start_date: string
+          wholesale_min_quantity: number
+          wholesale_price: number
+        }[]
+      }
       has_any_role: {
         Args: {
           _company_id: string
@@ -1995,6 +2315,7 @@ export type Database = {
         | "grafica_externa"
         | "bobina_continua"
         | "etiqueta_adesiva"
+      promotion_status: "draft" | "scheduled" | "active" | "ended" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2196,6 +2517,7 @@ export const Constants = {
         "bobina_continua",
         "etiqueta_adesiva",
       ],
+      promotion_status: ["draft", "scheduled", "active", "ended", "cancelled"],
     },
   },
 } as const

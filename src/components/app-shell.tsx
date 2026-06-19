@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
-  LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History,
+  LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History, DollarSign, Percent,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -21,6 +21,8 @@ const nav: NavItem[] = [
   { to: "/app/ingredients", label: "Ingredientes", icon: Leaf, group: "Cadastros" },
   { to: "/app/allergens", label: "Alergênicos", icon: AlertCircle, group: "Cadastros" },
   { to: "/app/nutrition", label: "Inf. Nutricionais", icon: Activity, group: "Cadastros" },
+  { to: "/app/prices", label: "Preços", icon: DollarSign, group: "Cadastros" },
+  { to: "/app/promotions", label: "Promoções", icon: Percent, group: "Cadastros" },
   { to: "/app/pending", label: "Pendências Regulatórias", icon: AlertCircle, group: "Cadastros" },
   { to: "/app/layouts", label: "Central de Layouts", icon: LayoutTemplate, group: "Layouts" },
   { to: "/app/layout-categories", label: "Categorias de Layout", icon: FolderKanban, group: "Layouts" },

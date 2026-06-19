@@ -17,12 +17,16 @@ import { toast } from "sonner";
 import {
   LABEL_TYPES,
   SUGGESTION_SOURCE_LABEL,
+  SHELF_MODELS,
   blockingIssuesForNutritional,
   computeExpiration,
+  isShelfLabel,
   suggestLayout,
   uniqueLabelCode,
   type LabelType,
+  type ShelfModel,
 } from "@/lib/label-emission";
+import { formatBRL } from "@/lib/label-pdf";
 
 export const Route = createFileRoute("/app/print-labels")({ component: PrintLabelsPage });
 
@@ -47,6 +51,10 @@ function PrintLabelsPage() {
   const [expiration, setExpiration] = useState<string>("");
   const [weight, setWeight] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [shelfModel, setShelfModel] = useState<ShelfModel>("simples");
+  const [promotionId, setPromotionId] = useState<string>("");
+
+  const isShelf = isShelfLabel(labelType);
 
   // Lookups
   const branches = useQuery({
@@ -129,6 +137,50 @@ function PrintLabelsPage() {
     },
   });
 
+  // Phase 6 — product price (regular/wholesale) for the product+branch
+  const productPrice = useQuery({
+    queryKey: ["em-price", companyId, productId, branchId],
+    enabled: !!companyId && !!productId && isShelf,
+    queryFn: async () => {
+      let q = (supabase.from("product_prices" as any) as any)
+        .select("*").eq("company_id", companyId!).eq("product_id", productId);
+      const { data, error } = await q;
+      if (error) throw error;
+      const list = (data as any[]) ?? [];
+      return list.find((p) => p.branch_id === (branchId || null)) ?? list.find((p) => p.branch_id == null) ?? null;
+    },
+  });
+
+  // Phase 6 — active promotions for product
+  const activePromotions = useQuery({
+    queryKey: ["em-promos", companyId, productId],
+    enabled: !!companyId && !!productId && isShelf,
+    queryFn: async () => {
+      const nowIso = new Date().toISOString();
+      const { data, error } = await (supabase.from("promotion_products" as any) as any)
+        .select("*, promotions:promotion_id(id,name,status,start_date,end_date)")
+        .eq("company_id", companyId!).eq("product_id", productId).eq("status", "ativo");
+      if (error) throw error;
+      return ((data as any[]) ?? []).filter((row) => {
+        const p = row.promotions;
+        return p && p.status === "active" && p.start_date <= nowIso && p.end_date >= nowIso;
+      });
+    },
+  });
+
+  // Auto-pick first active promotion when shelf=promocional
+  useEffect(() => {
+    if (!isShelf) { setPromotionId(""); return; }
+    if (shelfModel === "promocional" && !promotionId && activePromotions.data?.length) {
+      setPromotionId(activePromotions.data[0].promotion_id);
+    }
+  }, [isShelf, shelfModel, activePromotions.data, promotionId]);
+
+  const activePromo = useMemo(
+    () => activePromotions.data?.find((p) => p.promotion_id === promotionId) ?? null,
+    [activePromotions.data, promotionId],
+  );
+
   // Auto-suggest layout when product+type change
   const suggest = useMutation({
     mutationFn: async () => {
@@ -207,27 +259,43 @@ function PrintLabelsPage() {
     };
   }, [layout.data]);
 
-  const previewData = useMemo(() => ({
-    product_name: product?.name,
-    brand: undefined as string | undefined,
-    internal_code: product?.internal_code,
-    sku: product?.sku,
-    ean: product?.ean,
-    ingredients: product?.commercial_description,
-    allergens: product?.contains_gluten || product?.contains_lactose
-      ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
-      : undefined,
-    gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
-    lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
-    preservation: product?.preservation,
-    lot: batchCode,
-    manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
-    expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
-    weight: weight ? `${weight} kg` : (product?.standard_weight ? `${product.standard_weight} ${product.unit_of_measure ?? ""}` : undefined),
-    nutrition: nutrition.data,
-    qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId },
-    barcode_value: product?.ean || product?.internal_code,
-  }), [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId]);
+  const previewData = useMemo(() => {
+    const reg = productPrice.data?.regular_price ?? activePromo?.regular_price ?? null;
+    const promo = shelfModel === "promocional" ? (activePromo?.promotional_price ?? productPrice.data?.current_promotional_price ?? null) : null;
+    const whp = shelfModel === "atacado" ? (activePromo?.wholesale_price ?? productPrice.data?.wholesale_price ?? null) : null;
+    const whq = shelfModel === "atacado" ? (activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity ?? null) : null;
+    return {
+      product_name: product?.name,
+      brand: undefined as string | undefined,
+      internal_code: product?.internal_code,
+      sku: product?.sku,
+      ean: product?.ean,
+      ingredients: product?.commercial_description,
+      allergens: product?.contains_gluten || product?.contains_lactose
+        ? `${product?.contains_gluten ? "Contém glúten. " : ""}${product?.contains_lactose ? "Contém lactose." : ""}`
+        : undefined,
+      gluten: product?.contains_gluten ? "CONTÉM GLÚTEN" : undefined,
+      lactose: product?.contains_lactose ? "CONTÉM LACTOSE" : undefined,
+      preservation: product?.preservation,
+      lot: batchCode,
+      manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
+      expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
+      weight: weight ? `${weight} kg` : (product?.standard_weight ? `${product.standard_weight} ${product.unit_of_measure ?? ""}` : undefined),
+      nutrition: nutrition.data,
+      sale_unit: productPrice.data?.sale_unit ?? product?.unit_of_measure,
+      regular_price: reg != null ? formatBRL(Number(reg)) : undefined,
+      promotional_price: promo != null ? formatBRL(Number(promo)) : undefined,
+      previous_price: promo != null && reg != null ? formatBRL(Number(reg)) : undefined,
+      wholesale_price: whp != null ? formatBRL(Number(whp)) : undefined,
+      wholesale_min_quantity: whq != null ? String(whq) : undefined,
+      promotion_name: activePromo?.promotions?.name,
+      promotion_rules: activePromo?.promotion_rules,
+      promotion_start: activePromo?.promotions?.start_date ? new Date(activePromo.promotions.start_date).toLocaleDateString("pt-BR") : undefined,
+      promotion_end: activePromo?.promotions?.end_date ? new Date(activePromo.promotions.end_date).toLocaleDateString("pt-BR") : undefined,
+      qr_payload: { product: product?.name, code: product?.internal_code, lot: batchCode, mfg: manufactureDate, exp: expiration, company_id: companyId, label_type: labelType },
+      barcode_value: product?.ean || product?.internal_code,
+    };
+  }, [product, batchCode, manufactureDate, expiration, weight, nutrition.data, companyId, labelType, productPrice.data, activePromo, shelfModel]);
 
 
   // Validations
@@ -239,12 +307,25 @@ function PrintLabelsPage() {
     if (product && product.status !== "ativo") errs.push("Produto inativo.");
     if (layout.data && layout.data.status !== "ativo") errs.push("Layout inativo.");
     if (!version.data) errs.push("Layout não tem versão vigente.");
-    if (product?.variable_weight && !weight) errs.push("Produto de peso variável — informe o peso.");
+    if (product?.variable_weight && !weight && !isShelf) errs.push("Produto de peso variável — informe o peso.");
     if (labelType === "nutricional") {
       for (const m of blockingIssuesForNutritional(pending.data)) errs.push(m);
     }
+    if (isShelf) {
+      const reg = productPrice.data?.regular_price ?? activePromo?.regular_price;
+      if (reg == null) errs.push("Produto sem preço normal cadastrado.");
+      if (shelfModel === "promocional") {
+        if (!activePromo) errs.push("Nenhuma promoção ativa para este produto.");
+        else if (activePromo.promotional_price == null) errs.push("Promoção sem preço promocional definido.");
+      }
+      if (shelfModel === "atacado") {
+        const whp = activePromo?.wholesale_price ?? productPrice.data?.wholesale_price;
+        const whq = activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity;
+        if (whp == null || whq == null) errs.push("Preço por quantidade (atacado) não definido.");
+      }
+    }
     // Required layout elements
-    if (elements.data) {
+    if (elements.data && !isShelf) {
       const missingReq = elements.data.filter((e: any) => e.required).filter((e: any) => {
         if (e.element_type === "lot") return !batchCode;
         if (e.element_type === "manufacture_date") return !manufactureDate;
@@ -255,7 +336,7 @@ function PrintLabelsPage() {
       if (missingReq.length) errs.push(`Campos obrigatórios do layout não preenchidos: ${missingReq.map((e: any) => e.element_type).join(", ")}`);
     }
     return errs;
-  }, [productId, layoutId, quantity, product, layout.data, version.data, weight, labelType, pending.data, elements.data, batchCode, manufactureDate, expiration]);
+  }, [productId, layoutId, quantity, product, layout.data, version.data, weight, labelType, pending.data, elements.data, batchCode, manufactureDate, expiration, isShelf, shelfModel, productPrice.data, activePromo]);
 
   const canEmit = !isReadOnly && canCreateProduct && blocking.length === 0;
 
@@ -297,8 +378,13 @@ function PrintLabelsPage() {
         elements: elements.data ?? [],
         format: layout.data.label_formats,
       };
+      const reg = productPrice.data?.regular_price ?? activePromo?.regular_price ?? null;
+      const promoPrice = shelfModel === "promocional" ? (activePromo?.promotional_price ?? null) : null;
+      const whp = shelfModel === "atacado" ? (activePromo?.wholesale_price ?? productPrice.data?.wholesale_price ?? null) : null;
+      const whq = shelfModel === "atacado" ? (activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity ?? null) : null;
       const emissionSnap = {
         label_type: labelType,
+        shelf_model: isShelf ? shelfModel : null,
         batch_code: batchCode,
         manufacture_date: manufactureDate,
         expiration_date: expiration,
@@ -306,6 +392,17 @@ function PrintLabelsPage() {
         suggestion_source: layoutSource,
         overridden: layoutOverridden,
         emitted_at: new Date().toISOString(),
+        sale_unit: productPrice.data?.sale_unit ?? product.unit_of_measure ?? null,
+        regular_price: reg != null ? Number(reg) : null,
+        promotional_price: promoPrice != null ? Number(promoPrice) : null,
+        previous_price: promoPrice != null && reg != null ? Number(reg) : null,
+        wholesale_price: whp != null ? Number(whp) : null,
+        wholesale_min_quantity: whq != null ? Number(whq) : null,
+        promotion_id: activePromo?.promotion_id ?? null,
+        promotion_name: activePromo?.promotions?.name ?? null,
+        promotion_rules: activePromo?.promotion_rules ?? null,
+        promotion_start: activePromo?.promotions?.start_date ?? null,
+        promotion_end: activePromo?.promotions?.end_date ?? null,
       };
 
       const productSnap = product;
@@ -442,6 +539,40 @@ function PrintLabelsPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {isShelf && (
+              <>
+                <div>
+                  <Label>Modelo de gôndola</Label>
+                  <Select value={shelfModel} onValueChange={(v) => setShelfModel(v as ShelfModel)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SHELF_MODELS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Promoção ativa {activePromotions.data?.length ? `(${activePromotions.data.length})` : ""}</Label>
+                  <Select value={promotionId} onValueChange={setPromotionId} disabled={!activePromotions.data?.length}>
+                    <SelectTrigger><SelectValue placeholder="(nenhuma)" /></SelectTrigger>
+                    <SelectContent>
+                      {activePromotions.data?.map((p: any) => (
+                        <SelectItem key={p.promotion_id} value={p.promotion_id}>
+                          {p.promotions?.name} {p.promotional_price != null ? `· ${formatBRL(Number(p.promotional_price))}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Preço normal</div><div className="font-semibold">{productPrice.data?.regular_price != null ? formatBRL(Number(productPrice.data.regular_price)) : "—"}</div></div>
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Promocional</div><div className="font-semibold">{activePromo?.promotional_price != null ? formatBRL(Number(activePromo.promotional_price)) : "—"}</div></div>
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Atacado</div><div className="font-semibold">{(activePromo?.wholesale_price ?? productPrice.data?.wholesale_price) != null ? formatBRL(Number(activePromo?.wholesale_price ?? productPrice.data?.wholesale_price)) : "—"}</div></div>
+                  <div className="rounded-md border p-2"><div className="text-xs text-muted-foreground">Qtd. mín.</div><div className="font-semibold">{activePromo?.wholesale_min_quantity ?? productPrice.data?.wholesale_min_quantity ?? "—"}</div></div>
+                </div>
+              </>
+            )}
+
 
             <div className="sm:col-span-2">
               <Label className="flex items-center gap-2">

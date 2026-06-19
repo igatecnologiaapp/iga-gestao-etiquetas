@@ -69,6 +69,18 @@ export type PdfLabelData = {
   expiry?: string;
   weight?: string;
   price?: string;
+  // Shelf-label / promotion fields (Phase 6)
+  regular_price?: string;
+  promotional_price?: string;
+  previous_price?: string;
+  wholesale_price?: string;
+  wholesale_min_quantity?: string;
+  promotion_name?: string;
+  promotion_rules?: string;
+  promotion_start?: string;
+  promotion_end?: string;
+  promotion_period?: string;
+  sale_unit?: string;
   company_name?: string;
   nutrition?: PdfNutrition | null;
   qr_payload?: any;
@@ -87,6 +99,13 @@ const UNIT_TO_MM: Record<string, number> = { mm: 1, cm: 10, in: 25.4, px: 25.4 /
 
 function toMm(value: number, unit: string) {
   return value * (UNIT_TO_MM[unit] ?? 1);
+}
+
+export function formatBRL(v: number | string | null | undefined): string {
+  if (v == null || v === "") return "";
+  const n = typeof v === "number" ? v : Number(v);
+  if (!isFinite(n)) return "";
+  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 function fmtNum(n: number | null | undefined, digits = 1) {
@@ -209,7 +228,18 @@ function elementValue(el: PdfElement, d: PdfLabelData): string {
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
     case "expiry": return d.expiry ? `Val: ${d.expiry}` : "";
     case "weight": return d.weight ? `Peso: ${d.weight}` : "";
-    case "price": return d.price ?? "";
+    case "price": return d.price ?? d.regular_price ?? "";
+    case "regular_price": return d.regular_price ?? "";
+    case "promotional_price": return d.promotional_price ?? "";
+    case "previous_price": return d.previous_price ? `de ${d.previous_price}` : "";
+    case "wholesale_price": return d.wholesale_price ?? "";
+    case "wholesale_min_quantity": return d.wholesale_min_quantity ? `A partir de ${d.wholesale_min_quantity} un` : "";
+    case "promotion_name": return d.promotion_name ?? "";
+    case "promotion_rules": return d.promotion_rules ?? "";
+    case "promotion_period": return d.promotion_period ?? (d.promotion_start && d.promotion_end ? `${d.promotion_start} a ${d.promotion_end}` : "");
+    case "promotion_start": return d.promotion_start ? `De: ${d.promotion_start}` : "";
+    case "promotion_end": return d.promotion_end ? `Até: ${d.promotion_end}` : "";
+    case "sale_unit": return d.sale_unit ?? "";
     default: return "";
   }
 }
@@ -392,6 +422,16 @@ export function buildLabelDataFromSnapshot(snapshot: any, opts?: { unique_label_
     expiry: em.expiration_date ? new Date(em.expiration_date).toLocaleDateString("pt-BR") : undefined,
     weight: em.weight ? `${em.weight} kg` : (p.standard_weight ? `${p.standard_weight} ${p.unit_of_measure ?? ""}` : undefined),
     nutrition: n,
+    regular_price: em.regular_price != null ? formatBRL(em.regular_price) : undefined,
+    promotional_price: em.promotional_price != null ? formatBRL(em.promotional_price) : undefined,
+    previous_price: em.previous_price != null ? formatBRL(em.previous_price) : (em.regular_price != null && em.promotional_price != null ? formatBRL(em.regular_price) : undefined),
+    wholesale_price: em.wholesale_price != null ? formatBRL(em.wholesale_price) : undefined,
+    wholesale_min_quantity: em.wholesale_min_quantity != null ? String(em.wholesale_min_quantity) : undefined,
+    promotion_name: em.promotion_name,
+    promotion_rules: em.promotion_rules,
+    promotion_start: em.promotion_start ? new Date(em.promotion_start).toLocaleDateString("pt-BR") : undefined,
+    promotion_end: em.promotion_end ? new Date(em.promotion_end).toLocaleDateString("pt-BR") : undefined,
+    sale_unit: em.sale_unit ?? p.unit_of_measure,
     qr_payload: { ...em, id: opts?.unique_label_code, seq: opts?.sequential },
     barcode_value: p.ean,
     unique_label_code: opts?.unique_label_code,

@@ -16,10 +16,12 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppRolesRouteImport } from './routes/app.roles'
+import { Route as AppPromotionsRouteImport } from './routes/app.promotions'
 import { Route as AppProductsRouteImport } from './routes/app.products'
 import { Route as AppPrintersRouteImport } from './routes/app.printers'
 import { Route as AppPrintLabelsRouteImport } from './routes/app.print-labels'
 import { Route as AppPrintHistoryRouteImport } from './routes/app.print-history'
+import { Route as AppPricesRouteImport } from './routes/app.prices'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
 import { Route as AppLayoutsRouteImport } from './routes/app.layouts'
@@ -70,6 +72,11 @@ const AppRolesRoute = AppRolesRouteImport.update({
   path: '/roles',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPromotionsRoute = AppPromotionsRouteImport.update({
+  id: '/promotions',
+  path: '/promotions',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProductsRoute = AppProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -88,6 +95,11 @@ const AppPrintLabelsRoute = AppPrintLabelsRouteImport.update({
 const AppPrintHistoryRoute = AppPrintHistoryRouteImport.update({
   id: '/print-history',
   path: '/print-history',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPricesRoute = AppPricesRouteImport.update({
+  id: '/prices',
+  path: '/prices',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPendingRoute = AppPendingRouteImport.update({
@@ -177,10 +189,12 @@ export interface FileRoutesByFullPath {
   '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/prices': typeof AppPricesRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
+  '/app/promotions': typeof AppPromotionsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -203,10 +217,12 @@ export interface FileRoutesByTo {
   '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/prices': typeof AppPricesRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
+  '/app/promotions': typeof AppPromotionsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -231,10 +247,12 @@ export interface FileRoutesById {
   '/app/layouts': typeof AppLayoutsRouteWithChildren
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
+  '/app/prices': typeof AppPricesRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
+  '/app/promotions': typeof AppPromotionsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -260,10 +278,12 @@ export interface FileRouteTypes {
     | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/prices'
     | '/app/print-history'
     | '/app/print-labels'
     | '/app/printers'
     | '/app/products'
+    | '/app/promotions'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -286,10 +306,12 @@ export interface FileRouteTypes {
     | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/prices'
     | '/app/print-history'
     | '/app/print-labels'
     | '/app/printers'
     | '/app/products'
+    | '/app/promotions'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -313,10 +335,12 @@ export interface FileRouteTypes {
     | '/app/layouts'
     | '/app/nutrition'
     | '/app/pending'
+    | '/app/prices'
     | '/app/print-history'
     | '/app/print-labels'
     | '/app/printers'
     | '/app/products'
+    | '/app/promotions'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -382,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRolesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/promotions': {
+      id: '/app/promotions'
+      path: '/promotions'
+      fullPath: '/app/promotions'
+      preLoaderRoute: typeof AppPromotionsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/products': {
       id: '/app/products'
       path: '/products'
@@ -408,6 +439,13 @@ declare module '@tanstack/react-router' {
       path: '/print-history'
       fullPath: '/app/print-history'
       preLoaderRoute: typeof AppPrintHistoryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/prices': {
+      id: '/app/prices'
+      path: '/prices'
+      fullPath: '/app/prices'
+      preLoaderRoute: typeof AppPricesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/pending': {
@@ -548,10 +586,12 @@ interface AppRouteChildren {
   AppLayoutsRoute: typeof AppLayoutsRouteWithChildren
   AppNutritionRoute: typeof AppNutritionRoute
   AppPendingRoute: typeof AppPendingRoute
+  AppPricesRoute: typeof AppPricesRoute
   AppPrintHistoryRoute: typeof AppPrintHistoryRouteWithChildren
   AppPrintLabelsRoute: typeof AppPrintLabelsRoute
   AppPrintersRoute: typeof AppPrintersRoute
   AppProductsRoute: typeof AppProductsRoute
+  AppPromotionsRoute: typeof AppPromotionsRoute
   AppRolesRoute: typeof AppRolesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppUsersRoute: typeof AppUsersRoute
@@ -571,10 +611,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppLayoutsRoute: AppLayoutsRouteWithChildren,
   AppNutritionRoute: AppNutritionRoute,
   AppPendingRoute: AppPendingRoute,
+  AppPricesRoute: AppPricesRoute,
   AppPrintHistoryRoute: AppPrintHistoryRouteWithChildren,
   AppPrintLabelsRoute: AppPrintLabelsRoute,
   AppPrintersRoute: AppPrintersRoute,
   AppProductsRoute: AppProductsRoute,
+  AppPromotionsRoute: AppPromotionsRoute,
   AppRolesRoute: AppRolesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppUsersRoute: AppUsersRoute,
