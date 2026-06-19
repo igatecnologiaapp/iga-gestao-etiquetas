@@ -12,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { LABEL_TYPES } from "@/lib/label-emission";
 import { Button } from "@/components/ui/button";
+import { FileDown } from "lucide-react";
+import { buildLabelsPdf, buildFormatFromSnapshot, buildLabelDataFromSnapshot, downloadBlob } from "@/lib/label-pdf";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/print-history")({ component: Page });
 
