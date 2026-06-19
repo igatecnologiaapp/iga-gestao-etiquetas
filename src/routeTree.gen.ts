@@ -16,6 +16,7 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppSettingsRouteImport } from './routes/app.settings'
 import { Route as AppRolesRouteImport } from './routes/app.roles'
+import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppPromotionsRouteImport } from './routes/app.promotions'
 import { Route as AppProductsRouteImport } from './routes/app.products'
 import { Route as AppPrintersRouteImport } from './routes/app.printers'
@@ -70,6 +71,11 @@ const AppSettingsRoute = AppSettingsRouteImport.update({
 const AppRolesRoute = AppRolesRouteImport.update({
   id: '/roles',
   path: '/roles',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPromotionsRoute = AppPromotionsRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/promotions': typeof AppPromotionsRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -223,6 +230,7 @@ export interface FileRoutesByTo {
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/promotions': typeof AppPromotionsRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/promotions': typeof AppPromotionsRoute
+  '/app/reports': typeof AppReportsRoute
   '/app/roles': typeof AppRolesRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/users': typeof AppUsersRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/app/printers'
     | '/app/products'
     | '/app/promotions'
+    | '/app/reports'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/app/printers'
     | '/app/products'
     | '/app/promotions'
+    | '/app/reports'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/app/printers'
     | '/app/products'
     | '/app/promotions'
+    | '/app/reports'
     | '/app/roles'
     | '/app/settings'
     | '/app/users'
@@ -404,6 +416,13 @@ declare module '@tanstack/react-router' {
       path: '/roles'
       fullPath: '/app/roles'
       preLoaderRoute: typeof AppRolesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reports': {
+      id: '/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/promotions': {
@@ -592,6 +611,7 @@ interface AppRouteChildren {
   AppPrintersRoute: typeof AppPrintersRoute
   AppProductsRoute: typeof AppProductsRoute
   AppPromotionsRoute: typeof AppPromotionsRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppRolesRoute: typeof AppRolesRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppUsersRoute: typeof AppUsersRoute
@@ -617,6 +637,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPrintersRoute: AppPrintersRoute,
   AppProductsRoute: AppProductsRoute,
   AppPromotionsRoute: AppPromotionsRoute,
+  AppReportsRoute: AppReportsRoute,
   AppRolesRoute: AppRolesRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppUsersRoute: AppUsersRoute,

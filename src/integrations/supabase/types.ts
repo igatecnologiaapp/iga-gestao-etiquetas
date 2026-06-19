@@ -1882,6 +1882,13 @@ export type Database = {
             foreignKeyName: "promotion_products_promotion_id_fkey"
             columns: ["promotion_id"]
             isOneToOne: false
+            referencedRelation: "dashboard_promotions_summary"
+            referencedColumns: ["promotion_id"]
+          },
+          {
+            foreignKeyName: "promotion_products_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
             referencedRelation: "promotions"
             referencedColumns: ["id"]
           },
@@ -2128,8 +2135,241 @@ export type Database = {
       }
     }
     Views: {
+      dashboard_label_summary: {
+        Row: {
+          branch_id: string | null
+          company_id: string | null
+          total_batches: number | null
+          total_cancelled: number | null
+          total_gondola: number | null
+          total_labels: number | null
+          total_nutritional: number | null
+          total_reprints: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printed_labels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_prints_by_period: {
+        Row: {
+          branch_id: string | null
+          company_id: string | null
+          label_type: Database["public"]["Enums"]["label_type"] | null
+          period_day: string | null
+          total_labels: number | null
+          total_reprints: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printed_labels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_prints_by_printer: {
+        Row: {
+          branch_id: string | null
+          company_id: string | null
+          printer_config_id: string | null
+          printer_name: string | null
+          total_labels: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_batches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_printer_config_id_fkey"
+            columns: ["printer_config_id"]
+            isOneToOne: false
+            referencedRelation: "printer_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_prints_by_user: {
+        Row: {
+          branch_id: string | null
+          company_id: string | null
+          email: string | null
+          full_name: string | null
+          total_batches: number | null
+          total_labels: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_batches_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_batches_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_promotions_summary: {
+        Row: {
+          company_id: string | null
+          end_date: string | null
+          promotion_id: string | null
+          promotion_name: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["promotion_status"] | null
+          total_labels: number | null
+          total_products: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_reprints: {
+        Row: {
+          branch_id: string | null
+          company_id: string | null
+          period_day: string | null
+          total_reprints: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printed_labels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_top_layouts: {
+        Row: {
+          branch_id: string | null
+          company_id: string | null
+          label_layout_id: string | null
+          label_type: Database["public"]["Enums"]["label_type"] | null
+          layout_name: string | null
+          total_labels: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printed_labels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_label_layout_id_fkey"
+            columns: ["label_layout_id"]
+            isOneToOne: false
+            referencedRelation: "label_layouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dashboard_top_products: {
+        Row: {
+          branch_id: string | null
+          company_id: string | null
+          last_printed_at: string | null
+          product_id: string | null
+          product_name: string | null
+          total_labels: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printed_labels_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printed_labels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "printed_labels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_pending_issues: {
         Row: {
+          brand_id: string | null
+          category_id: string | null
           company_id: string | null
           missing_allergens: boolean | null
           missing_ingredients: boolean | null
@@ -2139,10 +2379,12 @@ export type Database = {
           name: string | null
           nutrition_in_review: boolean | null
           product_id: string | null
-          status: Database["public"]["Enums"]["entity_status"] | null
+          status: string | null
           status_pending: boolean | null
         }
         Insert: {
+          brand_id?: string | null
+          category_id?: string | null
           company_id?: string | null
           missing_allergens?: never
           missing_ingredients?: never
@@ -2152,10 +2394,12 @@ export type Database = {
           name?: string | null
           nutrition_in_review?: never
           product_id?: string | null
-          status?: Database["public"]["Enums"]["entity_status"] | null
+          status?: never
           status_pending?: never
         }
         Update: {
+          brand_id?: string | null
+          category_id?: string | null
           company_id?: string | null
           missing_allergens?: never
           missing_ingredients?: never
@@ -2165,10 +2409,24 @@ export type Database = {
           name?: string | null
           nutrition_in_review?: never
           product_id?: string | null
-          status?: Database["public"]["Enums"]["entity_status"] | null
+          status?: never
           status_pending?: never
         }
         Relationships: [
+          {
+            foreignKeyName: "products_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_company_id_fkey"
             columns: ["company_id"]

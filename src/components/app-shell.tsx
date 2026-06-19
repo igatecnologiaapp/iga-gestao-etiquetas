@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Building2, Store, Users, ShieldCheck, Settings, FileText,
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
   LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History, DollarSign, Percent,
+  BarChart3,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
@@ -13,6 +14,7 @@ import { CompanySwitcher } from "@/components/company-switcher";
 type NavItem = { to: string; label: string; icon: any; exact?: boolean; group: string };
 const nav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true, group: "Geral" },
+  { to: "/app/reports", label: "Relatórios", icon: BarChart3, group: "Geral" },
   { to: "/app/print-labels", label: "Emissão de Etiquetas", icon: PrinterCheck, group: "Emissão" },
   { to: "/app/print-history", label: "Histórico de Emissões", icon: History, group: "Emissão" },
   { to: "/app/products", label: "Produtos", icon: Package, group: "Cadastros" },
