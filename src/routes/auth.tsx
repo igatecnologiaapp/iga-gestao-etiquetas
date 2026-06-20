@@ -30,6 +30,16 @@ function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    // Se o usuário chegou aqui por um link de recuperação/convite,
+    // o Supabase coloca os tokens no hash da URL. Redirecionamos para
+    // a tela de definição de senha preservando o hash com os tokens.
+    if (typeof window !== "undefined" && window.location.hash) {
+      const h = window.location.hash;
+      if (/type=(recovery|invite|signup|magiclink)/.test(h) || /access_token=/.test(h)) {
+        window.location.replace(`/redefinir-senha${h}`);
+        return;
+      }
+    }
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/app" });
     });
