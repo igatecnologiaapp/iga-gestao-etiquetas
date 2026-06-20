@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -42,6 +43,11 @@ import { Route as AppPrintHistoryIdRouteImport } from './routes/app.print-histor
 import { Route as AppLayoutsIdRouteImport } from './routes/app.layouts.$id'
 import { Route as AppIntegrationsIdRouteImport } from './routes/app.integrations.$id'
 
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/app/admin-handover': typeof AppAdminHandoverRoute
   '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/app/admin-handover': typeof AppAdminHandoverRoute
   '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/app/admin-handover': typeof AppAdminHandoverRoute
   '/app/allergens': typeof AppAllergensRoute
   '/app/audit': typeof AppAuditRoute
@@ -311,6 +320,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/redefinir-senha'
     | '/app/admin-handover'
     | '/app/allergens'
     | '/app/audit'
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/redefinir-senha'
     | '/app/admin-handover'
     | '/app/allergens'
     | '/app/audit'
@@ -378,6 +389,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/redefinir-senha'
     | '/app/admin-handover'
     | '/app/allergens'
     | '/app/audit'
@@ -413,10 +425,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -744,6 +764,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
