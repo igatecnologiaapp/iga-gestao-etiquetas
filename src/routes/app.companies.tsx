@@ -43,21 +43,58 @@ function CompaniesPage() {
     },
   });
 
-  const { data: isAdmin } = useQuery({
-    queryKey: ["is-global-admin"],
+  const { data: adminCompanyIds } = useQuery({
+    queryKey: ["my-admin-company-ids"],
     queryFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return false;
+      if (!u.user) return [] as string[];
       const { data, error } = await supabase
         .from("user_company_roles")
-        .select("role")
+        .select("company_id")
         .eq("user_id", u.user.id)
-        .eq("role", "administrador")
-        .limit(1);
+        .eq("role", "administrador");
       if (error) throw error;
-      return (data?.length ?? 0) > 0;
+      return (data ?? []).map((r: any) => r.company_id as string);
     },
   });
+  const isAdmin = (adminCompanyIds?.length ?? 0) > 0;
+  const canEditCompany = (id: string) => !!adminCompanyIds?.includes(id);
+
+  const updateMut = useMutation({
+    mutationFn: async () => {
+      if (!editing) throw new Error("Sem registro");
+      const payload = {
+        name: editForm.name.trim(),
+        legal_name: editForm.legal_name.trim() || null,
+        tax_id: editForm.tax_id.trim() || null,
+        email: editForm.email.trim() || null,
+        phone: editForm.phone.trim() || null,
+      };
+      if (!payload.name) throw new Error("Nome fantasia é obrigatório");
+      const { error } = await supabase.from("companies").update(payload).eq("id", editing.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Empresa atualizada");
+      setEditOpen(false);
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["companies"] });
+      qc.invalidateQueries({ queryKey: ["user-companies"] });
+    },
+    onError: (e: any) => toast.error("Erro ao atualizar empresa", { description: e.message }),
+  });
+
+  function openEdit(c: any) {
+    setEditing(c);
+    setEditForm({
+      name: c.name ?? "",
+      legal_name: c.legal_name ?? "",
+      tax_id: c.tax_id ?? "",
+      email: c.email ?? "",
+      phone: c.phone ?? "",
+    });
+    setEditOpen(true);
+  }
 
   const createMut = useMutation({
     mutationFn: async () => {
