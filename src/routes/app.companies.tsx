@@ -12,17 +12,23 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/app/companies")({
   head: () => ({ meta: [{ title: "Empresas — Etiquetas" }] }),
   component: CompaniesPage,
 });
 
+type CompanyForm = { name: string; legal_name: string; tax_id: string; email: string; phone: string };
+const EMPTY_FORM: CompanyForm = { name: "", legal_name: "", tax_id: "", email: "", phone: "" };
+
 function CompaniesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", legal_name: "", tax_id: "", email: "", phone: "" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState<CompanyForm>(EMPTY_FORM);
+  const [editForm, setEditForm] = useState<CompanyForm>(EMPTY_FORM);
 
   const { data, isLoading } = useQuery({
     queryKey: ["companies"],
@@ -34,21 +40,58 @@ function CompaniesPage() {
     },
   });
 
-  const { data: isAdmin } = useQuery({
-    queryKey: ["is-global-admin"],
+  const { data: adminCompanyIds } = useQuery({
+    queryKey: ["my-admin-company-ids"],
     queryFn: async () => {
       const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return false;
+      if (!u.user) return [] as string[];
       const { data, error } = await supabase
         .from("user_company_roles")
-        .select("role")
+        .select("company_id")
         .eq("user_id", u.user.id)
-        .eq("role", "administrador")
-        .limit(1);
+        .eq("role", "administrador");
       if (error) throw error;
-      return (data?.length ?? 0) > 0;
+      return (data ?? []).map((r: any) => r.company_id as string);
     },
   });
+  const isAdmin = (adminCompanyIds?.length ?? 0) > 0;
+  const canEditCompany = (id: string) => !!adminCompanyIds?.includes(id);
+
+  const updateMut = useMutation({
+    mutationFn: async () => {
+      if (!editing) throw new Error("Sem registro");
+      const payload = {
+        name: editForm.name.trim(),
+        legal_name: editForm.legal_name.trim() || null,
+        tax_id: editForm.tax_id.trim() || null,
+        email: editForm.email.trim() || null,
+        phone: editForm.phone.trim() || null,
+      };
+      if (!payload.name) throw new Error("Nome fantasia é obrigatório");
+      const { error } = await supabase.from("companies").update(payload).eq("id", editing.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Empresa atualizada");
+      setEditOpen(false);
+      setEditing(null);
+      qc.invalidateQueries({ queryKey: ["companies"] });
+      qc.invalidateQueries({ queryKey: ["user-companies"] });
+    },
+    onError: (e: any) => toast.error("Erro ao atualizar empresa", { description: e.message }),
+  });
+
+  function openEdit(c: any) {
+    setEditing(c);
+    setEditForm({
+      name: c.name ?? "",
+      legal_name: c.legal_name ?? "",
+      tax_id: c.tax_id ?? "",
+      email: c.email ?? "",
+      phone: c.phone ?? "",
+    });
+    setEditOpen(true);
+  }
 
   const createMut = useMutation({
     mutationFn: async () => {
@@ -140,14 +183,15 @@ function CompaniesPage() {
                 <TableHead>CNPJ</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criada em</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
-                <TableRow><TableCell colSpan={4} className="text-muted-foreground">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-muted-foreground">Carregando…</TableCell></TableRow>
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-muted-foreground">Nenhuma empresa visível.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-muted-foreground">Nenhuma empresa visível.</TableCell></TableRow>
               )}
               {data?.map((c: any) => (
                 <TableRow key={c.id}>
@@ -160,12 +204,57 @@ function CompaniesPage() {
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(c.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {canEditCompany(c.id) ? (
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(c)} aria-label="Editar empresa">
+                        <Pencil className="size-4" />
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditing(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar empresa</DialogTitle>
+            <DialogDescription>
+              Atualiza os dados cadastrais da empresa. Vínculos de usuários e perfis não são alterados aqui.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); updateMut.mutate(); }} className="space-y-3">
+            <Field label="Nome fantasia *">
+              <Input required value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+            </Field>
+            <Field label="Razão social">
+              <Input value={editForm.legal_name} onChange={(e) => setEditForm((f) => ({ ...f, legal_name: e.target.value }))} />
+            </Field>
+            <Field label="CNPJ">
+              <Input value={editForm.tax_id} onChange={(e) => setEditForm((f) => ({ ...f, tax_id: e.target.value }))} />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="E-mail">
+                <Input type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} />
+              </Field>
+              <Field label="Telefone">
+                <Input value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} />
+              </Field>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={updateMut.isPending}>
+                {updateMut.isPending ? "Salvando…" : "Salvar alterações"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
