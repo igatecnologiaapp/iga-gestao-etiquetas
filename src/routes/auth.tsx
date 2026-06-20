@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Lock, ShieldCheck, Gauge, BarChart3 } from "lucide-react";
-import bannerAsset from "@/assets/souza-aguiar-banner.png.asset.json";
+import logoAsset from "@/assets/logo-souza-aguiar.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
