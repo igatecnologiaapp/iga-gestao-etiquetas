@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Lock, ShieldCheck, Gauge, BarChart3 } from "lucide-react";
-import bannerAsset from "@/assets/souza-aguiar-banner.png.asset.json";
+import logoAsset from "@/assets/logo-souza-aguiar.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -74,41 +74,28 @@ function AuthPage() {
   return (
     <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-[1.05fr_1fr]">
       {/* Painel institucional */}
-      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden text-white">
-        <img
-          src={bannerAsset.url}
-          alt=""
-          aria-hidden="true"
-          loading="eager"
-          className="absolute inset-0 h-full w-full object-cover object-left"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(20,5,5,0.85) 0%, rgba(60,8,12,0.78) 45%, rgba(120,15,20,0.55) 100%)",
-          }}
-        />
-
-        <div className="relative z-10 flex h-full flex-col justify-between p-12 xl:p-16">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/70">
-              Casa de Carnes
-            </p>
-            <p className="text-3xl font-extrabold tracking-tight text-white">
-              Souza Aguiar
-            </p>
+      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden text-white bg-[#5e0d12]">
+        <div className="relative z-10 flex h-full flex-col justify-between p-10 xl:p-14">
+          {/* Logotipo */}
+          <div className="flex justify-center">
+            <div className="rounded-2xl bg-white p-4 shadow-lg">
+              <img
+                src={logoAsset.url}
+                alt="Casa de Carnes Souza Aguiar"
+                className="h-32 w-auto object-contain"
+                loading="eager"
+              />
+            </div>
           </div>
 
-          <div className="max-w-md space-y-6">
-            <h1 className="text-4xl xl:text-5xl font-extrabold leading-[1.1] tracking-tight">
+          <div className="max-w-md space-y-5">
+            <h1 className="text-3xl xl:text-4xl font-extrabold leading-[1.15] tracking-tight">
               Qualidade que você confia,{" "}
               <span className="text-red-300">sabor que você merece!</span>
             </h1>
             <div className="h-1 w-16 rounded-full bg-red-400/80" />
             <div>
-              <p className="text-2xl font-semibold text-white">
+              <p className="text-xl font-semibold text-white">
                 Sistema de Emissão de Etiquetas
               </p>
               <p className="mt-2 text-base text-white/80">
@@ -117,7 +104,7 @@ function AuthPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-6 border-t border-white/15 pt-6 text-sm">
+          <div className="grid grid-cols-3 gap-5 border-t border-white/15 pt-5 text-sm">
             <Feature
               icon={<ShieldCheck className="size-5" />}
               title="Segurança"
