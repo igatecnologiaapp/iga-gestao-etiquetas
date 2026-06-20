@@ -186,14 +186,15 @@ function CompaniesPage() {
                 <TableHead>CNPJ</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Criada em</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading && (
-                <TableRow><TableCell colSpan={4} className="text-muted-foreground">Carregando…</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-muted-foreground">Carregando…</TableCell></TableRow>
               )}
               {!isLoading && data?.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-muted-foreground">Nenhuma empresa visível.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-muted-foreground">Nenhuma empresa visível.</TableCell></TableRow>
               )}
               {data?.map((c: any) => (
                 <TableRow key={c.id}>
@@ -206,12 +207,57 @@ function CompaniesPage() {
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(c.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
+                  <TableCell className="text-right">
+                    {canEditCompany(c.id) ? (
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(c)} aria-label="Editar empresa">
+                        <Pencil className="size-4" />
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={editOpen} onOpenChange={(o) => { setEditOpen(o); if (!o) setEditing(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar empresa</DialogTitle>
+            <DialogDescription>
+              Atualiza os dados cadastrais da empresa. Vínculos de usuários e perfis não são alterados aqui.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); updateMut.mutate(); }} className="space-y-3">
+            <Field label="Nome fantasia *">
+              <Input required value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+            </Field>
+            <Field label="Razão social">
+              <Input value={editForm.legal_name} onChange={(e) => setEditForm((f) => ({ ...f, legal_name: e.target.value }))} />
+            </Field>
+            <Field label="CNPJ">
+              <Input value={editForm.tax_id} onChange={(e) => setEditForm((f) => ({ ...f, tax_id: e.target.value }))} />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="E-mail">
+                <Input type="email" value={editForm.email} onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))} />
+              </Field>
+              <Field label="Telefone">
+                <Input value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} />
+              </Field>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={updateMut.isPending}>
+                {updateMut.isPending ? "Salvando…" : "Salvar alterações"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
