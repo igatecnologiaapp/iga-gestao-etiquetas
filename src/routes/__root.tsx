@@ -116,8 +116,8 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
-    // Encaminha qualquer rota de aterrissagem com tokens de recuperação/convite
-    // para a tela dedicada de definição de senha, preservando o hash.
+    // 1) Fallback síncrono: se o hash ainda contém tokens de recovery/invite
+    //    (antes do cliente Supabase consumir), redireciona preservando o hash.
     if (typeof window !== "undefined" && window.location.hash) {
       const h = window.location.hash;
       const isRecovery =
@@ -128,6 +128,14 @@ function RootComponent() {
       }
     }
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      // 2) O Supabase consome o hash no boot e dispara PASSWORD_RECOVERY.
+      //    Encaminhamos para a tela de definição de senha de qualquer rota.
+      if (event === "PASSWORD_RECOVERY") {
+        if (typeof window !== "undefined" && window.location.pathname !== "/redefinir-senha") {
+          window.location.replace("/redefinir-senha");
+        }
+        return;
+      }
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
