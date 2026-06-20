@@ -116,6 +116,17 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    // Encaminha qualquer rota de aterrissagem com tokens de recuperação/convite
+    // para a tela dedicada de definição de senha, preservando o hash.
+    if (typeof window !== "undefined" && window.location.hash) {
+      const h = window.location.hash;
+      const isRecovery =
+        /type=(recovery|invite|signup|magiclink)/.test(h) || /access_token=/.test(h);
+      if (isRecovery && window.location.pathname !== "/redefinir-senha") {
+        window.location.replace(`/redefinir-senha${h}`);
+        return;
+      }
+    }
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
