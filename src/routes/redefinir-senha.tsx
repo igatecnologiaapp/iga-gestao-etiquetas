@@ -1,0 +1,251 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Tag, Eye, EyeOff, ShieldCheck } from "lucide-react";
+
+export const Route = createFileRoute("/redefinir-senha")({
+  head: () => ({
+    meta: [
+      { title: "Definir nova senha — Etiquetas" },
+      { name: "description", content: "Defina sua nova senha de acesso." },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
+  component: ResetPasswordPage,
+});
+
+type Status = "checking" | "ready" | "invalid" | "saving" | "done";
+
+function parseHashTokens(hash: string) {
+  const h = hash.startsWith("#") ? hash.slice(1) : hash;
+  const p = new URLSearchParams(h);
+  return {
+    access_token: p.get("access_token"),
+    refresh_token: p.get("refresh_token"),
+    type: p.get("type"), // recovery | invite | signup | magiclink
+    error: p.get("error") || p.get("error_code"),
+    error_description: p.get("error_description"),
+  };
+}
+
+function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<Status>("checking");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [flowType, setFlowType] = useState<"recovery" | "invite" | "signup" | "magiclink" | "session">("session");
+
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    let unsub: { subscription: { unsubscribe: () => void } } | null = null;
+
+    async function bootstrap() {
+      // 1) Tokens vindos no hash (#access_token=...&type=recovery|invite)
+      if (typeof window !== "undefined" && window.location.hash) {
+        const t = parseHashTokens(window.location.hash);
+        if (t.error) {
+          setErrorMsg(
+            t.error_description?.replace(/\+/g, " ") ||
+              "Link inválido ou expirado. Solicite um novo.",
+          );
+          setStatus("invalid");
+          return;
+        }
+        if (t.access_token && t.refresh_token) {
+          const { error } = await supabase.auth.setSession({
+            access_token: t.access_token,
+            refresh_token: t.refresh_token,
+          });
+          // Limpa o hash da URL sem deixar token visível
+          history.replaceState(null, "", window.location.pathname);
+          if (error) {
+            setErrorMsg("Não foi possível validar o link. Solicite um novo.");
+            setStatus("invalid");
+            return;
+          }
+          if (t.type === "recovery") setFlowType("recovery");
+          else if (t.type === "invite") setFlowType("invite");
+          else if (t.type === "signup") setFlowType("signup");
+          else if (t.type === "magiclink") setFlowType("magiclink");
+          setStatus("ready");
+          return;
+        }
+      }
+
+      // 2) Evento PASSWORD_RECOVERY (Supabase emite ao detectar recovery)
+      const sub = supabase.auth.onAuthStateChange((event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setFlowType("recovery");
+          setStatus("ready");
+        }
+      });
+      unsub = sub.data;
+
+      // 3) Já existe sessão? Permite trocar a senha do usuário logado.
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setStatus("ready");
+        return;
+      }
+
+      // 4) Sem token e sem sessão.
+      setErrorMsg(
+        "Link inválido, expirado ou já utilizado. Solicite um novo link de redefinição.",
+      );
+      setStatus("invalid");
+    }
+
+    bootstrap();
+    return () => {
+      unsub?.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (password.length < 8) {
+      toast.error("A senha deve ter no mínimo 8 caracteres.");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("As senhas não coincidem.");
+      return;
+    }
+    setStatus("saving");
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      setStatus("ready");
+      toast.error("Não foi possível salvar", { description: error.message });
+      return;
+    }
+    setStatus("done");
+    toast.success("Senha definida com sucesso");
+    // Encerra a sessão temporária e leva ao login limpo
+    await supabase.auth.signOut();
+    setTimeout(() => navigate({ to: "/auth" }), 600);
+  }
+
+  const heading =
+    flowType === "invite"
+      ? "Definir senha de acesso"
+      : flowType === "recovery"
+        ? "Redefinir sua senha"
+        : "Definir nova senha";
+
+  return (
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <div className="hidden lg:flex flex-col justify-between bg-primary p-12 text-primary-foreground">
+        <div className="flex items-center gap-2 text-lg font-semibold">
+          <div className="size-10 rounded-md bg-primary-foreground/10 grid place-items-center" aria-label="Logotipo">
+            <Tag className="size-6" />
+          </div>
+          <span>Etiquetas</span>
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-4xl font-bold leading-tight">Acesso seguro</h1>
+          <p className="text-primary-foreground/80 max-w-md">
+            Sua senha é privada. O sistema nunca a armazena em texto puro e nunca
+            registra o link de redefinição.
+          </p>
+        </div>
+        <p className="text-sm text-primary-foreground/60">© {new Date().getFullYear()} Etiquetas</p>
+      </div>
+
+      <div className="flex items-center justify-center p-6 bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <div className="flex items-center gap-2 mb-2 lg:hidden">
+              <div className="size-9 rounded-md bg-primary text-primary-foreground grid place-items-center">
+                <Tag className="size-5" />
+              </div>
+              <span className="font-semibold">Etiquetas</span>
+            </div>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <ShieldCheck className="size-5 text-primary" aria-hidden /> {heading}
+            </CardTitle>
+            <CardDescription>
+              {flowType === "invite"
+                ? "Defina a senha que você usará para entrar no sistema."
+                : "Escolha uma senha forte. Mínimo de 8 caracteres."}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {status === "checking" && (
+              <p className="text-sm text-muted-foreground">Validando link…</p>
+            )}
+
+            {status === "invalid" && (
+              <div className="space-y-4">
+                <p className="text-sm text-destructive">{errorMsg}</p>
+                <Button variant="outline" className="w-full" onClick={() => navigate({ to: "/auth" })}>
+                  Voltar para o login
+                </Button>
+              </div>
+            )}
+
+            {(status === "ready" || status === "saving" || status === "done") && (
+              <form onSubmit={onSubmit} className="space-y-4" noValidate>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Nova senha</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      minLength={8}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pr-10"
+                      disabled={status !== "ready"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute inset-y-0 right-0 px-3 grid place-items-center text-muted-foreground hover:text-foreground"
+                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm">Confirmar nova senha</Label>
+                  <Input
+                    id="confirm"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    disabled={status !== "ready"}
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={status !== "ready"}>
+                  {status === "saving"
+                    ? "Salvando…"
+                    : status === "done"
+                      ? "Redirecionando…"
+                      : "Salvar nova senha"}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  Após salvar, você será redirecionado para a tela de login.
+                </p>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
