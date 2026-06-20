@@ -78,7 +78,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       } catch {}
     }
     const init: Record<string, boolean> = {};
-    groups.forEach((g) => { init[g] = saved[g] ?? true; });
+    // Default: grupos iniciam recolhidos. O efeito abaixo abre apenas o grupo
+    // que contém a rota ativa. Preferências salvas pelo próprio usuário são respeitadas.
+    groups.forEach((g) => { init[g] = saved[g] ?? false; });
     return init;
   });
 

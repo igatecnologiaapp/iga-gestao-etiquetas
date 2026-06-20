@@ -10,13 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { UserPlus, KeyRound, Power, PowerOff, Copy } from "lucide-react";
+import { UserPlus, KeyRound, Power, PowerOff, Copy, UserMinus } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { useUserCompanies, type AppRole } from "@/hooks/use-user-companies";
 import {
   adminListUsers, adminCreateUser, adminResetPassword, adminSetStatus, adminChangeRole,
+  adminRevokeAccess,
 } from "@/lib/admin-users.functions";
 
 const ROLES: AppRole[] = ["administrador", "supervisor", "operador", "consulta"];
@@ -44,6 +45,7 @@ function UsersPage() {
   const resetFn = useServerFn(adminResetPassword);
   const statusFn = useServerFn(adminSetStatus);
   const roleFn = useServerFn(adminChangeRole);
+  const revokeFn = useServerFn(adminRevokeAccess);
 
   const { data: members, isLoading } = useQuery({
     queryKey: ["admin-users", companyId],
@@ -92,6 +94,15 @@ function UsersPage() {
       roleFn({ data: { companyId, userId, newRole } }),
     onSuccess: () => {
       toast.success("Perfil alterado");
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+  const revokeMut = useMutation({
+    mutationFn: (userId: string) => revokeFn({ data: { companyId, userId } }),
+    onSuccess: () => {
+      toast.success("Acesso revogado");
       qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
@@ -218,14 +229,20 @@ function UsersPage() {
                       </TableCell>
                       <TableCell>
                         <Select
-                          value={m.role}
+                          value={m.role ?? "__none__"}
                           onValueChange={(v) => {
-                            if (!confirm(`Alterar perfil para ${ROLE_LABEL[v as AppRole]}?`)) return;
+                            if (v === "__none__") return;
+                            const label = ROLE_LABEL[v as AppRole];
+                            const msg = m.role
+                              ? `Alterar perfil para ${label}?`
+                              : `Conceder acesso como ${label}?`;
+                            if (!confirm(msg)) return;
                             roleMut.mutate({ userId: m.user_id, newRole: v as AppRole });
                           }}
                         >
-                          <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+                          <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="__none__" disabled>Sem acesso</SelectItem>
                             {ROLES.map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
                           </SelectContent>
                         </Select>
@@ -246,6 +263,15 @@ function UsersPage() {
                           onClick={() => resetMut.mutate(m.user_id)} disabled={resetMut.isPending}>
                           <KeyRound className="size-4" />
                         </Button>
+                        {m.role && (
+                          <Button variant="ghost" size="sm" title="Revogar acesso à empresa"
+                            onClick={() => {
+                              if (!confirm("Revogar acesso deste usuário à empresa?")) return;
+                              revokeMut.mutate(m.user_id);
+                            }}>
+                            <UserMinus className="size-4 text-destructive" />
+                          </Button>
+                        )}
                         {m.status === "ativo" ? (
                           <Button variant="ghost" size="sm" title="Inativar"
                             onClick={() => {

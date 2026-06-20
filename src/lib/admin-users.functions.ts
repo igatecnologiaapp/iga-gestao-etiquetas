@@ -23,7 +23,9 @@ async function assertAdmin(supabase: any, userId: string, companyId: string) {
   if (!data) throw new Error("Forbidden: requer perfil administrador");
 }
 
-// Lista usuários da empresa com último acesso (last_sign_in_at) do Auth.
+// Lista TODOS os usuários do sistema; quando há vínculo com a empresa selecionada,
+// inclui role/link_id. Usuários sem vínculo aparecem com role=null (Sem acesso),
+// permitindo ao administrador conceder acesso diretamente.
 export const adminListUsers = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { companyId: string }) => d)
@@ -31,34 +33,85 @@ export const adminListUsers = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase, context.userId, data.companyId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: members, error } = await supabaseAdmin
-      .from("user_company_roles")
-      .select("id, role, user_id, created_at, user_profiles(full_name, email, status, created_at)")
-      .eq("company_id", data.companyId);
-    if (error) throw new Error(error.message);
+    const [{ data: profiles, error: pErr }, { data: links, error: lErr }] = await Promise.all([
+      supabaseAdmin.from("user_profiles").select("id, full_name, email, status, created_at"),
+      supabaseAdmin.from("user_company_roles")
+        .select("id, role, user_id, created_at").eq("company_id", data.companyId),
+    ]);
+    if (pErr) throw new Error(pErr.message);
+    if (lErr) throw new Error(lErr.message);
 
-    // Buscar last_sign_in_at de cada user via admin API
-    const ids = (members ?? []).map((m: any) => m.user_id);
+    const linkByUser = new Map<string, { id: string; role: AppRole; created_at: string }>();
+    for (const l of links ?? []) {
+      // Se houver múltiplas (não deveria), mantém a última.
+      linkByUser.set(l.user_id, { id: l.id, role: l.role as AppRole, created_at: l.created_at });
+    }
+
+    // last_sign_in_at via Admin API — best-effort
     const lastById: Record<string, string | null> = {};
-    for (const id of ids) {
+    for (const p of profiles ?? []) {
       try {
-        const { data: u } = await supabaseAdmin.auth.admin.getUserById(id);
-        lastById[id] = u?.user?.last_sign_in_at ?? null;
+        const { data: u } = await supabaseAdmin.auth.admin.getUserById(p.id);
+        lastById[p.id] = u?.user?.last_sign_in_at ?? null;
       } catch {
-        lastById[id] = null;
+        lastById[p.id] = null;
       }
     }
 
-    return (members ?? []).map((m: any) => ({
-      link_id: m.id,
-      user_id: m.user_id,
-      role: m.role as AppRole,
-      full_name: m.user_profiles?.full_name ?? null,
-      email: m.user_profiles?.email ?? null,
-      status: m.user_profiles?.status ?? "ativo",
-      created_at: m.user_profiles?.created_at ?? m.created_at,
-      last_sign_in_at: lastById[m.user_id],
-    }));
+    const rows = (profiles ?? []).map((p: any) => {
+      const link = linkByUser.get(p.id);
+      return {
+        link_id: link?.id ?? p.id, // chave única para o React
+        user_id: p.id,
+        role: (link?.role ?? null) as AppRole | null,
+        full_name: p.full_name ?? null,
+        email: p.email ?? null,
+        status: p.status ?? "ativo",
+        created_at: p.created_at ?? link?.created_at ?? null,
+        last_sign_in_at: lastById[p.id] ?? null,
+        has_access: !!link,
+      };
+    });
+    // Ordena: com acesso primeiro, depois por nome/email
+    rows.sort((a, b) => {
+      if (a.has_access !== b.has_access) return a.has_access ? -1 : 1;
+      return (a.full_name || a.email || "").localeCompare(b.full_name || b.email || "");
+    });
+    return rows;
+  });
+
+// Remove o vínculo do usuário com a empresa (revoga acesso). Mantém o auth user.
+export const adminRevokeAccess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { companyId: string; userId: string }) => d)
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId, data.companyId);
+    if (data.userId === context.userId) throw new Error("Você não pode revogar o próprio acesso");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Não revogar último administrador ativo
+    const { data: admins } = await supabaseAdmin
+      .from("user_company_roles")
+      .select("user_id, user_profiles(status)")
+      .eq("company_id", data.companyId).eq("role", "administrador");
+    const targetIsAdmin = (admins ?? []).some((a: any) => a.user_id === data.userId);
+    const outrosAdminsAtivos = (admins ?? []).filter(
+      (a: any) => a.user_id !== data.userId && a.user_profiles?.status === "ativo",
+    );
+    if (targetIsAdmin && outrosAdminsAtivos.length === 0) {
+      throw new Error("Não é possível revogar: precisa restar outro administrador ativo");
+    }
+
+    const { error } = await supabaseAdmin.from("user_company_roles")
+      .delete().eq("user_id", data.userId).eq("company_id", data.companyId);
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("audit_logs").insert({
+      company_id: data.companyId, user_id: context.userId,
+      action: "DELETE", table_name: "user_company_roles", record_id: data.userId,
+      reason: "admin_revoke_access",
+    });
+    return { ok: true };
   });
 
 // Cria usuário no Auth + profile + vínculo. Retorna recovery link uma única vez.
