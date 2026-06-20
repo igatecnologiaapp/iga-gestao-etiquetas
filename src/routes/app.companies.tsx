@@ -19,10 +19,16 @@ export const Route = createFileRoute("/app/companies")({
   component: CompaniesPage,
 });
 
+type CompanyForm = { name: string; legal_name: string; tax_id: string; email: string; phone: string };
+const EMPTY_FORM: CompanyForm = { name: "", legal_name: "", tax_id: "", email: "", phone: "" };
+
 function CompaniesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", legal_name: "", tax_id: "", email: "", phone: "" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [form, setForm] = useState<CompanyForm>(EMPTY_FORM);
+  const [editForm, setEditForm] = useState<CompanyForm>(EMPTY_FORM);
 
   const { data, isLoading } = useQuery({
     queryKey: ["companies"],
