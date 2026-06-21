@@ -11,8 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Power, PowerOff } from "lucide-react";
 
 export const Route = createFileRoute("/app/companies")({
   head: () => ({ meta: [{ title: "Empresas — Etiquetas" }] }),
@@ -29,6 +33,7 @@ function CompaniesPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState<CompanyForm>(EMPTY_FORM);
   const [editForm, setEditForm] = useState<CompanyForm>(EMPTY_FORM);
+  const [statusTarget, setStatusTarget] = useState<any | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["companies"],
@@ -79,6 +84,22 @@ function CompaniesPage() {
       qc.invalidateQueries({ queryKey: ["user-companies"] });
     },
     onError: (e: any) => toast.error("Erro ao atualizar empresa", { description: e.message }),
+  });
+
+  const toggleStatusMut = useMutation({
+    mutationFn: async (row: any) => {
+      const next = row.status === "ativo" ? "inativo" : "ativo";
+      const { error } = await supabase.from("companies").update({ status: next }).eq("id", row.id);
+      if (error) throw error;
+      return next;
+    },
+    onSuccess: (next) => {
+      toast.success(next === "ativo" ? "Empresa ativada" : "Empresa inativada");
+      setStatusTarget(null);
+      qc.invalidateQueries({ queryKey: ["companies"] });
+      qc.invalidateQueries({ queryKey: ["user-companies"] });
+    },
+    onError: (e: any) => toast.error("Erro ao alterar status", { description: e.message }),
   });
 
   function openEdit(c: any) {
@@ -200,15 +221,44 @@ function CompaniesPage() {
                     {c.legal_name && <div className="text-xs text-muted-foreground">{c.legal_name}</div>}
                   </TableCell>
                   <TableCell className="font-mono text-sm">{c.tax_id ?? "—"}</TableCell>
-                  <TableCell><Badge variant="secondary" className="capitalize">{c.status}</Badge></TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={c.status === "ativo" ? "default" : "secondary"}
+                      className="capitalize"
+                    >
+                      {c.status === "ativo" ? "Ativa" : c.status === "inativo" ? "Inativa" : c.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(c.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-1">
                     {canEditCompany(c.id) ? (
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(c)} aria-label="Editar empresa">
-                        <Pencil className="size-4" />
-                      </Button>
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(c)} aria-label="Editar empresa">
+                          <Pencil className="size-4" />
+                        </Button>
+                        {c.status === "ativo" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setStatusTarget(c)}
+                            aria-label="Inativar empresa"
+                          >
+                            <PowerOff className="size-4 mr-1" /> Inativar
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleStatusMut.mutate(c)}
+                            disabled={toggleStatusMut.isPending}
+                            aria-label="Ativar empresa"
+                          >
+                            <Power className="size-4 mr-1" /> Ativar
+                          </Button>
+                        )}
+                      </>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
@@ -255,6 +305,29 @@ function CompaniesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!statusTarget} onOpenChange={(o) => { if (!o) setStatusTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inativar empresa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A empresa <strong>{statusTarget?.name}</strong> deixará de aparecer nas caixas
+              de seleção operacionais (novos cadastros, emissão, etc.). Os dados, usuários
+              vinculados, histórico e registros existentes serão preservados e poderão ser
+              consultados normalmente. Você pode reativá-la a qualquer momento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (statusTarget) toggleStatusMut.mutate(statusTarget); }}
+              disabled={toggleStatusMut.isPending}
+            >
+              {toggleStatusMut.isPending ? "Inativando…" : "Inativar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
