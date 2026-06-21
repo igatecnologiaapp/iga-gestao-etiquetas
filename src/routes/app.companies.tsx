@@ -305,6 +305,29 @@ function CompaniesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!statusTarget} onOpenChange={(o) => { if (!o) setStatusTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Inativar empresa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A empresa <strong>{statusTarget?.name}</strong> deixará de aparecer nas caixas
+              de seleção operacionais (novos cadastros, emissão, etc.). Os dados, usuários
+              vinculados, histórico e registros existentes serão preservados e poderão ser
+              consultados normalmente. Você pode reativá-la a qualquer momento.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); if (statusTarget) toggleStatusMut.mutate(statusTarget); }}
+              disabled={toggleStatusMut.isPending}
+            >
+              {toggleStatusMut.isPending ? "Inativando…" : "Inativar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
