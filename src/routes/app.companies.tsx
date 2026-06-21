@@ -33,6 +33,7 @@ function CompaniesPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState<CompanyForm>(EMPTY_FORM);
   const [editForm, setEditForm] = useState<CompanyForm>(EMPTY_FORM);
+  const [statusTarget, setStatusTarget] = useState<any | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["companies"],
