@@ -2,7 +2,7 @@ import { useActiveCompany } from "@/hooks/use-active-company";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Building2 } from "lucide-react";
+import { AlertCircle, Building2 } from "lucide-react";
 
 export function CompanySwitcher() {
   const { companyId, memberships, setActive } = useActiveCompany();
