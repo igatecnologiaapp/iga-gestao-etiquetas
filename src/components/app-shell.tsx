@@ -172,10 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           )}
         </div>
         {renderNav(collapsed)}
-        <div className="border-t border-sidebar-border p-3 space-y-2">
-          {!collapsed && (
-            <div className="px-2 text-xs text-muted-foreground truncate">{user?.email}</div>
-          )}
+        <div className="shrink-0 p-3">
           <Button
             variant="outline"
             size="sm"
@@ -185,6 +182,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           >
             <LogOut className="size-4" /> {!collapsed && "Sair"}
           </Button>
+        </div>
+        <div className="shrink-0 border-t border-sidebar-border p-3 space-y-2">
+          {!collapsed && (
+            <div className="px-2 text-xs text-muted-foreground truncate">{user?.email}</div>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -213,11 +215,13 @@ export function AppShell({ children }: { children: ReactNode }) {
               </div>
             </div>
             {renderNav(false)}
-            <div className="border-t border-sidebar-border p-3">
-              <div className="px-2 pb-2 text-xs text-muted-foreground truncate">{user?.email}</div>
+            <div className="shrink-0 p-3">
               <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={handleSignOut}>
                 <LogOut className="size-4" /> Sair
               </Button>
+            </div>
+            <div className="shrink-0 border-t border-sidebar-border p-3">
+              <div className="px-2 pb-2 text-xs text-muted-foreground truncate">{user?.email}</div>
             </div>
           </aside>
         </div>

@@ -2,11 +2,18 @@ import { useActiveCompany } from "@/hooks/use-active-company";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Building2 } from "lucide-react";
+import { AlertCircle, Building2 } from "lucide-react";
 
 export function CompanySwitcher() {
   const { companyId, memberships, setActive } = useActiveCompany();
-  if (memberships.length === 0) return null;
+  if (memberships.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-amber-600 text-sm">
+        <AlertCircle className="size-4" />
+        <span className="hidden sm:inline">Nenhuma empresa ativa vinculada</span>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-2">
       <Building2 className="size-4 text-muted-foreground" />
