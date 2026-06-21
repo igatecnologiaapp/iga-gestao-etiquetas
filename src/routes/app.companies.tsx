@@ -221,15 +221,44 @@ function CompaniesPage() {
                     {c.legal_name && <div className="text-xs text-muted-foreground">{c.legal_name}</div>}
                   </TableCell>
                   <TableCell className="font-mono text-sm">{c.tax_id ?? "—"}</TableCell>
-                  <TableCell><Badge variant="secondary" className="capitalize">{c.status}</Badge></TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={c.status === "ativo" ? "default" : "secondary"}
+                      className="capitalize"
+                    >
+                      {c.status === "ativo" ? "Ativa" : c.status === "inativo" ? "Inativa" : c.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {new Date(c.created_at).toLocaleDateString("pt-BR")}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-1">
                     {canEditCompany(c.id) ? (
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(c)} aria-label="Editar empresa">
-                        <Pencil className="size-4" />
-                      </Button>
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => openEdit(c)} aria-label="Editar empresa">
+                          <Pencil className="size-4" />
+                        </Button>
+                        {c.status === "ativo" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setStatusTarget(c)}
+                            aria-label="Inativar empresa"
+                          >
+                            <PowerOff className="size-4 mr-1" /> Inativar
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleStatusMut.mutate(c)}
+                            disabled={toggleStatusMut.isPending}
+                            aria-label="Ativar empresa"
+                          >
+                            <Power className="size-4 mr-1" /> Ativar
+                          </Button>
+                        )}
+                      </>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
