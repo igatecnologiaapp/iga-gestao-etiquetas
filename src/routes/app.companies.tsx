@@ -86,6 +86,22 @@ function CompaniesPage() {
     onError: (e: any) => toast.error("Erro ao atualizar empresa", { description: e.message }),
   });
 
+  const toggleStatusMut = useMutation({
+    mutationFn: async (row: any) => {
+      const next = row.status === "ativo" ? "inativo" : "ativo";
+      const { error } = await supabase.from("companies").update({ status: next }).eq("id", row.id);
+      if (error) throw error;
+      return next;
+    },
+    onSuccess: (next) => {
+      toast.success(next === "ativo" ? "Empresa ativada" : "Empresa inativada");
+      setStatusTarget(null);
+      qc.invalidateQueries({ queryKey: ["companies"] });
+      qc.invalidateQueries({ queryKey: ["user-companies"] });
+    },
+    onError: (e: any) => toast.error("Erro ao alterar status", { description: e.message }),
+  });
+
   function openEdit(c: any) {
     setEditing(c);
     setEditForm({
