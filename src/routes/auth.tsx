@@ -74,37 +74,37 @@ function AuthPage() {
   return (
     <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-[1.05fr_1fr]">
       {/* Painel institucional */}
-      <aside className="relative hidden lg:flex flex-col justify-between overflow-hidden text-white bg-[#5e0d12]">
-        <div className="relative z-10 flex h-full flex-col justify-between p-10 xl:p-14">
+      <aside className="relative hidden lg:flex flex-col overflow-hidden text-white bg-[#5e0d12]">
+        <div className="relative z-10 flex h-full flex-col gap-8 overflow-y-auto p-10 xl:p-14">
           {/* Logotipo */}
-          <div className="flex justify-center">
+          <div className="flex shrink-0 justify-center">
             <div className="rounded-2xl bg-white p-4 shadow-lg">
               <img
                 src={logoAsset.url}
                 alt="Casa de Carnes Souza Aguiar"
-                className="h-32 w-auto object-contain"
+                className="h-24 xl:h-32 w-auto object-contain"
                 loading="eager"
               />
             </div>
           </div>
 
-          <div className="max-w-md space-y-5">
-            <h1 className="text-3xl xl:text-4xl font-extrabold leading-[1.15] tracking-tight">
+          <div className="flex-1 min-h-0 flex flex-col justify-center max-w-md space-y-4 xl:space-y-5">
+            <h1 className="text-2xl xl:text-4xl font-extrabold leading-[1.15] tracking-tight">
               Qualidade que você confia,{" "}
               <span className="text-red-300">sabor que você merece!</span>
             </h1>
             <div className="h-1 w-16 rounded-full bg-red-400/80" />
             <div>
-              <p className="text-xl font-semibold text-white">
+              <p className="text-lg xl:text-xl font-semibold text-white">
                 Sistema de Emissão de Etiquetas
               </p>
-              <p className="mt-2 text-base text-white/80">
+              <p className="mt-2 text-sm xl:text-base text-white/80">
                 Mais controle, segurança e eficiência para o seu negócio.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-5 border-t border-white/15 pt-5 text-sm">
+          <div className="shrink-0 grid grid-cols-3 gap-5 border-t border-white/15 pt-5 text-sm">
             <Feature
               icon={<ShieldCheck className="size-5" />}
               title="Segurança"
