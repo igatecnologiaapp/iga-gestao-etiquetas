@@ -33,7 +33,7 @@ type FormState = {
   unit_of_measure: string; standard_weight: string; variable_weight: boolean;
   commercial_description: string;
   nutrition_fact_id: string;
-  contains_gluten: boolean; contains_lactose: boolean;
+  contains_gluten: boolean | null; contains_lactose: boolean | null;
   preservation: string; preparation: string;
   shelf_life_days: string; storage_temperature: string;
   legal_notes: string; image_url: string;
