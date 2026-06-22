@@ -33,7 +33,7 @@ type FormState = {
   unit_of_measure: string; standard_weight: string; variable_weight: boolean;
   commercial_description: string;
   nutrition_fact_id: string;
-  contains_gluten: boolean; contains_lactose: boolean;
+  contains_gluten: boolean | null; contains_lactose: boolean | null;
   preservation: string; preparation: string;
   shelf_life_days: string; storage_temperature: string;
   legal_notes: string; image_url: string;
@@ -48,7 +48,7 @@ const emptyForm = (): FormState => ({
   unit_of_measure: "un", standard_weight: "", variable_weight: false,
   commercial_description: "",
   nutrition_fact_id: "",
-  contains_gluten: false, contains_lactose: false,
+  contains_gluten: null, contains_lactose: null,
   preservation: "", preparation: "",
   shelf_life_days: "", storage_temperature: "",
   legal_notes: "", image_url: "",
@@ -125,7 +125,8 @@ function ProductsPage() {
       variable_weight: !!row.variable_weight,
       commercial_description: row.commercial_description ?? "",
       nutrition_fact_id: row.nutrition_fact_id ?? "",
-      contains_gluten: !!row.contains_gluten, contains_lactose: !!row.contains_lactose,
+      contains_gluten: row.contains_gluten === null || row.contains_gluten === undefined ? null : !!row.contains_gluten,
+      contains_lactose: row.contains_lactose === null || row.contains_lactose === undefined ? null : !!row.contains_lactose,
       preservation: row.preservation ?? "", preparation: row.preparation ?? "",
       shelf_life_days: row.shelf_life_days?.toString() ?? "",
       storage_temperature: row.storage_temperature ?? "",
@@ -377,8 +378,32 @@ function ProductsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2"><Checkbox checked={form.contains_gluten} onCheckedChange={(v) => setForm({ ...form, contains_gluten: !!v })} /><Label>Contém glúten</Label></div>
-            <div className="flex items-center gap-2"><Checkbox checked={form.contains_lactose} onCheckedChange={(v) => setForm({ ...form, contains_lactose: !!v })} /><Label>Contém lactose</Label></div>
+            <div className="space-y-1.5"><Label>Glúten</Label>
+              <Select
+                value={form.contains_gluten === null ? "nao_informado" : form.contains_gluten ? "contem" : "nao_contem"}
+                onValueChange={(v) => setForm({ ...form, contains_gluten: v === "nao_informado" ? null : v === "contem" })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Informação não preenchida</SelectItem>
+                  <SelectItem value="contem">Contém glúten</SelectItem>
+                  <SelectItem value="nao_contem">Não contém glúten</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Lactose</Label>
+              <Select
+                value={form.contains_lactose === null ? "nao_informado" : form.contains_lactose ? "contem" : "nao_contem"}
+                onValueChange={(v) => setForm({ ...form, contains_lactose: v === "nao_informado" ? null : v === "contem" })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Informação não preenchida</SelectItem>
+                  <SelectItem value="contem">Contém lactose</SelectItem>
+                  <SelectItem value="nao_contem">Não contém lactose</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div />
 
             <div className="md:col-span-3 space-y-1.5"><Label>Conservação</Label>
@@ -436,7 +461,7 @@ function ProductDetail({ product }: { product: any }) {
         <div><span className="text-muted-foreground">Conservação:</span> {product.preservation ?? "—"}</div>
         <div><span className="text-muted-foreground">Validade:</span> {product.shelf_life_days ? `${product.shelf_life_days} dias` : "—"}</div>
         <div><span className="text-muted-foreground">Temperatura:</span> {product.storage_temperature ?? "—"}</div>
-        <div><span className="text-muted-foreground">Glúten/Lactose:</span> {product.contains_gluten ? "Contém glúten" : "Sem glúten"} · {product.contains_lactose ? "Contém lactose" : "Sem lactose"}</div>
+        <div><span className="text-muted-foreground">Glúten/Lactose:</span> {product.contains_gluten === true ? "Contém glúten" : product.contains_gluten === false ? "Não contém glúten" : "Não informado"} · {product.contains_lactose === true ? "Contém lactose" : product.contains_lactose === false ? "Não contém lactose" : "Não informado"}</div>
       </div>
       <div>
         <div className="font-medium mb-1">Ingredientes</div>

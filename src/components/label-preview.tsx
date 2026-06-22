@@ -43,6 +43,8 @@ export type PreviewData = {
   lactose?: string;
   preservation?: string;
   preparation?: string;
+  legal_notes?: string;
+  observations?: string;
   lot?: string;
   manufacture_date?: string;
   expiry?: string;
@@ -97,6 +99,9 @@ function labelOf(el: PreviewElement, d: PreviewData): string {
     case "lactose": return d.lactose ?? "";
     case "preservation": return d.preservation ? `Conservação: ${d.preservation}` : "";
     case "preparation": return d.preparation ?? "";
+    case "legal_notes": return d.legal_notes ?? "";
+    case "observations":
+    case "nutrition_notes": return d.observations ? `Obs.: ${d.observations}` : "";
     case "lot": return d.lot ? `Lote: ${d.lot}` : "";
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
     case "expiry": return d.expiry ? `Val: ${d.expiry}` : "";
@@ -171,6 +176,9 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
           ))}
         </tbody>
       </table>
+      {n?.notes ? (
+        <div style={{ fontSize: fontPx * 0.85, marginTop: 1, textAlign: "left" }}>Obs.: {n.notes}</div>
+      ) : null}
     </div>
   );
 }
