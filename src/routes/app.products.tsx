@@ -461,7 +461,7 @@ function ProductDetail({ product }: { product: any }) {
         <div><span className="text-muted-foreground">Conservação:</span> {product.preservation ?? "—"}</div>
         <div><span className="text-muted-foreground">Validade:</span> {product.shelf_life_days ? `${product.shelf_life_days} dias` : "—"}</div>
         <div><span className="text-muted-foreground">Temperatura:</span> {product.storage_temperature ?? "—"}</div>
-        <div><span className="text-muted-foreground">Glúten/Lactose:</span> {product.contains_gluten ? "Contém glúten" : "Sem glúten"} · {product.contains_lactose ? "Contém lactose" : "Sem lactose"}</div>
+        <div><span className="text-muted-foreground">Glúten/Lactose:</span> {product.contains_gluten === true ? "Contém glúten" : product.contains_gluten === false ? "Não contém glúten" : "Não informado"} · {product.contains_lactose === true ? "Contém lactose" : product.contains_lactose === false ? "Não contém lactose" : "Não informado"}</div>
       </div>
       <div>
         <div className="font-medium mb-1">Ingredientes</div>
