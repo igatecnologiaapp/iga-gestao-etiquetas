@@ -365,6 +365,8 @@ function PrintLabelsPage() {
     if (product?.variable_weight && !weight && !isShelf) errs.push("Produto de peso variável — informe o peso.");
     if (labelType === "nutricional") {
       for (const m of blockingIssuesForNutritional(pending.data)) errs.push(m);
+      if (product && product.contains_gluten === null) errs.push("Informação sobre glúten não cadastrada no produto.");
+      if (product && product.contains_lactose === null) errs.push("Informação sobre lactose não cadastrada no produto.");
     }
     if (isShelf) {
       const reg = productPrice.data?.regular_price ?? activePromo?.regular_price;
