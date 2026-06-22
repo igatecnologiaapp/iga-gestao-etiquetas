@@ -99,6 +99,9 @@ function labelOf(el: PreviewElement, d: PreviewData): string {
     case "lactose": return d.lactose ?? "";
     case "preservation": return d.preservation ? `Conservação: ${d.preservation}` : "";
     case "preparation": return d.preparation ?? "";
+    case "legal_notes": return d.legal_notes ?? "";
+    case "observations":
+    case "nutrition_notes": return d.observations ? `Obs.: ${d.observations}` : "";
     case "lot": return d.lot ? `Lote: ${d.lot}` : "";
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
     case "expiry": return d.expiry ? `Val: ${d.expiry}` : "";
