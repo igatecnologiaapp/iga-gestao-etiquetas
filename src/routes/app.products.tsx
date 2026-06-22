@@ -378,8 +378,32 @@ function ProductsPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2"><Checkbox checked={form.contains_gluten} onCheckedChange={(v) => setForm({ ...form, contains_gluten: !!v })} /><Label>Contém glúten</Label></div>
-            <div className="flex items-center gap-2"><Checkbox checked={form.contains_lactose} onCheckedChange={(v) => setForm({ ...form, contains_lactose: !!v })} /><Label>Contém lactose</Label></div>
+            <div className="space-y-1.5"><Label>Glúten</Label>
+              <Select
+                value={form.contains_gluten === null ? "nao_informado" : form.contains_gluten ? "contem" : "nao_contem"}
+                onValueChange={(v) => setForm({ ...form, contains_gluten: v === "nao_informado" ? null : v === "contem" })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Informação não preenchida</SelectItem>
+                  <SelectItem value="contem">Contém glúten</SelectItem>
+                  <SelectItem value="nao_contem">Não contém glúten</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Lactose</Label>
+              <Select
+                value={form.contains_lactose === null ? "nao_informado" : form.contains_lactose ? "contem" : "nao_contem"}
+                onValueChange={(v) => setForm({ ...form, contains_lactose: v === "nao_informado" ? null : v === "contem" })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nao_informado">Informação não preenchida</SelectItem>
+                  <SelectItem value="contem">Contém lactose</SelectItem>
+                  <SelectItem value="nao_contem">Não contém lactose</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div />
 
             <div className="md:col-span-3 space-y-1.5"><Label>Conservação</Label>
