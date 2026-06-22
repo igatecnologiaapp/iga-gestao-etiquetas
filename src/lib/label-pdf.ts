@@ -153,78 +153,125 @@ function renderNutritionTable(
   x: number, y: number, w: number, h: number, fontSize: number,
 ) {
   const baseSize = Math.max(5, fontSize);
-  doc.setLineWidth(0.15);
+
+  // Outer border (slightly thicker, matching the visual reference)
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(0, 0, 0);
   doc.rect(x, y, w, h);
 
-  let cy = y + 0.5;
+  // 1) Title
+  const titleFs = Math.min(baseSize * 1.35, baseSize + 4);
+  const titleH = titleFs * 0.55 + 1.2;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(baseSize + 0.5);
-  doc.text("INFORMAÇÃO NUTRICIONAL", x + w / 2, cy + baseSize * 0.35, { align: "center" });
-  cy += baseSize * 0.6 + 0.6;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(baseSize - 0.5);
-  doc.text("Porções por embalagem: Variável", x + 1, cy + baseSize * 0.35);
-  cy += baseSize * 0.55 + 0.2;
-  const serving = n?.serving_size_g ? `Porção: ${fmtNum(n.serving_size_g, 0)} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —";
-  doc.text(serving, x + 1, cy + baseSize * 0.35);
-  cy += baseSize * 0.55 + 0.4;
-
-  doc.setLineWidth(0.1);
+  doc.setFontSize(titleFs);
+  doc.text("INFORMAÇÃO NUTRICIONAL", x + w / 2, y + titleH * 0.75, { align: "center" });
+  let cy = y + titleH;
+  doc.setLineWidth(0.4);
   doc.line(x, cy, x + w, cy);
-  cy += 0.5;
+  cy += 0.4;
 
+  // 2) Porções
+  const metaFs = Math.max(4.5, baseSize * 0.92);
+  const metaLh = metaFs * 0.55 + 0.5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(metaFs);
+  doc.text("Porções por embalagem: Variável", x + 1.2, cy + metaLh * 0.7);
+  cy += metaLh;
+  const serving = n?.serving_size_g
+    ? `Porção: ${fmtNum(n.serving_size_g, 0)} g${n?.serving_household ? ` (${n.serving_household})` : ""}`
+    : "Porção: —";
+  doc.setFont("helvetica", "bold");
+  doc.text(serving, x + 1.2, cy + metaLh * 0.7);
+  cy += metaLh + 0.2;
+  doc.setLineWidth(0.25);
+  doc.line(x, cy, x + w, cy);
+  cy += 0.3;
+
+  // 3) Reserve footer + notes space so they NEVER overlap rows
+  const footerFs = Math.max(4.2, baseSize * 0.78);
+  const footerH = footerFs * 0.55 + 0.8;
+  const notesText = n?.notes ? `Obs.: ${n.notes}` : "";
+  const notesFs = Math.max(4.2, baseSize * 0.85);
+  let notesH = 0;
+  let notesLines: string[] = [];
+  if (notesText) {
+    doc.setFontSize(notesFs);
+    notesLines = doc.splitTextToSize(notesText, w - 2.4) as string[];
+    notesH = notesLines.length * (notesFs * 0.48) + 0.6;
+  }
+  const reservedBottom = footerH + notesH + 0.4;
+
+  // 4) Required nutritional rows (ALL 10 — never skipped, never cut)
   const rows: Array<{ label: string; qty: string; vd: string; indent?: boolean }> = [
-    { label: "Valor energético", qty: `${fmtNum(n?.energy_kcal, 0)} kcal`, vd: dv(n, "energy_kcal", 200) },
-    { label: "Carboidratos", qty: `${fmtNum(n?.carbs_g)} g`, vd: dv(n, "carbs_g", 50) },
-    { label: "Açúcares totais", qty: `${fmtNum(n?.total_sugars_g)} g`, vd: "", indent: true },
-    { label: "Açúcares adicionados", qty: `${fmtNum(n?.added_sugars_g)} g`, vd: dv(n, "added_sugars_g", 50), indent: true },
-    { label: "Proteínas", qty: `${fmtNum(n?.protein_g)} g`, vd: dv(n, "protein_g", 50) },
-    { label: "Gorduras totais", qty: `${fmtNum(n?.total_fat_g)} g`, vd: dv(n, "total_fat_g", 55) },
-    { label: "Saturadas", qty: `${fmtNum(n?.saturated_fat_g)} g`, vd: dv(n, "saturated_fat_g", 22), indent: true },
-    { label: "Trans", qty: `${fmtNum(n?.trans_fat_g)} g`, vd: "", indent: true },
-    { label: "Fibra alimentar", qty: `${fmtNum(n?.fiber_g)} g`, vd: dv(n, "fiber_g", 25) },
-    { label: "Sódio", qty: `${fmtNum(n?.sodium_mg, 0)} mg`, vd: dv(n, "sodium_mg", 2000) },
+    { label: "Valor energético (kcal)", qty: `${fmtNum(n?.energy_kcal, 0)}`, vd: dv(n, "energy_kcal", 2000) },
+    { label: "Carboidratos (g)", qty: `${fmtNum(n?.carbs_g)}`, vd: dv(n, "carbs_g", 300) },
+    { label: "Açúcares totais (g)", qty: `${fmtNum(n?.total_sugars_g)}`, vd: "", indent: true },
+    { label: "Açúcares adicionados (g)", qty: `${fmtNum(n?.added_sugars_g)}`, vd: dv(n, "added_sugars_g", 50), indent: true },
+    { label: "Proteínas (g)", qty: `${fmtNum(n?.protein_g)}`, vd: dv(n, "protein_g", 75) },
+    { label: "Gorduras totais (g)", qty: `${fmtNum(n?.total_fat_g)}`, vd: dv(n, "total_fat_g", 65) },
+    { label: "Gorduras saturadas (g)", qty: `${fmtNum(n?.saturated_fat_g)}`, vd: dv(n, "saturated_fat_g", 20), indent: true },
+    { label: "Gorduras trans (g)", qty: `${fmtNum(n?.trans_fat_g)}`, vd: "", indent: true },
+    { label: "Fibra alimentar (g)", qty: `${fmtNum(n?.fiber_g)}`, vd: dv(n, "fiber_g", 25) },
+    { label: "Sódio (mg)", qty: `${fmtNum(n?.sodium_mg, 0)}`, vd: dv(n, "sodium_mg", 2000) },
   ];
-  const rowH = Math.max(0.9, baseSize * 0.55);
-  const col1 = x + 1;
-  const col1Indent = x + 1 + Math.max(1, baseSize * 0.25);
-  const col2 = x + w * 0.55;
-  const col3 = x + w * 0.78;
 
+  // 5) Adaptive sizing: shrink rowH/fontSize so all 10 rows fit
+  const headerH = Math.max(2.2, baseSize * 0.68);
+  const available = y + h - reservedBottom - cy - headerH;
+  const rowH = Math.max(1.7, Math.min(baseSize * 0.7, available / rows.length));
+  const rowFs = Math.max(4.2, Math.min(baseSize * 0.95, rowH * 1.55));
+
+  const col1 = x + 1.2;
+  const col1Indent = col1 + Math.max(1.2, rowFs * 0.4);
+  const col2 = x + w * 0.62;
+  const col3 = x + w * 0.85;
+
+  // Header
   doc.setFont("helvetica", "bold");
-  doc.text("Nutriente", col1, cy + rowH * 0.7, { align: "left" });
-  doc.text("Qtd.", col2, cy + rowH * 0.7, { align: "left" });
-  doc.text("%VD*", col3, cy + rowH * 0.7, { align: "left" });
-  cy += rowH;
+  doc.setFontSize(rowFs);
+  doc.text("Quantidade", col2, cy + headerH * 0.72, { align: "left" });
+  doc.text("%VD*", col3, cy + headerH * 0.72, { align: "left" });
+  cy += headerH;
+  doc.setLineWidth(0.2);
   doc.line(x, cy, x + w, cy);
 
-  // Reserve bottom area: %VD footer (~1 line) + optional notes (up to ~2 lines)
-  const footerH = Math.max(1.4, baseSize * 0.5);
-  const notesH = n?.notes ? Math.max(2.2, baseSize * 0.9) : 0;
-  const reservedBottom = footerH + notesH + 0.6;
-  const rowsLimit = y + h - reservedBottom;
-
+  // Data rows with thin separators
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(rowFs);
   for (const r of rows) {
-    if (cy + rowH > rowsLimit) break;
-    doc.text(r.label, r.indent ? col1Indent : col1, cy + rowH * 0.7, { align: "left" });
-    doc.text(r.qty, col2, cy + rowH * 0.7, { align: "left" });
-    doc.text(r.vd, col3, cy + rowH * 0.7, { align: "left" });
+    doc.text(r.label, r.indent ? col1Indent : col1, cy + rowH * 0.72, { align: "left" });
+    doc.text(r.qty, col2, cy + rowH * 0.72, { align: "left" });
+    doc.text(r.vd, col3, cy + rowH * 0.72, { align: "left" });
     cy += rowH;
+    doc.setLineWidth(0.05);
+    doc.setDrawColor(190);
+    doc.line(x + 0.5, cy, x + w - 0.5, cy);
+    doc.setDrawColor(0);
   }
 
-  // Notes block (if any) — drawn above the %VD footer with breathing room
-  if (n?.notes) {
-    const notesTop = y + h - footerH - notesH - 0.2;
-    doc.setLineWidth(0.1);
-    doc.line(x, notesTop - 0.3, x + w, notesTop - 0.3);
-    doc.setFontSize(Math.max(4.5, baseSize - 1));
-    doc.text(`Obs.: ${n.notes}`, x + 1, notesTop + baseSize * 0.45, { maxWidth: w - 2 });
+  // Notes — only inside the table; never duplicated below
+  if (notesText) {
+    const notesTop = y + h - footerH - notesH;
+    doc.setLineWidth(0.2);
+    doc.line(x, notesTop - 0.2, x + w, notesTop - 0.2);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(notesFs);
+    let ny = notesTop + notesFs * 0.5;
+    for (const ln of notesLines) {
+      doc.text(ln, x + 1.2, ny, { maxWidth: w - 2.4 });
+      ny += notesFs * 0.48;
+    }
+    doc.setFont("helvetica", "normal");
   }
 
-  doc.setFontSize(Math.max(4.5, baseSize - 1));
-  doc.text("*% Valores diários de referência com base em uma dieta de 2.000 kcal.", x + 1, y + h - 0.6, { maxWidth: w - 2 });
+  // %VD footer (always inside the box)
+  doc.setFontSize(footerFs);
+  doc.text(
+    "*% Valores diários de referência com base em uma dieta de 2.000 kcal.",
+    x + 1.2,
+    y + h - 0.8,
+    { maxWidth: w - 2.4 },
+  );
 }
 
 function dv(n: PdfNutrition | null | undefined, key: keyof PdfNutrition, ref: number): string {
