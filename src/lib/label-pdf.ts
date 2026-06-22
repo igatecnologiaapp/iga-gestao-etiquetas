@@ -414,9 +414,10 @@ export function buildLabelDataFromSnapshot(snapshot: any, opts?: { unique_label_
     : (p.commercial_description ?? "");
   const alParts: string[] = [];
   if (Array.isArray(al) && al.length) alParts.push(`Contém: ${al.map((a: any) => a?.name ?? a).join(", ")}`);
-  if (p.contains_gluten) alParts.push("CONTÉM GLÚTEN");
-  else if (p && Object.keys(p).length) alParts.push("NÃO CONTÉM GLÚTEN");
-  if (p.contains_lactose) alParts.push("Contém lactose");
+  if (p.contains_gluten === true) alParts.push("CONTÉM GLÚTEN");
+  else if (p.contains_gluten === false) alParts.push("NÃO CONTÉM GLÚTEN");
+  if (p.contains_lactose === true) alParts.push("Contém lactose");
+  else if (p.contains_lactose === false) alParts.push("Não contém lactose");
   const alText = alParts.join(" · ");
   return {
     product_name: p.name,
@@ -426,11 +427,18 @@ export function buildLabelDataFromSnapshot(snapshot: any, opts?: { unique_label_
     ean: p.ean,
     ingredients: ingText,
     allergens: alText,
-    gluten: p ? (p.contains_gluten ? "CONTÉM GLÚTEN" : "NÃO CONTÉM GLÚTEN") : undefined,
-    lactose: p ? (p.contains_lactose ? "CONTÉM LACTOSE" : "NÃO CONTÉM LACTOSE") : undefined,
+    gluten:
+      p.contains_gluten === true ? "CONTÉM GLÚTEN"
+      : p.contains_gluten === false ? "NÃO CONTÉM GLÚTEN"
+      : undefined,
+    lactose:
+      p.contains_lactose === true ? "CONTÉM LACTOSE"
+      : p.contains_lactose === false ? "NÃO CONTÉM LACTOSE"
+      : undefined,
     preservation: p.preservation,
     preparation: p.preparation,
     legal_notes: p.legal_notes,
+    observations: n?.notes ?? undefined,
     lot: em.batch_code,
     manufacture_date: em.manufacture_date ? new Date(em.manufacture_date).toLocaleDateString("pt-BR") : undefined,
     expiry: em.expiration_date ? new Date(em.expiration_date).toLocaleDateString("pt-BR") : undefined,
