@@ -203,6 +203,10 @@ function renderNutritionTable(
   if (cy + rowH < y + h) {
     doc.text("*% Valores diários de referência com base em uma dieta de 2.000 kcal.", x + 1, y + h - 0.6, { maxWidth: w - 2 });
   }
+  if (n?.notes) {
+    const notesY = Math.min(cy + 0.4, y + h - 2.4);
+    doc.text(`Obs.: ${n.notes}`, x + 1, notesY + baseSize * 0.35, { maxWidth: w - 2 });
+  }
 }
 
 function dv(n: PdfNutrition | null | undefined, key: keyof PdfNutrition, ref: number): string {
