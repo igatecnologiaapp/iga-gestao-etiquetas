@@ -101,7 +101,10 @@ function labelOf(el: PreviewElement, d: PreviewData): string {
     case "preparation": return d.preparation ?? "";
     case "legal_notes": return d.legal_notes ?? "";
     case "observations":
-    case "nutrition_notes": return d.observations ? `Obs.: ${d.observations}` : "";
+    case "nutrition_notes":
+      // Observações é renderizada dentro do bloco de Informação Nutricional.
+      // Não renderizar em elementos avulsos do rodapé para evitar duplicidade.
+      return "";
     case "lot": return d.lot ? `Lote: ${d.lot}` : "";
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
     case "expiry": return d.expiry ? `Val: ${d.expiry}` : "";

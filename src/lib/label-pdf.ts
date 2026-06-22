@@ -116,6 +116,15 @@ function fmtNum(n: number | null | undefined, digits = 1) {
   return Number.isInteger(v) ? v.toString() : v.toFixed(digits);
 }
 
+/** Format a weight value with exactly 3 decimals and comma separator, preserving the registered unit. */
+export function formatWeight(value: number | string | null | undefined, unit?: string | null): string {
+  if (value === null || value === undefined || value === "") return "";
+  const n = typeof value === "number" ? value : Number(String(value).replace(",", "."));
+  if (!isFinite(n)) return "";
+  const u = (unit && String(unit).trim()) || "kg";
+  return `${n.toFixed(3).replace(".", ",")} ${u}`;
+}
+
 async function qrDataUrl(payload: any, sizePx = 256): Promise<string> {
   const text = typeof payload === "string" ? payload : JSON.stringify(payload ?? {});
   return QRCode.toDataURL(text, { errorCorrectionLevel: "M", margin: 1, width: sizePx });
@@ -190,23 +199,32 @@ function renderNutritionTable(
   cy += rowH;
   doc.line(x, cy, x + w, cy);
 
+  // Reserve bottom area: %VD footer (~1 line) + optional notes (up to ~2 lines)
+  const footerH = Math.max(1.4, baseSize * 0.5);
+  const notesH = n?.notes ? Math.max(2.2, baseSize * 0.9) : 0;
+  const reservedBottom = footerH + notesH + 0.6;
+  const rowsLimit = y + h - reservedBottom;
+
   doc.setFont("helvetica", "normal");
   for (const r of rows) {
-    if (cy + rowH > y + h) break;
+    if (cy + rowH > rowsLimit) break;
     doc.text(r.label, r.indent ? col1Indent : col1, cy + rowH * 0.7, { align: "left" });
     doc.text(r.qty, col2, cy + rowH * 0.7, { align: "left" });
     doc.text(r.vd, col3, cy + rowH * 0.7, { align: "left" });
     cy += rowH;
   }
 
-  doc.setFontSize(baseSize - 1);
-  if (cy + rowH < y + h) {
-    doc.text("*% Valores diários de referência com base em uma dieta de 2.000 kcal.", x + 1, y + h - 0.6, { maxWidth: w - 2 });
-  }
+  // Notes block (if any) — drawn above the %VD footer with breathing room
   if (n?.notes) {
-    const notesY = Math.min(cy + 0.4, y + h - 2.4);
-    doc.text(`Obs.: ${n.notes}`, x + 1, notesY + baseSize * 0.35, { maxWidth: w - 2 });
+    const notesTop = y + h - footerH - notesH - 0.2;
+    doc.setLineWidth(0.1);
+    doc.line(x, notesTop - 0.3, x + w, notesTop - 0.3);
+    doc.setFontSize(Math.max(4.5, baseSize - 1));
+    doc.text(`Obs.: ${n.notes}`, x + 1, notesTop + baseSize * 0.45, { maxWidth: w - 2 });
   }
+
+  doc.setFontSize(Math.max(4.5, baseSize - 1));
+  doc.text("*% Valores diários de referência com base em uma dieta de 2.000 kcal.", x + 1, y + h - 0.6, { maxWidth: w - 2 });
 }
 
 function dv(n: PdfNutrition | null | undefined, key: keyof PdfNutrition, ref: number): string {
@@ -236,7 +254,10 @@ function elementValue(el: PdfElement, d: PdfLabelData): string {
     case "preparation": return d.preparation ?? "";
     case "legal_notes": return d.legal_notes ?? "";
     case "observations":
-    case "nutrition_notes": return d.observations ? `Obs.: ${d.observations}` : "";
+    case "nutrition_notes":
+      // Observações já é renderizada dentro da tabela de Informação Nutricional (nutrition_facts).
+      // Para evitar duplicidade visual, NÃO renderizar em elementos independentes de rodapé.
+      return "";
     case "lot": return d.lot ? `Lote: ${d.lot}` : "";
     case "manufacture_date": return d.manufacture_date ? `Fab: ${d.manufacture_date}` : "";
     case "expiry": return d.expiry ? `Val: ${d.expiry}` : "";
@@ -442,7 +463,7 @@ export function buildLabelDataFromSnapshot(snapshot: any, opts?: { unique_label_
     lot: em.batch_code,
     manufacture_date: em.manufacture_date ? new Date(em.manufacture_date).toLocaleDateString("pt-BR") : undefined,
     expiry: em.expiration_date ? new Date(em.expiration_date).toLocaleDateString("pt-BR") : undefined,
-    weight: em.weight ? `${em.weight} kg` : (p.standard_weight ? `${p.standard_weight} ${p.unit_of_measure ?? ""}` : undefined),
+    weight: em.weight != null && em.weight !== "" ? formatWeight(em.weight, "kg") : (p.standard_weight != null ? formatWeight(p.standard_weight, p.unit_of_measure) : undefined),
     nutrition: n,
     regular_price: em.regular_price != null ? formatBRL(em.regular_price) : undefined,
     promotional_price: em.promotional_price != null ? formatBRL(em.promotional_price) : undefined,
