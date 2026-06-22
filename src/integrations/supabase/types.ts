@@ -3170,6 +3170,7 @@ export type Database = {
         | "image"
         | "line"
         | "box"
+        | "observations"
       label_orientation: "vertical" | "horizontal"
       label_status: "ativo" | "inativo" | "arquivado"
       label_type:
@@ -3415,6 +3416,7 @@ export const Constants = {
         "image",
         "line",
         "box",
+        "observations",
       ],
       label_orientation: ["vertical", "horizontal"],
       label_status: ["ativo", "inativo", "arquivado"],
