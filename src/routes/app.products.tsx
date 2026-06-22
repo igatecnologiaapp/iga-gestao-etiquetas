@@ -48,7 +48,7 @@ const emptyForm = (): FormState => ({
   unit_of_measure: "un", standard_weight: "", variable_weight: false,
   commercial_description: "",
   nutrition_fact_id: "",
-  contains_gluten: false, contains_lactose: false,
+  contains_gluten: null, contains_lactose: null,
   preservation: "", preparation: "",
   shelf_life_days: "", storage_temperature: "",
   legal_notes: "", image_url: "",
