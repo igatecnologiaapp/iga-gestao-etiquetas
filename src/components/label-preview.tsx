@@ -176,6 +176,9 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
           ))}
         </tbody>
       </table>
+      {n?.notes ? (
+        <div style={{ fontSize: fontPx * 0.85, marginTop: 1, textAlign: "left" }}>Obs.: {n.notes}</div>
+      ) : null}
     </div>
   );
 }
