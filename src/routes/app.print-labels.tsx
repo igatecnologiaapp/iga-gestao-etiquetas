@@ -26,7 +26,7 @@ import {
   type LabelType,
   type ShelfModel,
 } from "@/lib/label-emission";
-import { formatBRL } from "@/lib/label-pdf";
+import { formatBRL, formatWeight } from "@/lib/label-pdf";
 
 export const Route = createFileRoute("/app/print-labels")({ component: PrintLabelsPage });
 
@@ -335,7 +335,7 @@ function PrintLabelsPage() {
       lot: batchCode,
       manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
       expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
-      weight: weight ? `${weight} kg` : (product?.standard_weight ? `${product.standard_weight} ${product.unit_of_measure ?? ""}` : undefined),
+      weight: weight ? formatWeight(weight, "kg") : (product?.standard_weight != null ? formatWeight(product.standard_weight, product.unit_of_measure) : undefined),
       nutrition: nutrition.data,
       sale_unit: productPrice.data?.sale_unit ?? product?.unit_of_measure,
       regular_price: reg != null ? formatBRL(Number(reg)) : undefined,
