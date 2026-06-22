@@ -49,6 +49,7 @@ export type PdfNutrition = {
   fiber_g?: number | null;
   sodium_mg?: number | null;
   daily_values?: Record<string, number> | null;
+  notes?: string | null;
 };
 
 export type PdfLabelData = {
