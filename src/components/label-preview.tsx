@@ -152,36 +152,64 @@ function BarcodeImage({ value, width, height }: { value: string; width: number; 
 }
 
 function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: number }) {
-  const rows: Array<{ label: string; qty: string; indent?: boolean }> = [];
-  const fmt = (v: any, d = 1) => v == null || isNaN(Number(v)) ? "—" : (Number.isInteger(Number(v)) ? String(v) : Number(v).toFixed(d));
-  rows.push({ label: "Valor energético", qty: `${fmt(n?.energy_kcal, 0)} kcal` });
-  rows.push({ label: "Carboidratos", qty: `${fmt(n?.carbs_g)} g` });
-  rows.push({ label: "Açúcares totais", qty: `${fmt(n?.total_sugars_g)} g`, indent: true });
-  rows.push({ label: "Açúcares adicionados", qty: `${fmt(n?.added_sugars_g)} g`, indent: true });
-  rows.push({ label: "Proteínas", qty: `${fmt(n?.protein_g)} g` });
-  rows.push({ label: "Gorduras totais", qty: `${fmt(n?.total_fat_g)} g` });
-  rows.push({ label: "Saturadas", qty: `${fmt(n?.saturated_fat_g)} g`, indent: true });
-  rows.push({ label: "Trans", qty: `${fmt(n?.trans_fat_g)} g`, indent: true });
-  rows.push({ label: "Fibra alimentar", qty: `${fmt(n?.fiber_g)} g` });
-  rows.push({ label: "Sódio", qty: `${fmt(n?.sodium_mg, 0)} mg` });
+  const fmt = (v: any, d = 1) =>
+    v == null || isNaN(Number(v))
+      ? "—"
+      : Number.isInteger(Number(v))
+        ? String(v)
+        : Number(v).toFixed(d);
+  const dvPct = (v: any, ref: number) => {
+    if (v == null || isNaN(Number(v))) return "";
+    const p = (Number(v) / ref) * 100;
+    return isFinite(p) ? `${p.toFixed(0)}%` : "";
+  };
+  const rows: Array<{ label: string; qty: string; vd: string; indent?: boolean }> = [
+    { label: "Valor energético (kcal)", qty: fmt(n?.energy_kcal, 0), vd: dvPct(n?.energy_kcal, 2000) },
+    { label: "Carboidratos (g)", qty: fmt(n?.carbs_g), vd: dvPct(n?.carbs_g, 300) },
+    { label: "Açúcares totais (g)", qty: fmt(n?.total_sugars_g), vd: "", indent: true },
+    { label: "Açúcares adicionados (g)", qty: fmt(n?.added_sugars_g), vd: dvPct(n?.added_sugars_g, 50), indent: true },
+    { label: "Proteínas (g)", qty: fmt(n?.protein_g), vd: dvPct(n?.protein_g, 75) },
+    { label: "Gorduras totais (g)", qty: fmt(n?.total_fat_g), vd: dvPct(n?.total_fat_g, 65) },
+    { label: "Gorduras saturadas (g)", qty: fmt(n?.saturated_fat_g), vd: dvPct(n?.saturated_fat_g, 20), indent: true },
+    { label: "Gorduras trans (g)", qty: fmt(n?.trans_fat_g), vd: "", indent: true },
+    { label: "Fibra alimentar (g)", qty: fmt(n?.fiber_g), vd: dvPct(n?.fiber_g, 25) },
+    { label: "Sódio (mg)", qty: fmt(n?.sodium_mg, 0), vd: dvPct(n?.sodium_mg, 2000) },
+  ];
   return (
-    <div style={{ fontSize: fontPx, lineHeight: 1.1, padding: 1, height: "100%", overflow: "hidden", textAlign: "left" }}>
-      <div style={{ fontWeight: 700, textAlign: "center", borderBottom: "1px solid #000" }}>INFORMAÇÃO NUTRICIONAL</div>
-      <div style={{ fontSize: fontPx * 0.9, textAlign: "left" }}>Porções por embalagem: Variável</div>
-      <div style={{ fontSize: fontPx * 0.9, textAlign: "left" }}>{n?.serving_size_g ? `Porção: ${n.serving_size_g} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —"}</div>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: fontPx * 0.9, tableLayout: "fixed" }}>
+    <div style={{ fontSize: fontPx, lineHeight: 1.05, padding: 2, height: "100%", overflow: "hidden", textAlign: "left", display: "flex", flexDirection: "column" }}>
+      <div style={{ fontWeight: 800, textAlign: "center", fontSize: fontPx * 1.35, borderBottom: "1.5px solid #000", paddingBottom: 1 }}>
+        INFORMAÇÃO NUTRICIONAL
+      </div>
+      <div style={{ fontSize: fontPx * 0.95, marginTop: 1 }}>Porções por embalagem: Variável</div>
+      <div style={{ fontSize: fontPx * 0.95, fontWeight: 700, borderBottom: "1px solid #000", paddingBottom: 1 }}>
+        {n?.serving_size_g ? `Porção: ${n.serving_size_g} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —"}
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: fontPx * 0.92, tableLayout: "fixed", flex: 1 }}>
+        <thead>
+          <tr>
+            <td></td>
+            <td style={{ textAlign: "left", fontWeight: 700, borderBottom: "1px solid #000" }}>Quantidade</td>
+            <td style={{ textAlign: "left", fontWeight: 700, borderBottom: "1px solid #000", width: "20%" }}>%VD*</td>
+          </tr>
+        </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.label}>
-              <td style={{ textAlign: "left", padding: "0 1px", paddingLeft: r.indent ? 6 : 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</td>
-              <td style={{ textAlign: "right", padding: "0 1px", width: "32%" }}>{r.qty}</td>
+            <tr key={r.label} style={{ borderBottom: "0.5px solid #cbd5e1" }}>
+              <td style={{ textAlign: "left", paddingLeft: r.indent ? 8 : 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</td>
+              <td style={{ textAlign: "left", paddingLeft: 2 }}>{r.qty}</td>
+              <td style={{ textAlign: "left", paddingLeft: 2 }}>{r.vd}</td>
             </tr>
           ))}
         </tbody>
       </table>
       {n?.notes ? (
-        <div style={{ fontSize: fontPx * 0.85, marginTop: 1, textAlign: "left" }}>Obs.: {n.notes}</div>
+        <div style={{ fontSize: fontPx * 0.85, fontStyle: "italic", borderTop: "1px solid #000", paddingTop: 1, marginTop: 1 }}>
+          Obs.: {n.notes}
+        </div>
       ) : null}
+      <div style={{ fontSize: fontPx * 0.8, marginTop: 1 }}>
+        *% Valores diários de referência com base em uma dieta de 2.000 kcal.
+      </div>
     </div>
   );
 }
