@@ -43,6 +43,8 @@ export type PreviewData = {
   lactose?: string;
   preservation?: string;
   preparation?: string;
+  legal_notes?: string;
+  observations?: string;
   lot?: string;
   manufacture_date?: string;
   expiry?: string;
