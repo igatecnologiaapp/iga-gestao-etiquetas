@@ -73,7 +73,7 @@ function PrintLabelsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id,name,internal_code,ean,variable_weight,shelf_life_days,status,category_id,brand_id,nutrition_fact_id,preservation,unit_of_measure,standard_weight")
+        .select("id,name,internal_code,ean,variable_weight,shelf_life_days,status,category_id,brand_id,nutrition_fact_id,preservation,preparation,unit_of_measure,standard_weight,contains_gluten,contains_lactose,commercial_description,legal_notes,sku")
         .eq("company_id", companyId!)
         .order("name");
       if (error) throw error;
