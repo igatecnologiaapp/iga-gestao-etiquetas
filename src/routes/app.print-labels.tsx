@@ -313,18 +313,25 @@ function PrintLabelsPage() {
           .filter(Boolean);
         const parts: string[] = [];
         if (list.length) parts.push(`Contém: ${list.join(", ")}`);
-        if (product?.contains_gluten) parts.push("CONTÉM GLÚTEN");
-        else if (product) parts.push("NÃO CONTÉM GLÚTEN");
-        if (product?.contains_lactose) parts.push("Contém lactose");
+        // Glúten: só exibe quando há cadastro explícito (true ou false). Nunca presumir.
+        if (product?.contains_gluten === true) parts.push("CONTÉM GLÚTEN");
+        else if (product?.contains_gluten === false) parts.push("NÃO CONTÉM GLÚTEN");
+        if (product?.contains_lactose === true) parts.push("Contém lactose");
+        else if (product?.contains_lactose === false) parts.push("Não contém lactose");
         return parts.length ? parts.join(" · ") : undefined;
       })(),
-      gluten: product
-        ? (product.contains_gluten ? "CONTÉM GLÚTEN" : "NÃO CONTÉM GLÚTEN")
+      gluten:
+        product?.contains_gluten === true ? "CONTÉM GLÚTEN"
+        : product?.contains_gluten === false ? "NÃO CONTÉM GLÚTEN"
         : undefined,
-      lactose: product
-        ? (product.contains_lactose ? "CONTÉM LACTOSE" : "NÃO CONTÉM LACTOSE")
+      lactose:
+        product?.contains_lactose === true ? "CONTÉM LACTOSE"
+        : product?.contains_lactose === false ? "NÃO CONTÉM LACTOSE"
         : undefined,
       preservation: product?.preservation,
+      preparation: product?.preparation,
+      legal_notes: product?.legal_notes ?? undefined,
+      observations: nutrition.data?.notes ?? undefined,
       lot: batchCode,
       manufacture_date: manufactureDate ? new Date(manufactureDate).toLocaleDateString("pt-BR") : undefined,
       expiry: expiration ? new Date(expiration).toLocaleDateString("pt-BR") : undefined,
