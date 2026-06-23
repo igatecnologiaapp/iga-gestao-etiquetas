@@ -147,7 +147,7 @@ function barcodeDataUrl(value: string, width = 1.2, height = 50): string {
   }
 }
 
-function renderNutritionTable(
+export function renderNutritionTable(
   doc: jsPDF,
   n: PdfNutrition | null | undefined,
   x: number, y: number, w: number, h: number, fontSize: number,
