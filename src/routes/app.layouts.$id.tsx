@@ -14,8 +14,10 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Copy, Save, GitBranch, ChevronUp, ChevronDown } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Plus, Trash2, Copy, Save, GitBranch, ChevronUp, ChevronDown, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { checkNutritionElementHeight } from "@/lib/nutrition-layout-rules";
 
 export const Route = createFileRoute("/app/layouts/$id")({
   component: LayoutEditorPage,
