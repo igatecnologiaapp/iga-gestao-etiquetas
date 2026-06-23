@@ -204,6 +204,20 @@ function LayoutEditorPage() {
   if (!layout.data) return <div>Layout não encontrado.</div>;
   const fmt = layout.data.label_formats;
 
+  // Validação de altura mínima do bloco nutrition_facts.
+  // Não reduzimos a fonte indefinidamente nem permitimos corte silencioso
+  // de Fibra, Sódio ou Observações — alertamos no editor.
+  const nutritionIssues = (elements.data ?? [])
+    .filter((e) => e.element_type === "nutrition_facts")
+    .map((e) => ({
+      el: e,
+      check: fmt
+        ? checkNutritionElementHeight(Number(e.height), Number(e.width), fmt.unit)
+        : null,
+    }))
+    .filter((x) => x.check && x.check.level !== "ok");
+
+
   return (
     <>
       <PageHeader
