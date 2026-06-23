@@ -311,7 +311,18 @@ function LayoutEditorPage() {
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.pos_x} onChange={(e) => updateElement.mutate({ id: el.id, patch: { pos_x: Number(e.target.value) } })} /></TableCell>
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.pos_y} onChange={(e) => updateElement.mutate({ id: el.id, patch: { pos_y: Number(e.target.value) } })} /></TableCell>
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.width} onChange={(e) => updateElement.mutate({ id: el.id, patch: { width: Number(e.target.value) } })} /></TableCell>
-                        <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.height} onChange={(e) => updateElement.mutate({ id: el.id, patch: { height: Number(e.target.value) } })} /></TableCell>
+                        <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.height} onChange={(e) => {
+                          const v = Number(e.target.value);
+                          if (el.element_type === "nutrition_facts" && fmt) {
+                            const c = checkNutritionElementHeight(v, Number(el.width), fmt.unit);
+                            if (c.level === "error") {
+                              toast.error(c.message ?? "Altura insuficiente para a tabela nutricional.");
+                              return;
+                            }
+                            if (c.level === "warning") toast.warning(c.message ?? "Altura abaixo do recomendado.");
+                          }
+                          updateElement.mutate({ id: el.id, patch: { height: v } });
+                        }} /></TableCell>
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.font_size ?? 10} onChange={(e) => updateElement.mutate({ id: el.id, patch: { font_size: Number(e.target.value) } })} /></TableCell>
                         <TableCell>
                           <div className="flex gap-1">
