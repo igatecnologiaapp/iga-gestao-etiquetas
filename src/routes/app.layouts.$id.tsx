@@ -251,6 +251,29 @@ function LayoutEditorPage() {
         <TabsContent value="editor" className="space-y-4">
           <div className="grid lg:grid-cols-[1fr_minmax(0,420px)] gap-4">
             <Card className="p-4">
+              {nutritionIssues.length > 0 && (
+                <Alert
+                  variant={nutritionIssues.some((i) => i.check?.level === "error") ? "destructive" : "default"}
+                  className="mb-3"
+                >
+                  <AlertTriangle className="size-4" />
+                  <AlertTitle>
+                    {nutritionIssues.some((i) => i.check?.level === "error")
+                      ? "Altura insuficiente para exibir a tabela nutricional completa"
+                      : "Tabela nutricional abaixo da altura recomendada"}
+                  </AlertTitle>
+                  <AlertDescription className="space-y-1">
+                    {nutritionIssues.map((i, idx) => (
+                      <div key={idx} className="text-xs">
+                        Bloco nutrição em {Math.round(i.check!.heightMm)} mm —{" "}
+                        mínimo {i.check!.minMm} mm, recomendado {i.check!.recommendedMm} mm.
+                        {" "}
+                        {i.check!.message}
+                      </div>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+              )}
               {canWrite && (
                 <div className="flex items-end gap-2 mb-3">
                   <div className="flex-1">
@@ -265,6 +288,7 @@ function LayoutEditorPage() {
                   <Button onClick={() => addElement.mutate()}><Plus className="size-4" /> Adicionar</Button>
                 </div>
               )}
+
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
