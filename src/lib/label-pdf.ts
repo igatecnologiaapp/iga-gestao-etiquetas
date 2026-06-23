@@ -285,7 +285,7 @@ function dv(n: PdfNutrition | null | undefined, key: keyof PdfNutrition, ref: nu
   return `${pct.toFixed(0)}%`;
 }
 
-function elementValue(el: PdfElement, d: PdfLabelData): string {
+export function elementValue(el: PdfElement, d: PdfLabelData): string {
   if (el.element_type === "fixed_text") return el.fixed_text || "";
   if (el.element_type === "custom_field") return el.bound_field || "";
   switch (el.element_type) {
