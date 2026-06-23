@@ -14,8 +14,10 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Copy, Save, GitBranch, ChevronUp, ChevronDown } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Plus, Trash2, Copy, Save, GitBranch, ChevronUp, ChevronDown, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { checkNutritionElementHeight } from "@/lib/nutrition-layout-rules";
 
 export const Route = createFileRoute("/app/layouts/$id")({
   component: LayoutEditorPage,
@@ -202,6 +204,20 @@ function LayoutEditorPage() {
   if (!layout.data) return <div>Layout não encontrado.</div>;
   const fmt = layout.data.label_formats;
 
+  // Validação de altura mínima do bloco nutrition_facts.
+  // Não reduzimos a fonte indefinidamente nem permitimos corte silencioso
+  // de Fibra, Sódio ou Observações — alertamos no editor.
+  const nutritionIssues = (elements.data ?? [])
+    .filter((e) => e.element_type === "nutrition_facts")
+    .map((e) => ({
+      el: e,
+      check: fmt
+        ? checkNutritionElementHeight(Number(e.height), Number(e.width), fmt.unit)
+        : null,
+    }))
+    .filter((x) => x.check && x.check.level !== "ok");
+
+
   return (
     <>
       <PageHeader
@@ -235,6 +251,29 @@ function LayoutEditorPage() {
         <TabsContent value="editor" className="space-y-4">
           <div className="grid lg:grid-cols-[1fr_minmax(0,420px)] gap-4">
             <Card className="p-4">
+              {nutritionIssues.length > 0 && (
+                <Alert
+                  variant={nutritionIssues.some((i) => i.check?.level === "error") ? "destructive" : "default"}
+                  className="mb-3"
+                >
+                  <AlertTriangle className="size-4" />
+                  <AlertTitle>
+                    {nutritionIssues.some((i) => i.check?.level === "error")
+                      ? "Altura insuficiente para exibir a tabela nutricional completa"
+                      : "Tabela nutricional abaixo da altura recomendada"}
+                  </AlertTitle>
+                  <AlertDescription className="space-y-1">
+                    {nutritionIssues.map((i, idx) => (
+                      <div key={idx} className="text-xs">
+                        Bloco nutrição em {Math.round(i.check!.heightMm)} mm —{" "}
+                        mínimo {i.check!.minMm} mm, recomendado {i.check!.recommendedMm} mm.
+                        {" "}
+                        {i.check!.message}
+                      </div>
+                    ))}
+                  </AlertDescription>
+                </Alert>
+              )}
               {canWrite && (
                 <div className="flex items-end gap-2 mb-3">
                   <div className="flex-1">
@@ -249,6 +288,7 @@ function LayoutEditorPage() {
                   <Button onClick={() => addElement.mutate()}><Plus className="size-4" /> Adicionar</Button>
                 </div>
               )}
+
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -271,7 +311,18 @@ function LayoutEditorPage() {
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.pos_x} onChange={(e) => updateElement.mutate({ id: el.id, patch: { pos_x: Number(e.target.value) } })} /></TableCell>
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.pos_y} onChange={(e) => updateElement.mutate({ id: el.id, patch: { pos_y: Number(e.target.value) } })} /></TableCell>
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.width} onChange={(e) => updateElement.mutate({ id: el.id, patch: { width: Number(e.target.value) } })} /></TableCell>
-                        <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.height} onChange={(e) => updateElement.mutate({ id: el.id, patch: { height: Number(e.target.value) } })} /></TableCell>
+                        <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.height} onChange={(e) => {
+                          const v = Number(e.target.value);
+                          if (el.element_type === "nutrition_facts" && fmt) {
+                            const c = checkNutritionElementHeight(v, Number(el.width), fmt.unit);
+                            if (c.level === "error") {
+                              toast.error(c.message ?? "Altura insuficiente para a tabela nutricional.");
+                              return;
+                            }
+                            if (c.level === "warning") toast.warning(c.message ?? "Altura abaixo do recomendado.");
+                          }
+                          updateElement.mutate({ id: el.id, patch: { height: v } });
+                        }} /></TableCell>
                         <TableCell><Input type="number" step="0.5" disabled={!canWrite} value={el.font_size ?? 10} onChange={(e) => updateElement.mutate({ id: el.id, patch: { font_size: Number(e.target.value) } })} /></TableCell>
                         <TableCell>
                           <div className="flex gap-1">
