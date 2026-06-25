@@ -75,9 +75,13 @@ describe("PrintAgentClient (FASE 4)", () => {
   });
 
   it("timeout → PrintAgentOfflineError com code=TIMEOUT", async () => {
-    const slow: typeof fetch = (() =>
-      new Promise(() => {
-        /* never resolves */
+    const slow: typeof fetch = ((_url: RequestInfo | URL, init?: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          const err = new Error("aborted");
+          err.name = "AbortError";
+          reject(err);
+        });
       })) as typeof fetch;
     const agent = new PrintAgentClient({ transport: { fetch: slow }, timeoutMs: 30 });
     const h = await agent.health();
