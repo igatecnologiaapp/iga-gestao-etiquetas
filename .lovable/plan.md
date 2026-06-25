@@ -1,61 +1,99 @@
-## Contexto atual verificado
+# Módulo Profissional de Impressão Direta — Plano Incremental
 
-- Existe **1 empresa**: `IGA Comercial`.
-- Existe **1 usuário**: `igacomercial.sp@gmail.com` (Administrador IGA), com papel `administrador` na empresa.
-- Papéis disponíveis no enum `app_role`: `administrador`, `supervisor`, `operador`, `consulta`. Não existe um papel separado "principal" — `administrador` já é o nível máximo. Vou tratar **"Administrador principal" = papel `administrador`** (sem criar enum novo, para não quebrar RLS/funções existentes `has_role`, `has_any_role`, `is_global_admin`).
-- A tela `/app/users` já existe e permite vincular usuários existentes, trocar papel e remover vínculo. Falta: criar usuário novo, ativar/inativar, reenviar convite/redefinição, ver último acesso.
+## Escopo
 
-## Etapa 1 — Criar Souza Aguiar e transferir admin (sem expor senha)
+Implementar gerenciamento de impressoras + impressão direta via **Print Agent local**, mantendo o fluxo atual de PDF como fallback. Trabalho será dividido em **fases entregáveis e validáveis**, não em um único PR gigante.
 
-Não posso enviar e-mail real sem infraestrutura de e-mail configurada, e não vou gravar a senha `Wia@aguiar` no código, banco ou logs. Proposta:
+Esta proposta é o plano técnico (FASE 1 — Diagnóstico) + roadmap das fases seguintes. **Nenhum código será alterado até sua aprovação.**
 
-1. **Server function** `bootstrapPrincipalAdmin` (chamada **uma única vez** a partir de uma página interna `/app/admin-handover`, visível só para `administrador` autenticado), que:
-   - Cria `souzaaguiar.producao@gmail.com` via `supabaseAdmin.auth.admin.createUser` com **senha aleatória forte descartável** (nunca retornada, nunca logada) e `email_confirm: true`.
-   - Insere `full_name = "Souza Aguiar"` em `user_profiles`.
-   - Cria vínculo `user_company_roles` com papel `administrador` na empresa IGA Comercial.
-   - Gera link de **recovery** via `supabaseAdmin.auth.admin.generateLink({ type: 'recovery' })` e **retorna o link uma única vez para a tela** (não persiste, não loga). O administrador atual encaminha ao Souza pelo canal que preferir; ao abrir o link, Souza define a própria senha.
-   - Rebaixa `igacomercial.sp@gmail.com` para papel `consulta` e marca `user_profiles.status = 'inativo'`.
-   - Registra eventos em `audit_logs` (criação, atribuição de papel, rebaixamento) **sem incluir senha nem o link**.
-   - Valida pré-condição: só executa se ainda não existir Souza Aguiar como administrador (idempotência).
+---
 
-2. Página `/app/admin-handover` simples: botão "Executar transferência" + área que exibe o link de recovery **uma única vez**, com aviso para copiá-lo. Após uso, a função recusa novas execuções.
+## FASE 1 — Diagnóstico (entregue agora, sem código)
 
-3. **Não há nenhuma menção a `Wia@aguiar` no código ou banco em momento algum.**
+Mapeamento da arquitetura atual relevante ao módulo:
 
-## Etapa 2 — Ampliar `/app/users` (gestão completa)
+### Impressão / PDF
+- `src/lib/label-pdf.ts` — geração de PDF (jsPDF), `renderNutritionTable`, `elementValue`, snapshot.
+- `src/components/label-preview.tsx` — preview visual sincronizado com PDF.
+- `src/routes/app.print-labels.tsx` — tela principal de emissão (seleção produto/layout/quantidade, geração de PDF, impressão via `window.print`).
+- `src/routes/app.print-history.tsx` + `app.print-history.$id.tsx` — histórico e reimpressão a partir de `label_snapshots`.
+- `src/lib/label-emission.ts` — orquestração da emissão (lotes, snapshots).
 
-Adicionar à página já existente, restrito a quem tem papel `administrador` na empresa selecionada:
+### Layouts
+- `src/routes/app.layouts.tsx` e `app.layouts.$id.tsx` — Central de Layouts (editor visual).
+- `src/lib/nutrition-layout-rules.ts` — regras de validação (altura mínima nutricional).
+- Tabelas: `label_layouts`, `label_layout_elements`, `label_layout_versions`, `label_formats`, `label_categories`, `layout_associations`, `label_snapshots`.
 
-- **Criar novo usuário**: e-mail + nome + papel → server function que cria via `auth.admin.createUser` (senha aleatória descartável), insere profile, cria vínculo, gera link de recovery e exibe **uma vez** para o admin copiar.
-- **Editar nome/e-mail** (apenas profile; troca de e-mail no Auth fica fora do escopo desta entrega).
-- **Alterar papel** do vínculo (já existe parcialmente — vou consolidar).
-- **Ativar/Inativar** (atualiza `user_profiles.status`).
-- **Reenviar link de redefinição de senha** (gera novo recovery link e exibe uma vez).
-- **Listar**: nome, e-mail, papel, status, criado em, **último acesso** (lido via `auth.admin.listUsers` → `last_sign_in_at`).
-- **Auditoria**: cada ação acima grava em `audit_logs` (sem senha/link).
+### Impressoras (estado atual)
+- Tabela `printer_configs` já existe (25 colunas) com policies — usada hoje apenas como cadastro informativo (`src/routes/app.printers.tsx`).
+- **Não há** integração com SO, drivers, fila, ou envio direto.
 
-## Etapa 3 — Salvaguardas de segurança
+### Dados / Segurança
+- Multi-tenant por `company_id`, RLS ativa em todas as tabelas relevantes.
+- Roles via `user_company_roles` + `has_role()` / `has_any_role()`.
+- Auditoria via `audit_logs` + trigger `tg_audit_row` + função `log_audit`.
 
-- Todas as operações sensíveis ficam em **server functions** com `requireSupabaseAuth` + verificação `has_role(uid, company_id, 'administrador')` no início do handler. Sem essa verificação, retornam 403. Nada depende só de esconder botão no frontend.
-- **Não promover a si mesmo**: a função de mudar papel recusa quando `target_user_id === caller_id`.
-- **Nunca ficar sem administrador**: rebaixar/remover/inativar último `administrador` ativo da empresa é bloqueado (`count(administrador ativos) > 1`).
-- Senhas **nunca** retornadas, logadas ou armazenadas em texto plano — Supabase Auth cuida do hash. Link de recovery exibido **uma única vez** no momento da criação, sem persistência.
+### Fluxo atual de impressão
+1. Usuário seleciona produto + layout + quantidade em `/app/print-labels`.
+2. `buildLabelDataFromSnapshot` monta dados → `generateLabelPdf` gera PDF → `window.open` ou `iframe.print()`.
+3. Snapshot persistido em `label_snapshots` para reimpressão.
+4. Histórico em `print_batches` + `printed_labels` + `print_events`.
 
-## Arquivos previstos
+### Pontos de menor risco para encaixe
+- **Print Agent Client** é um serviço novo, isolado em `src/lib/print-agent/` — não toca PDF.
+- **Envio**: novo botão "Imprimir direto" em `/app/print-labels` ao lado do existente; fallback automático.
+- **Cadastro de impressoras**: estender `printer_configs` (adicionar `driver_name`, `raw_language`, `agent_printer_id`) sem quebrar UI atual.
 
-- `supabase/migrations/...sql` — adicionar coluna `last_login_at` opcional? **Não** — usar `auth.users.last_sign_in_at` via admin API. Apenas garantir índice/constraint para evitar duplicidade de papel (já existe `unique(user_id, role)` em user_roles — confirmar em `user_company_roles`).
-- `src/lib/admin-users.functions.ts` — server functions: `bootstrapPrincipalAdmin`, `adminCreateUser`, `adminUpdateUserStatus`, `adminChangeUserRole`, `adminResetUserPassword`, `adminListUsers`.
-- `src/routes/app.admin-handover.tsx` — página de uso único para a troca.
-- `src/routes/app.users.tsx` — ampliação da UI.
+### Mudanças de banco previstas
+- `printer_configs`: +colunas `driver_name`, `raw_language`, `agent_printer_id`, `offset_x`, `offset_y`, `rotation`, `speed`, `auto_cut`.
+- Nova `printer_layout_compatibility` (printer_id, layout_id ou format_id).
+- Nova `print_queue` (jobs em andamento; `print_batches` permanece para histórico consolidado).
+- Auditoria: reusar `audit_logs` (não criar nova tabela).
 
-## O que NÃO será feito
+### Rollback
+- Cada fase em migration própria + flags de feature (`settings.print_agent_enabled` por empresa).
+- Botão "Imprimir direto" oculto quando flag off → comportamento idêntico ao atual.
 
-- Não vou criar novo enum de papel "principal" — quebraria RLS, `has_role`, `is_global_admin` e telas existentes. "Administrador principal" = papel `administrador` (semântica preservada na UI).
-- Não vou apagar nada do histórico do usuário IGA. Ele permanece em `user_profiles` (inativo) e no `audit_logs`.
-- Não vou configurar infraestrutura de e-mail nesta entrega (é uma feature à parte e exige domínio). O fluxo de convite usa **link de recovery exibido ao admin atual**, que o repassa por canal seguro. Se quiser que eu configure envio automático de e-mail depois, faço numa segunda rodada.
+---
 
-## Confirmações que preciso antes de executar
+## Roadmap de Fases (entregas incrementais)
 
-1. OK tratar "Administrador principal" como papel `administrador` (sem novo enum)?
-2. OK que o convite do Souza seja entregue como **link de recovery exibido uma vez** ao admin atual (em vez de e-mail automático, que exigiria configurar domínio de e-mail)?
-3. OK rebaixar `igacomercial.sp@gmail.com` para papel `consulta` e marcar `status = inativo` (mantendo todo histórico)?
+| Fase | Entrega | Risco |
+|------|---------|-------|
+| **2** | Migration: ampliar `printer_configs` + `printer_layout_compatibility` + `print_queue` | Baixo |
+| **3** | Serviços TS: `PrinterService`, `PrintAgentClient` (com mocks), `PrintQueueService` | Baixo |
+| **4** | Contrato Print Agent (HTTP local `http://127.0.0.1:17777` + token pareamento) — apenas client + interfaces, **sem instalador** | Baixo |
+| **5** | UI Gerenciamento de Impressoras (estender `app.printers.tsx`): detectar via agent, testar conexão, página de teste, padrão | Médio |
+| **6** | Configurações avançadas por impressora (DPI, offsets, rotação, linguagem) | Baixo |
+| **7** | Botão "Imprimir direto" em `print-labels` com fallback PDF automático | Médio |
+| **8** | Validação dimensional 100% (sem fit-to-page no envio ao agent) | Médio |
+| **9** | Tela de Fila de impressão (`/app/print-queue`) | Baixo |
+| **10** | Filtros estendidos no histórico + auditoria de ações de impressora | Baixo |
+| **11** | Dashboard de impressão (`/app/print-dashboard`) | Baixo |
+| **12** | Impressão em lote multi-produto/multi-layout | Médio |
+| **13** | Adapters por driver (ZPL/EPL/TSPL) — interface + Zebra ZPL como primeiro driver | Médio |
+| **14** | Revisão final RLS + permissões UI + testes | Baixo |
+| **15** | Suite de testes Vitest cobrindo serviços + fluxo end-to-end mock | Baixo |
+
+### Print Agent (entregável separado)
+Esta proposta cobre o **lado web** (cliente + contratos + fallback). O **binário Print Agent local** (Windows/Mac/Linux) é um projeto separado, fora do escopo Lovable, mas o contrato HTTP estará especificado em `docs/PRINT_AGENT_PROTOCOL.md` para implementação posterior em Node/Electron/.NET.
+
+---
+
+## Contrato Print Agent (preview)
+
+```
+GET  http://127.0.0.1:17777/health           → { version, status }
+GET  http://127.0.0.1:17777/printers         → [{ id, name, driver, default }]
+POST http://127.0.0.1:17777/print            → { jobId }
+GET  http://127.0.0.1:17777/jobs/:id         → { status, error? }
+```
+Header: `Authorization: Bearer <token-pareado-por-empresa>`. CORS restrito a origens da aplicação.
+
+---
+
+## Decisão necessária antes de implementar
+
+Dado o tamanho (15 fases, ~3-5 migrations, ~20 arquivos novos), peço autorização **por fase**, não global.
+
+**Confirma que eu inicie pela FASE 2 (migration de schema)** ou prefere ajustar o escopo/ordem antes?
