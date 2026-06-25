@@ -92,7 +92,7 @@ function PrintLabelsPage() {
     enabled: !!companyId,
     queryFn: async () => {
       const { data, error } = await (supabase.from("printer_configs" as any) as any)
-        .select("id,name,status,is_default,printer_type").eq("company_id", companyId!).eq("status", "ativo");
+        .select("*").eq("company_id", companyId!).eq("status", "ativo");
       if (error) throw error;
       return data as any[];
     },
