@@ -106,6 +106,25 @@ function PrintLabelsPage() {
     }
   }, [printers.data, printerId]);
 
+  const selectedPrinter = useMemo(
+    () => printers.data?.find((p: any) => p.id === printerId) ?? null,
+    [printers.data, printerId],
+  );
+
+  // Compatibilidade impressora x layout (FASE 7).
+  const compatibility = useQuery({
+    queryKey: ["em-printer-compat", printerId],
+    enabled: !!printerId,
+    queryFn: async () => PrinterCompatibilityService.listByPrinter(printerId),
+  });
+  const compatibleLayoutIds = useMemo(
+    () => (compatibility.data ?? []).map((c) => c.layout_id).filter(Boolean) as string[],
+    [compatibility.data],
+  );
+
+  // Print Agent (status + token local).
+  const agent = usePrintAgent(companyId);
+
   const layouts = useQuery({
     queryKey: ["em-layouts", companyId],
     enabled: !!companyId,
