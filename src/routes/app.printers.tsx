@@ -132,16 +132,19 @@ async function logAgentAudit(params: {
   payload?: Record<string, unknown>;
 }) {
   try {
-    await supabase.rpc("log_audit", {
-      _action: "OTHER",
-      _table_name: "printer_configs",
-      _record_id: params.recordId,
-      _company_id: params.companyId,
-      _branch_id: null,
-      _old: null,
-      _new: params.payload ?? null,
-      _reason: params.reason,
-    });
+    await (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>)(
+      "log_audit",
+      {
+        _action: "OTHER",
+        _table_name: "printer_configs",
+        _record_id: params.recordId ?? "",
+        _company_id: params.companyId,
+        _branch_id: null,
+        _old: null,
+        _new: params.payload ?? null,
+        _reason: params.reason,
+      },
+    );
   } catch {
     // auditoria não pode bloquear a UX
   }
