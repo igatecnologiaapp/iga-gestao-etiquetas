@@ -1633,6 +1633,122 @@ export type Database = {
           },
         ]
       }
+      print_queue: {
+        Row: {
+          agent_job_id: string | null
+          attempts: number
+          batch_id: string | null
+          branch_id: string | null
+          company_id: string
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          layout_id: string | null
+          payload: Json
+          printer_id: string | null
+          product_id: string | null
+          quantity: number
+          source: Database["public"]["Enums"]["print_job_source"]
+          started_at: string | null
+          status: Database["public"]["Enums"]["print_job_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agent_job_id?: string | null
+          attempts?: number
+          batch_id?: string | null
+          branch_id?: string | null
+          company_id: string
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          layout_id?: string | null
+          payload?: Json
+          printer_id?: string | null
+          product_id?: string | null
+          quantity?: number
+          source?: Database["public"]["Enums"]["print_job_source"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["print_job_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agent_job_id?: string | null
+          attempts?: number
+          batch_id?: string | null
+          branch_id?: string | null
+          company_id?: string
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          layout_id?: string | null
+          payload?: Json
+          printer_id?: string | null
+          product_id?: string | null
+          quantity?: number
+          source?: Database["public"]["Enums"]["print_job_source"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["print_job_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_queue_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "print_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_queue_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_queue_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_queue_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "label_layouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_queue_printer_id_fkey"
+            columns: ["printer_id"]
+            isOneToOne: false
+            referencedRelation: "printer_configs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product_pending_issues"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "print_queue_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       printed_labels: {
         Row: {
           barcode_value: string | null
@@ -1746,6 +1862,8 @@ export type Database = {
       }
       printer_configs: {
         Row: {
+          agent_printer_id: string | null
+          auto_cut: boolean
           branch_id: string | null
           command_language:
             | Database["public"]["Enums"]["printer_command_language"]
@@ -1756,10 +1874,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           dpi: number | null
+          driver_name: string | null
           driver_notes: string | null
           id: string
           integration_config_id: string | null
           is_default: boolean
+          label_advance: number | null
           location: string | null
           manufacturer: string | null
           max_height: number | null
@@ -1767,14 +1887,21 @@ export type Database = {
           model: string | null
           name: string
           notes: string | null
+          offset_x: number
+          offset_y: number
           paper_type: string | null
           printer_type: Database["public"]["Enums"]["printer_type"] | null
           protocol: string | null
+          raw_language: string | null
           ribbon_type: string | null
+          rotation: number
+          speed: number | null
           status: Database["public"]["Enums"]["label_status"]
           updated_at: string
         }
         Insert: {
+          agent_printer_id?: string | null
+          auto_cut?: boolean
           branch_id?: string | null
           command_language?:
             | Database["public"]["Enums"]["printer_command_language"]
@@ -1785,10 +1912,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dpi?: number | null
+          driver_name?: string | null
           driver_notes?: string | null
           id?: string
           integration_config_id?: string | null
           is_default?: boolean
+          label_advance?: number | null
           location?: string | null
           manufacturer?: string | null
           max_height?: number | null
@@ -1796,14 +1925,21 @@ export type Database = {
           model?: string | null
           name: string
           notes?: string | null
+          offset_x?: number
+          offset_y?: number
           paper_type?: string | null
           printer_type?: Database["public"]["Enums"]["printer_type"] | null
           protocol?: string | null
+          raw_language?: string | null
           ribbon_type?: string | null
+          rotation?: number
+          speed?: number | null
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
         }
         Update: {
+          agent_printer_id?: string | null
+          auto_cut?: boolean
           branch_id?: string | null
           command_language?:
             | Database["public"]["Enums"]["printer_command_language"]
@@ -1814,10 +1950,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dpi?: number | null
+          driver_name?: string | null
           driver_notes?: string | null
           id?: string
           integration_config_id?: string | null
           is_default?: boolean
+          label_advance?: number | null
           location?: string | null
           manufacturer?: string | null
           max_height?: number | null
@@ -1825,10 +1963,15 @@ export type Database = {
           model?: string | null
           name?: string
           notes?: string | null
+          offset_x?: number
+          offset_y?: number
           paper_type?: string | null
           printer_type?: Database["public"]["Enums"]["printer_type"] | null
           protocol?: string | null
+          raw_language?: string | null
           ribbon_type?: string | null
+          rotation?: number
+          speed?: number | null
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
         }
@@ -1852,6 +1995,71 @@ export type Database = {
             columns: ["integration_config_id"]
             isOneToOne: false
             referencedRelation: "integration_configs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printer_layout_compatibility: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          format_id: string | null
+          id: string
+          layout_id: string | null
+          notes: string | null
+          printer_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          format_id?: string | null
+          id?: string
+          layout_id?: string | null
+          notes?: string | null
+          printer_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          format_id?: string | null
+          id?: string
+          layout_id?: string | null
+          notes?: string | null
+          printer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_layout_compatibility_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printer_layout_compatibility_format_id_fkey"
+            columns: ["format_id"]
+            isOneToOne: false
+            referencedRelation: "label_formats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printer_layout_compatibility_layout_id_fkey"
+            columns: ["layout_id"]
+            isOneToOne: false
+            referencedRelation: "label_layouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printer_layout_compatibility_printer_id_fkey"
+            columns: ["printer_id"]
+            isOneToOne: false
+            referencedRelation: "printer_configs"
             referencedColumns: ["id"]
           },
         ]
@@ -3195,6 +3403,14 @@ export type Database = {
         | "previewed"
         | "pdf_generated"
         | "pdf_downloaded"
+      print_job_source: "print_agent" | "pdf_fallback" | "manual"
+      print_job_status:
+        | "pending"
+        | "sent"
+        | "printing"
+        | "completed"
+        | "failed"
+        | "canceled"
       printed_label_status: "generated" | "cancelled" | "reprinted"
       printer_command_language: "ZPL" | "EPL" | "ESC_POS" | "PDF" | "generic"
       printer_type:
@@ -3443,6 +3659,15 @@ export const Constants = {
         "previewed",
         "pdf_generated",
         "pdf_downloaded",
+      ],
+      print_job_source: ["print_agent", "pdf_fallback", "manual"],
+      print_job_status: [
+        "pending",
+        "sent",
+        "printing",
+        "completed",
+        "failed",
+        "canceled",
       ],
       printed_label_status: ["generated", "cancelled", "reprinted"],
       printer_command_language: ["ZPL", "EPL", "ESC_POS", "PDF", "generic"],
