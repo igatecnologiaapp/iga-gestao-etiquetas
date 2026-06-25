@@ -1443,6 +1443,62 @@ export type Database = {
         }
         Relationships: []
       }
+      print_agent_pairings: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          last_seen_at: string | null
+          last_seen_ip: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          token_hash: string
+          token_prefix: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          last_seen_at?: string | null
+          last_seen_ip?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash: string
+          token_prefix: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          last_seen_at?: string | null
+          last_seen_ip?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          token_hash?: string
+          token_prefix?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_agent_pairings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       print_batches: {
         Row: {
           batch_code: string | null
