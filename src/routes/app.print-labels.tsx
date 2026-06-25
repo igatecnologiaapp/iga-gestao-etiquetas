@@ -814,22 +814,51 @@ function PrintLabelsPage() {
             </Alert>
           )}
 
-          <div className="flex justify-end gap-2">
+          <PrintAgentPanel companyId={companyId ?? null} canManage={!!canWrite || !!canCreateProduct} />
+
+          {selectedPrinter && compatibility.data && compatibleLayoutIds.length > 0 && !compatibleLayoutIds.includes(layoutId) && layoutId && (
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertTitle>Layout incompatível</AlertTitle>
+              <AlertDescription className="text-sm">
+                A impressora selecionada não está vinculada a este layout. Escolha outro layout ou ajuste a compatibilidade em{" "}
+                <a className="underline" href="/app/printers">Gerenciamento de Impressoras</a>.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {directValidation && !directValidation.ok && (
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertTitle>Impressão direta indisponível</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5 text-sm">{directValidation.errors.map((e) => <li key={e}>{e}</li>)}</ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex flex-wrap justify-end gap-2">
             <Button
               variant="outline"
               disabled={!previewFormat || !elements.data}
-              onClick={async () => {
-                if (!previewFormat || !elements.data) return;
-                const { buildLabelsPdf, openBlob } = await import("@/lib/label-pdf");
-                const blob = await buildLabelsPdf({
-                  format: previewFormat as any,
-                  elements: elements.data as any,
-                  labels: [previewData as any],
-                });
-                openBlob(blob);
-              }}
+              onClick={openPdfFallback}
             >
               <PrinterIcon className="size-4 mr-2" /> Pré-visualizar PDF
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => directPrint.mutate()}
+              disabled={!canDirectPrint || directPrint.isPending}
+              title={
+                !agent.health?.ok
+                  ? "Print Agent offline — emissão usará PDF"
+                  : !directValidation?.ok
+                    ? "Resolva as validações para imprimir direto"
+                    : "Enviar diretamente para a impressora"
+              }
+            >
+              <Send className="size-4 mr-2" />
+              {directPrint.isPending ? "Enviando..." : `Imprimir direto (${quantity})`}
             </Button>
             <Button onClick={() => emit.mutate()} disabled={!canEmit || emit.isPending}>
               <PrinterIcon className="size-4 mr-2" />
