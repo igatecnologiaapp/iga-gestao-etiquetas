@@ -41,6 +41,11 @@ export interface PrinterConfig {
   label_advance: number | null;
   offset_x: number;
   offset_y: number;
+  scale: number;
+  margin_top: number;
+  margin_right: number;
+  margin_bottom: number;
+  margin_left: number;
   created_at: string;
   updated_at: string;
 }
