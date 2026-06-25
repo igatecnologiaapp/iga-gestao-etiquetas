@@ -581,6 +581,85 @@ function PrintLabelsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // ===== FASE 7 — Impressão direta via Print Agent =====
+  const directValidation = useMemo(() => {
+    if (!companyId || !product || !layout.data || !version.data || !selectedPrinter) return null;
+    return validateDirectPrint({
+      companyId,
+      branchId: branchId || null,
+      productId: product.id,
+      printer: selectedPrinter as any,
+      layout: {
+        id: layout.data.id,
+        name: layout.data.name,
+        status: layout.data.status,
+        label_type: layout.data.label_type,
+        format: previewFormat as any,
+        elements: (elements.data ?? []) as any,
+      },
+      quantity,
+      compatibleLayoutIds,
+      labelData: previewData,
+    });
+  }, [companyId, product, layout.data, version.data, selectedPrinter, branchId, previewFormat, elements.data, quantity, compatibleLayoutIds, previewData]);
+
+  async function openPdfFallback() {
+    if (!previewFormat || !elements.data) return;
+    const { buildLabelsPdf, openBlob } = await import("@/lib/label-pdf");
+    const labels = Array.from({ length: Math.max(1, quantity) }, () => previewData as any);
+    const blob = await buildLabelsPdf({ format: previewFormat as any, elements: elements.data as any, labels });
+    openBlob(blob);
+  }
+
+  const directPrint = useMutation({
+    mutationFn: async () => {
+      if (!companyId || !product || !layout.data || !version.data || !selectedPrinter) {
+        throw new Error("Dados incompletos para impressão direta.");
+      }
+      return runDirectPrint(agent.client, {
+        companyId,
+        branchId: branchId || null,
+        productId: product.id,
+        printer: selectedPrinter as any,
+        layout: {
+          id: layout.data.id,
+          name: layout.data.name,
+          status: layout.data.status,
+          label_type: layout.data.label_type,
+          format: previewFormat as any,
+          elements: (elements.data ?? []) as any,
+        },
+        quantity,
+        compatibleLayoutIds,
+        labelData: previewData,
+      });
+    },
+    onSuccess: async (res) => {
+      if (res.ok) {
+        toast.success(`Enviado ao Print Agent (job ${res.agentJobId ?? res.jobId?.slice(0, 8)})`);
+        return;
+      }
+      if (res.fallback) {
+        toast.warning(`${res.fallbackReason ?? "Falha no agente"} — abrindo PDF como fallback.`);
+        await openPdfFallback();
+        return;
+      }
+      toast.error(res.errorMessage ?? "Não foi possível imprimir.");
+    },
+    onError: async (e: any) => {
+      toast.error(e?.message ?? "Falha inesperada — usando PDF.");
+      await openPdfFallback();
+    },
+  });
+
+  const canDirectPrint =
+    !isReadOnly &&
+    canCreateProduct &&
+    blocking.length === 0 &&
+    !!selectedPrinter &&
+    !!directValidation?.ok &&
+    !!agent.health?.ok;
+
   return (
     <div className="space-y-6">
       <PageHeader title="Emissão de Etiquetas" description="Nova emissão com sugestão automática de layout, snapshot histórico e validações regulatórias." />
