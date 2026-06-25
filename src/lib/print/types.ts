@@ -1,6 +1,6 @@
-// FASE 3 — Tipos compartilhados dos serviços de impressão.
-// Tipagem mantida explícita aqui porque print_queue / printer_layout_compatibility
-// ainda não estão refletidas nos types gerados do Supabase.
+// FASE 3/4 — Tipos compartilhados dos serviços de impressão.
+// Tipagem mantida explícita aqui porque print_queue / printer_layout_compatibility /
+// print_agent_pairings ainda não estão refletidas nos types gerados do Supabase.
 
 export type PrinterType =
   | "termica"
@@ -93,7 +93,31 @@ export interface NewPrintJob {
   payload?: Record<string, unknown>;
 }
 
-// ===== Print Agent (contrato local) =====
+// ===== Print Agent (contrato local — FASE 4) =====
+
+/**
+ * Códigos de erro padronizados retornados pelo Print Agent.
+ * Espelhados em docs/PRINT_AGENT_PROTOCOL.md.
+ */
+export type AgentErrorCode =
+  | "AGENT_OFFLINE"
+  | "TIMEOUT"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN_ORIGIN"
+  | "INVALID_TOKEN"
+  | "MISSING_TOKEN"
+  | "PRINTER_NOT_FOUND"
+  | "PRINTER_OFFLINE"
+  | "INVALID_PAYLOAD"
+  | "JOB_NOT_FOUND"
+  | "JOB_NOT_CANCELABLE"
+  | "INTERNAL_ERROR";
+
+export interface AgentErrorBody {
+  code: AgentErrorCode;
+  message: string;
+  details?: Record<string, unknown>;
+}
 
 export interface AgentHealth {
   ok: boolean;
@@ -101,6 +125,7 @@ export interface AgentHealth {
   status?: string;
   reachable: boolean;
   error?: string;
+  code?: AgentErrorCode;
 }
 
 export interface AgentPrinter {
@@ -108,6 +133,7 @@ export interface AgentPrinter {
   name: string;
   driver?: string;
   default?: boolean;
+  status?: "online" | "offline" | "unknown";
 }
 
 export interface AgentPrintRequest {
@@ -128,4 +154,37 @@ export interface AgentJobStatus {
   jobId: string;
   status: PrintJobStatus;
   error?: string;
+  code?: AgentErrorCode;
+}
+
+export interface AgentCancelResponse {
+  jobId: string;
+  canceled: boolean;
+  code?: AgentErrorCode;
+  message?: string;
+}
+
+// ===== Pareamento (registro persistido — sem o token bruto) =====
+
+export type PairingStatus = "active" | "revoked";
+
+export interface PrintAgentPairing {
+  id: string;
+  company_id: string;
+  label: string;
+  token_prefix: string;
+  status: PairingStatus;
+  created_by: string | null;
+  revoked_by: string | null;
+  revoked_at: string | null;
+  last_seen_at: string | null;
+  last_seen_ip: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Retorno único contendo o token bruto — exibido apenas uma vez. */
+export interface PrintAgentPairingCreated {
+  pairing: PrintAgentPairing;
+  token: string;
 }
