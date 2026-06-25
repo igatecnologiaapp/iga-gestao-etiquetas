@@ -1,14 +1,18 @@
-// FASE 3 — PrintAgentClient
-// Contrato HTTP do Print Agent local (ver .lovable/plan.md e docs/PRINT_AGENT_PROTOCOL.md).
+// FASE 4 — PrintAgentClient
+// Contrato HTTP do Print Agent local (ver docs/PRINT_AGENT_PROTOCOL.md).
 //
-// Comportamento desta fase:
+// Princípios:
 //   - Por padrão tenta `http://127.0.0.1:17777`.
-//   - Se o agente não responder em <timeout>, considera offline e retorna shape padronizado.
-//   - Permite injetar um transport mock para testes/UX sem dependência real.
-//   - NÃO envia trabalhos reais a impressoras físicas: o backend (binário Print Agent)
-//     ainda não existe; este client está pronto para falar com ele assim que for empacotado.
+//   - Token de pareamento (por empresa) viaja em `Authorization: Bearer <token>` +
+//     header opcional `X-Company-Id` para o agente validar o vínculo.
+//   - Toda falha de rede/timeout é normalizada para `PrintAgentOfflineError`.
+//   - Erros HTTP padronizados são convertidos em `PrintAgentError` com `code`.
+//   - NÃO altera `label-pdf.ts` nem o fluxo PDF atual; o fallback continua sendo o PDF.
 
 import type {
+  AgentCancelResponse,
+  AgentErrorBody,
+  AgentErrorCode,
   AgentHealth,
   AgentJobStatus,
   AgentPrinter,
@@ -23,6 +27,7 @@ export interface AgentTransport {
 export interface PrintAgentClientOptions {
   baseUrl?: string;
   token?: string | null;
+  companyId?: string | null;
   timeoutMs?: number;
   transport?: AgentTransport;
 }
@@ -31,21 +36,38 @@ const DEFAULT_BASE_URL = "http://127.0.0.1:17777";
 const DEFAULT_TIMEOUT = 1500;
 
 export class PrintAgentOfflineError extends Error {
-  constructor(message = "Print Agent offline") {
+  code: AgentErrorCode = "AGENT_OFFLINE";
+  constructor(message = "Print Agent offline", code: AgentErrorCode = "AGENT_OFFLINE") {
     super(message);
     this.name = "PrintAgentOfflineError";
+    this.code = code;
+  }
+}
+
+export class PrintAgentError extends Error {
+  code: AgentErrorCode;
+  status: number;
+  details?: Record<string, unknown>;
+  constructor(code: AgentErrorCode, message: string, status = 500, details?: Record<string, unknown>) {
+    super(message);
+    this.name = "PrintAgentError";
+    this.code = code;
+    this.status = status;
+    this.details = details;
   }
 }
 
 export class PrintAgentClient {
   private readonly baseUrl: string;
   private readonly token: string | null;
+  private readonly companyId: string | null;
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
 
   constructor(opts: PrintAgentClientOptions = {}) {
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/$/, "");
     this.token = opts.token ?? null;
+    this.companyId = opts.companyId ?? null;
     this.timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT;
     this.fetchImpl = opts.transport?.fetch ?? globalThis.fetch.bind(globalThis);
   }
@@ -53,6 +75,7 @@ export class PrintAgentClient {
   private headers(extra: Record<string, string> = {}): Record<string, string> {
     const base: Record<string, string> = { "content-type": "application/json", ...extra };
     if (this.token) base["authorization"] = `Bearer ${this.token}`;
+    if (this.companyId) base["x-company-id"] = this.companyId;
     return base;
   }
 
@@ -66,34 +89,59 @@ export class PrintAgentClient {
         signal: ctrl.signal,
       });
       if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw new Error(`Agent ${res.status}: ${body || res.statusText}`);
+        const body = (await res.json().catch(() => null)) as AgentErrorBody | null;
+        const code = (body?.code ?? this.statusToCode(res.status)) as AgentErrorCode;
+        const msg = body?.message ?? `Agent ${res.status}: ${res.statusText}`;
+        throw new PrintAgentError(code, msg, res.status, body?.details);
       }
       return (await res.json()) as T;
-    } catch (e: any) {
-      if (e?.name === "AbortError") throw new PrintAgentOfflineError("Tempo esgotado");
+    } catch (e: unknown) {
+      const err = e as { name?: string; message?: string };
+      if (err?.name === "AbortError") throw new PrintAgentOfflineError("Tempo esgotado", "TIMEOUT");
       // Network error / DNS / connection refused → offline
-      if (e instanceof TypeError) throw new PrintAgentOfflineError(e.message);
+      if (e instanceof TypeError) throw new PrintAgentOfflineError(err.message ?? "network", "AGENT_OFFLINE");
       throw e;
     } finally {
       clearTimeout(timer);
     }
   }
 
+  private statusToCode(status: number): AgentErrorCode {
+    if (status === 401) return "UNAUTHORIZED";
+    if (status === 403) return "FORBIDDEN_ORIGIN";
+    if (status === 404) return "JOB_NOT_FOUND";
+    if (status === 409) return "JOB_NOT_CANCELABLE";
+    if (status === 422) return "INVALID_PAYLOAD";
+    return "INTERNAL_ERROR";
+  }
+
   async health(): Promise<AgentHealth> {
     try {
       const data = await this.request<{ version?: string; status?: string }>("/health", { method: "GET" });
       return { ok: true, reachable: true, version: data.version, status: data.status };
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (e instanceof PrintAgentOfflineError) {
-        return { ok: false, reachable: false, error: e.message };
+        return { ok: false, reachable: false, error: e.message, code: e.code };
       }
-      return { ok: false, reachable: true, error: e?.message ?? "unknown" };
+      if (e instanceof PrintAgentError) {
+        return { ok: false, reachable: true, error: e.message, code: e.code };
+      }
+      return { ok: false, reachable: true, error: (e as Error)?.message ?? "unknown", code: "INTERNAL_ERROR" };
     }
   }
 
   async listPrinters(): Promise<AgentPrinter[]> {
     return this.request<AgentPrinter[]>("/printers", { method: "GET" });
+  }
+
+  async testPrinter(printerId: string): Promise<{ ok: boolean }> {
+    return this.request<{ ok: boolean }>(`/printers/${encodeURIComponent(printerId)}/test`, { method: "POST" });
+  }
+
+  async printTestPage(printerId: string): Promise<AgentPrintResponse> {
+    return this.request<AgentPrintResponse>(`/printers/${encodeURIComponent(printerId)}/test-page`, {
+      method: "POST",
+    });
   }
 
   async testConnection(): Promise<boolean> {
@@ -111,6 +159,10 @@ export class PrintAgentClient {
   async getJob(jobId: string): Promise<AgentJobStatus> {
     return this.request<AgentJobStatus>(`/jobs/${encodeURIComponent(jobId)}`, { method: "GET" });
   }
+
+  async cancelJob(jobId: string): Promise<AgentCancelResponse> {
+    return this.request<AgentCancelResponse>(`/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST" });
+  }
 }
 
 // ===== Mock controlado =====
@@ -119,17 +171,24 @@ export interface MockAgentOptions {
   online?: boolean;
   printers?: AgentPrinter[];
   failSubmit?: boolean;
+  requireToken?: string;       // se setado, exige Authorization Bearer = requireToken
+  invalidToken?: boolean;      // força resposta 401 INVALID_TOKEN
+  cancelable?: boolean;        // controla se cancelJob aceita (default: true)
 }
 
 export function createMockAgentTransport(opts: MockAgentOptions = {}): AgentTransport {
   const online = opts.online ?? true;
   const printers = opts.printers ?? [
-    { id: "MOCK-001", name: "Mock Zebra ZD220", driver: "ZPL", default: true },
+    { id: "MOCK-001", name: "Mock Zebra ZD220", driver: "ZPL", default: true, status: "online" },
   ];
   const jobs = new Map<string, AgentJobStatus>();
+  const cancelable = opts.cancelable ?? true;
 
   const json = (body: unknown, status = 200): Response =>
     new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  const err = (status: number, code: AgentErrorCode, message: string) =>
+    json({ code, message } satisfies AgentErrorBody, status);
 
   return {
     fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -137,24 +196,51 @@ export function createMockAgentTransport(opts: MockAgentOptions = {}): AgentTran
       const url = typeof input === "string" ? input : input.toString();
       const path = new URL(url).pathname;
       const method = (init?.method ?? "GET").toUpperCase();
+      const headers = new Headers(init?.headers as HeadersInit | undefined);
+      const auth = headers.get("authorization");
+
+      if (opts.invalidToken) return err(401, "INVALID_TOKEN", "token inválido");
+      if (opts.requireToken) {
+        if (!auth) return err(401, "MISSING_TOKEN", "token de pareamento ausente");
+        if (auth !== `Bearer ${opts.requireToken}`) return err(401, "INVALID_TOKEN", "token inválido");
+      }
 
       if (path === "/health") return json({ version: "mock-0.0.1", status: "ok" });
       if (path === "/printers") return json(printers);
+      if (path.match(/^\/printers\/[^/]+\/test$/) && method === "POST") return json({ ok: true });
+      if (path.match(/^\/printers\/[^/]+\/test-page$/) && method === "POST") {
+        const jobId = `mock-test-${Date.now()}`;
+        jobs.set(jobId, { jobId, status: "completed" });
+        return json({ jobId });
+      }
       if (path === "/print" && method === "POST") {
-        if (opts.failSubmit) return json({ error: "mock failure" }, 500);
+        if (opts.failSubmit) return err(500, "INTERNAL_ERROR", "mock failure");
         const jobId = `mock-${Date.now()}`;
         jobs.set(jobId, { jobId, status: "completed" });
         return json({ jobId });
       }
+      if (path.match(/^\/jobs\/[^/]+\/cancel$/) && method === "POST") {
+        const jobId = decodeURIComponent(path.split("/")[2]);
+        if (!jobs.has(jobId)) return err(404, "JOB_NOT_FOUND", "job não encontrado");
+        if (!cancelable) return err(409, "JOB_NOT_CANCELABLE", "job não pode ser cancelado");
+        jobs.set(jobId, { jobId, status: "canceled" });
+        return json({ jobId, canceled: true } satisfies AgentCancelResponse);
+      }
       if (path.startsWith("/jobs/") && method === "GET") {
         const jobId = decodeURIComponent(path.slice("/jobs/".length));
-        return json(jobs.get(jobId) ?? { jobId, status: "failed", error: "unknown job" });
+        const job = jobs.get(jobId);
+        if (!job) return err(404, "JOB_NOT_FOUND", "job não encontrado");
+        return json(job);
       }
-      return json({ error: "not found" }, 404);
+      return err(404, "JOB_NOT_FOUND", "rota não encontrada");
     }) as typeof fetch,
   };
 }
 
 export function createMockPrintAgent(opts: MockAgentOptions = {}): PrintAgentClient {
-  return new PrintAgentClient({ transport: createMockAgentTransport(opts), timeoutMs: 500 });
+  return new PrintAgentClient({
+    transport: createMockAgentTransport(opts),
+    timeoutMs: 500,
+    token: opts.requireToken ?? null,
+  });
 }
