@@ -1938,6 +1938,10 @@ export type Database = {
           label_advance: number | null
           location: string | null
           manufacturer: string | null
+          margin_bottom: number
+          margin_left: number
+          margin_right: number
+          margin_top: number
           max_height: number | null
           max_width: number | null
           model: string | null
@@ -1951,6 +1955,7 @@ export type Database = {
           raw_language: string | null
           ribbon_type: string | null
           rotation: number
+          scale: number
           speed: number | null
           status: Database["public"]["Enums"]["label_status"]
           updated_at: string
@@ -1976,6 +1981,10 @@ export type Database = {
           label_advance?: number | null
           location?: string | null
           manufacturer?: string | null
+          margin_bottom?: number
+          margin_left?: number
+          margin_right?: number
+          margin_top?: number
           max_height?: number | null
           max_width?: number | null
           model?: string | null
@@ -1989,6 +1998,7 @@ export type Database = {
           raw_language?: string | null
           ribbon_type?: string | null
           rotation?: number
+          scale?: number
           speed?: number | null
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
@@ -2014,6 +2024,10 @@ export type Database = {
           label_advance?: number | null
           location?: string | null
           manufacturer?: string | null
+          margin_bottom?: number
+          margin_left?: number
+          margin_right?: number
+          margin_top?: number
           max_height?: number | null
           max_width?: number | null
           model?: string | null
@@ -2027,6 +2041,7 @@ export type Database = {
           raw_language?: string | null
           ribbon_type?: string | null
           rotation?: number
+          scale?: number
           speed?: number | null
           status?: Database["public"]["Enums"]["label_status"]
           updated_at?: string
