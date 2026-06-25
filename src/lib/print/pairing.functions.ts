@@ -8,6 +8,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { createHash, randomBytes } from "node:crypto";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PrintAgentPairing, PrintAgentPairingCreated } from "./types";
 
 function sha256Hex(input: string): string {
@@ -15,13 +16,12 @@ function sha256Hex(input: string): string {
 }
 
 function generateToken(): { token: string; prefix: string; hash: string } {
-  // 32 bytes → 64 hex chars. Prefixo "pat_" facilita identificação visual.
   const raw = `pat_${randomBytes(32).toString("hex")}`;
   return { token: raw, prefix: raw.slice(0, 12), hash: sha256Hex(raw) };
 }
 
 async function assertCompanyAdmin(
-  supabase: Awaited<ReturnType<typeof requireSupabaseAuth.handler>>["context"]["supabase"],
+  supabase: SupabaseClient,
   userId: string,
   companyId: string,
 ): Promise<void> {
