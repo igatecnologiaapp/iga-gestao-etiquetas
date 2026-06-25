@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Printer as PrinterIcon, Wand2 } from "lucide-react";
+import { AlertTriangle, Printer as PrinterIcon, Wand2, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
   LABEL_TYPES,
@@ -27,6 +27,10 @@ import {
   type ShelfModel,
 } from "@/lib/label-emission";
 import { formatBRL, formatWeight } from "@/lib/label-pdf";
+import { PrintAgentPanel } from "@/components/print/print-agent-panel";
+import { usePrintAgent } from "@/lib/print/use-print-agent";
+import { runDirectPrint, validateDirectPrint } from "@/lib/print/direct-print";
+import { PrinterCompatibilityService } from "@/lib/print/printer-compatibility-service";
 
 export const Route = createFileRoute("/app/print-labels")({ component: PrintLabelsPage });
 
@@ -88,7 +92,7 @@ function PrintLabelsPage() {
     enabled: !!companyId,
     queryFn: async () => {
       const { data, error } = await (supabase.from("printer_configs" as any) as any)
-        .select("id,name,status,is_default,printer_type").eq("company_id", companyId!).eq("status", "ativo");
+        .select("*").eq("company_id", companyId!).eq("status", "ativo");
       if (error) throw error;
       return data as any[];
     },
@@ -101,6 +105,25 @@ function PrintLabelsPage() {
       setPrinterId(def?.id ?? "");
     }
   }, [printers.data, printerId]);
+
+  const selectedPrinter = useMemo(
+    () => printers.data?.find((p: any) => p.id === printerId) ?? null,
+    [printers.data, printerId],
+  );
+
+  // Compatibilidade impressora x layout (FASE 7).
+  const compatibility = useQuery({
+    queryKey: ["em-printer-compat", printerId],
+    enabled: !!printerId,
+    queryFn: async () => PrinterCompatibilityService.listByPrinter(printerId),
+  });
+  const compatibleLayoutIds = useMemo(
+    () => (compatibility.data ?? []).map((c) => c.layout_id).filter(Boolean) as string[],
+    [compatibility.data],
+  );
+
+  // Print Agent (status + token local).
+  const agent = usePrintAgent(companyId);
 
   const layouts = useQuery({
     queryKey: ["em-layouts", companyId],
@@ -558,6 +581,85 @@ function PrintLabelsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  // ===== FASE 7 — Impressão direta via Print Agent =====
+  const directValidation = useMemo(() => {
+    if (!companyId || !product || !layout.data || !version.data || !selectedPrinter) return null;
+    return validateDirectPrint({
+      companyId,
+      branchId: branchId || null,
+      productId: product.id,
+      printer: selectedPrinter as any,
+      layout: {
+        id: layout.data.id,
+        name: layout.data.name,
+        status: layout.data.status,
+        label_type: layout.data.label_type,
+        format: previewFormat as any,
+        elements: (elements.data ?? []) as any,
+      },
+      quantity,
+      compatibleLayoutIds,
+      labelData: previewData,
+    });
+  }, [companyId, product, layout.data, version.data, selectedPrinter, branchId, previewFormat, elements.data, quantity, compatibleLayoutIds, previewData]);
+
+  async function openPdfFallback() {
+    if (!previewFormat || !elements.data) return;
+    const { buildLabelsPdf, openBlob } = await import("@/lib/label-pdf");
+    const labels = Array.from({ length: Math.max(1, quantity) }, () => previewData as any);
+    const blob = await buildLabelsPdf({ format: previewFormat as any, elements: elements.data as any, labels });
+    openBlob(blob);
+  }
+
+  const directPrint = useMutation({
+    mutationFn: async () => {
+      if (!companyId || !product || !layout.data || !version.data || !selectedPrinter) {
+        throw new Error("Dados incompletos para impressão direta.");
+      }
+      return runDirectPrint(agent.client, {
+        companyId,
+        branchId: branchId || null,
+        productId: product.id,
+        printer: selectedPrinter as any,
+        layout: {
+          id: layout.data.id,
+          name: layout.data.name,
+          status: layout.data.status,
+          label_type: layout.data.label_type,
+          format: previewFormat as any,
+          elements: (elements.data ?? []) as any,
+        },
+        quantity,
+        compatibleLayoutIds,
+        labelData: previewData,
+      });
+    },
+    onSuccess: async (res) => {
+      if (res.ok) {
+        toast.success(`Enviado ao Print Agent (job ${res.agentJobId ?? res.jobId?.slice(0, 8)})`);
+        return;
+      }
+      if (res.fallback) {
+        toast.warning(`${res.fallbackReason ?? "Falha no agente"} — abrindo PDF como fallback.`);
+        await openPdfFallback();
+        return;
+      }
+      toast.error(res.errorMessage ?? "Não foi possível imprimir.");
+    },
+    onError: async (e: any) => {
+      toast.error(e?.message ?? "Falha inesperada — usando PDF.");
+      await openPdfFallback();
+    },
+  });
+
+  const canDirectPrint =
+    !isReadOnly &&
+    canCreateProduct &&
+    blocking.length === 0 &&
+    !!selectedPrinter &&
+    !!directValidation?.ok &&
+    !!agent.health?.ok;
+
   return (
     <div className="space-y-6">
       <PageHeader title="Emissão de Etiquetas" description="Nova emissão com sugestão automática de layout, snapshot histórico e validações regulatórias." />
@@ -712,22 +814,51 @@ function PrintLabelsPage() {
             </Alert>
           )}
 
-          <div className="flex justify-end gap-2">
+          <PrintAgentPanel companyId={companyId ?? null} canManage={!!canWrite || !!canCreateProduct} />
+
+          {selectedPrinter && compatibility.data && compatibleLayoutIds.length > 0 && !compatibleLayoutIds.includes(layoutId) && layoutId && (
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertTitle>Layout incompatível</AlertTitle>
+              <AlertDescription className="text-sm">
+                A impressora selecionada não está vinculada a este layout. Escolha outro layout ou ajuste a compatibilidade em{" "}
+                <a className="underline" href="/app/printers">Gerenciamento de Impressoras</a>.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {directValidation && !directValidation.ok && (
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertTitle>Impressão direta indisponível</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-5 text-sm">{directValidation.errors.map((e) => <li key={e}>{e}</li>)}</ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="flex flex-wrap justify-end gap-2">
             <Button
               variant="outline"
               disabled={!previewFormat || !elements.data}
-              onClick={async () => {
-                if (!previewFormat || !elements.data) return;
-                const { buildLabelsPdf, openBlob } = await import("@/lib/label-pdf");
-                const blob = await buildLabelsPdf({
-                  format: previewFormat as any,
-                  elements: elements.data as any,
-                  labels: [previewData as any],
-                });
-                openBlob(blob);
-              }}
+              onClick={openPdfFallback}
             >
               <PrinterIcon className="size-4 mr-2" /> Pré-visualizar PDF
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => directPrint.mutate()}
+              disabled={!canDirectPrint || directPrint.isPending}
+              title={
+                !agent.health?.ok
+                  ? "Print Agent offline — emissão usará PDF"
+                  : !directValidation?.ok
+                    ? "Resolva as validações para imprimir direto"
+                    : "Enviar diretamente para a impressora"
+              }
+            >
+              <Send className="size-4 mr-2" />
+              {directPrint.isPending ? "Enviando..." : `Imprimir direto (${quantity})`}
             </Button>
             <Button onClick={() => emit.mutate()} disabled={!canEmit || emit.isPending}>
               <PrinterIcon className="size-4 mr-2" />
