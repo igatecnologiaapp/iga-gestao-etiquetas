@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Printer as PrinterIcon, Wand2 } from "lucide-react";
+import { AlertTriangle, Printer as PrinterIcon, Wand2, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
   LABEL_TYPES,
@@ -27,6 +27,10 @@ import {
   type ShelfModel,
 } from "@/lib/label-emission";
 import { formatBRL, formatWeight } from "@/lib/label-pdf";
+import { PrintAgentPanel } from "@/components/print/print-agent-panel";
+import { usePrintAgent } from "@/lib/print/use-print-agent";
+import { runDirectPrint, validateDirectPrint } from "@/lib/print/direct-print";
+import { PrinterCompatibilityService } from "@/lib/print/printer-compatibility-service";
 
 export const Route = createFileRoute("/app/print-labels")({ component: PrintLabelsPage });
 
