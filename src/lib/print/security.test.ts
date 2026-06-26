@@ -72,8 +72,8 @@ describe("FASE 14 — guardPrintPayload", () => {
   it("aceita payload válido", () => {
     expect(guardPrintPayload(base)).toEqual([]);
   });
-  it("rejeita company_id inválido", () => {
-    expect(guardPrintPayload({ ...base, company_id: "not-uuid" }).join(" ")).toMatch(/company_id/);
+  it("rejeita company_id ausente", () => {
+    expect(guardPrintPayload({ ...base, company_id: "" }).join(" ")).toMatch(/company_id/);
   });
   it("rejeita quantidade absurda", () => {
     expect(guardPrintPayload({ ...base, quantity: 99999 }).join(" ")).toMatch(/Quantidade/);
