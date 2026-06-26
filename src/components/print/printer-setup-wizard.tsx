@@ -295,7 +295,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
 
   const canAdvance = useMemo(() => {
     switch (step) {
-      case 1: return !!agent.health?.ok;
+      case 1: return !!agent.health?.ok && isPaired;
       case 2: return (detected ?? []).length > 0;
       case 3: return !!savedPrinter;
       case 4: return true; // pode pular sem layouts, mas alerta
