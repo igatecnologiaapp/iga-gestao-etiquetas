@@ -45,6 +45,7 @@ import { Route as AppAdminHandoverRouteImport } from './routes/app.admin-handove
 import { Route as AppPrintHistoryIdRouteImport } from './routes/app.print-history.$id'
 import { Route as AppLayoutsIdRouteImport } from './routes/app.layouts.$id'
 import { Route as AppIntegrationsIdRouteImport } from './routes/app.integrations.$id'
+import { Route as ApiPublicPrintAgentExchangeRouteImport } from './routes/api/public/print-agent/exchange'
 
 const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
   id: '/redefinir-senha',
@@ -226,6 +227,12 @@ const AppIntegrationsIdRoute = AppIntegrationsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppIntegrationsRoute,
 } as any)
+const ApiPublicPrintAgentExchangeRoute =
+  ApiPublicPrintAgentExchangeRouteImport.update({
+    id: '/api/public/print-agent/exchange',
+    path: '/api/public/print-agent/exchange',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
+  '/api/public/print-agent/exchange': typeof ApiPublicPrintAgentExchangeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -301,6 +309,7 @@ export interface FileRoutesByTo {
   '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
+  '/api/public/print-agent/exchange': typeof ApiPublicPrintAgentExchangeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -340,6 +349,7 @@ export interface FileRoutesById {
   '/app/integrations/$id': typeof AppIntegrationsIdRoute
   '/app/layouts/$id': typeof AppLayoutsIdRoute
   '/app/print-history/$id': typeof AppPrintHistoryIdRoute
+  '/api/public/print-agent/exchange': typeof ApiPublicPrintAgentExchangeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
+    | '/api/public/print-agent/exchange'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -417,6 +428,7 @@ export interface FileRouteTypes {
     | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
+    | '/api/public/print-agent/exchange'
   id:
     | '__root__'
     | '/'
@@ -455,6 +467,7 @@ export interface FileRouteTypes {
     | '/app/integrations/$id'
     | '/app/layouts/$id'
     | '/app/print-history/$id'
+    | '/api/public/print-agent/exchange'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -462,6 +475,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
   RedefinirSenhaRoute: typeof RedefinirSenhaRoute
+  ApiPublicPrintAgentExchangeRoute: typeof ApiPublicPrintAgentExchangeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -718,6 +732,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIntegrationsIdRouteImport
       parentRoute: typeof AppIntegrationsRoute
     }
+    '/api/public/print-agent/exchange': {
+      id: '/api/public/print-agent/exchange'
+      path: '/api/public/print-agent/exchange'
+      fullPath: '/api/public/print-agent/exchange'
+      preLoaderRoute: typeof ApiPublicPrintAgentExchangeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -828,6 +849,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
   RedefinirSenhaRoute: RedefinirSenhaRoute,
+  ApiPublicPrintAgentExchangeRoute: ApiPublicPrintAgentExchangeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

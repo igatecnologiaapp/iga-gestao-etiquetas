@@ -28,6 +28,7 @@ import {
   ROTATION_VALUES,
   PrinterCompatibilityService,
 } from "@/lib/print";
+import { PairingCodeCard } from "@/components/print/pairing-code-card";
 
 export const Route = createFileRoute("/app/printers")({ component: Page });
 
@@ -175,6 +176,12 @@ function Page() {
           </Dialog>
         )}
       />
+
+      {companyId && canWrite && (
+        <div className="mb-4">
+          <PairingCodeCard companyId={companyId} />
+        </div>
+      )}
 
       <Card className="p-4">
         <Table>
