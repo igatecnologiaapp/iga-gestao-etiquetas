@@ -69,10 +69,23 @@ async function logAudit(
   }
 }
 
-export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
+export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing }: Props) {
   const qc = useQueryClient();
   const agent = usePrintAgent(companyId);
   const [step, setStep] = useState<StepId>(1);
+  const isPaired = agent.health?.ok === true && agent.health?.paired !== false;
+  const authError =
+    agent.health?.code === "UNAUTHORIZED" ||
+    agent.health?.code === "INVALID_TOKEN" ||
+    agent.health?.code === "MISSING_TOKEN" ||
+    agent.health?.code === "NOT_PAIRED" ||
+    (agent.health?.ok === true && agent.health?.paired === false);
+
+  function goToPairing() {
+    onClose();
+    onRequestPairing?.();
+  }
+
 
   // Etapa 2 — impressoras detectadas
   const [detected, setDetected] = useState<AgentPrinter[] | null>(null);
