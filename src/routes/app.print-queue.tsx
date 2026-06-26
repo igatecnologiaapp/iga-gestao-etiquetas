@@ -28,6 +28,7 @@ import { PrintQueueService } from "@/lib/print/print-queue-service";
 import { PrintAgentError, PrintAgentOfflineError } from "@/lib/print/print-agent-client";
 import { usePrintAgent } from "@/lib/print/use-print-agent";
 import type { PrintJobStatus, PrintQueueJob } from "@/lib/print/types";
+import { sanitizePayload } from "@/lib/print/security";
 
 export const Route = createFileRoute("/app/print-queue")({ component: PrintQueuePage });
 
