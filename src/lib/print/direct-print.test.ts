@@ -116,7 +116,7 @@ describe("validateDirectPrint", () => {
       layout: { ...baseLayout, elements: [{ id: "x", element_type: "text", x: 9999, y: 1, width: 10, height: 5 }] },
     });
     expect(r.ok).toBe(false);
-    expect(r.errors.join(" ")).toMatch(/coordenadas/);
+    expect(r.errors.join(" ")).toMatch(/área útil/);
   });
 
   it("bloqueia DPI fora do intervalo", () => {
