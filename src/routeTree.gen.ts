@@ -24,6 +24,7 @@ import { Route as AppPrintersRouteImport } from './routes/app.printers'
 import { Route as AppPrintQueueRouteImport } from './routes/app.print-queue'
 import { Route as AppPrintLabelsRouteImport } from './routes/app.print-labels'
 import { Route as AppPrintHistoryRouteImport } from './routes/app.print-history'
+import { Route as AppPrintDashboardRouteImport } from './routes/app.print-dashboard'
 import { Route as AppPricesRouteImport } from './routes/app.prices'
 import { Route as AppPendingRouteImport } from './routes/app.pending'
 import { Route as AppNutritionRouteImport } from './routes/app.nutrition'
@@ -117,6 +118,11 @@ const AppPrintLabelsRoute = AppPrintLabelsRouteImport.update({
 const AppPrintHistoryRoute = AppPrintHistoryRouteImport.update({
   id: '/print-history',
   path: '/print-history',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPrintDashboardRoute = AppPrintDashboardRouteImport.update({
+  id: '/print-dashboard',
+  path: '/print-dashboard',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPricesRoute = AppPricesRouteImport.update({
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
+  '/app/print-dashboard': typeof AppPrintDashboardRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/print-queue': typeof AppPrintQueueRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
+  '/app/print-dashboard': typeof AppPrintDashboardRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/print-queue': typeof AppPrintQueueRoute
@@ -308,6 +316,7 @@ export interface FileRoutesById {
   '/app/nutrition': typeof AppNutritionRoute
   '/app/pending': typeof AppPendingRoute
   '/app/prices': typeof AppPricesRoute
+  '/app/print-dashboard': typeof AppPrintDashboardRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
   '/app/print-queue': typeof AppPrintQueueRoute
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
+    | '/app/print-dashboard'
     | '/app/print-history'
     | '/app/print-labels'
     | '/app/print-queue'
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
+    | '/app/print-dashboard'
     | '/app/print-history'
     | '/app/print-labels'
     | '/app/print-queue'
@@ -417,6 +428,7 @@ export interface FileRouteTypes {
     | '/app/nutrition'
     | '/app/pending'
     | '/app/prices'
+    | '/app/print-dashboard'
     | '/app/print-history'
     | '/app/print-labels'
     | '/app/print-queue'
@@ -545,6 +557,13 @@ declare module '@tanstack/react-router' {
       path: '/print-history'
       fullPath: '/app/print-history'
       preLoaderRoute: typeof AppPrintHistoryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/print-dashboard': {
+      id: '/app/print-dashboard'
+      path: '/print-dashboard'
+      fullPath: '/app/print-dashboard'
+      preLoaderRoute: typeof AppPrintDashboardRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/prices': {
@@ -736,6 +755,7 @@ interface AppRouteChildren {
   AppNutritionRoute: typeof AppNutritionRoute
   AppPendingRoute: typeof AppPendingRoute
   AppPricesRoute: typeof AppPricesRoute
+  AppPrintDashboardRoute: typeof AppPrintDashboardRoute
   AppPrintHistoryRoute: typeof AppPrintHistoryRouteWithChildren
   AppPrintLabelsRoute: typeof AppPrintLabelsRoute
   AppPrintQueueRoute: typeof AppPrintQueueRoute
@@ -766,6 +786,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppNutritionRoute: AppNutritionRoute,
   AppPendingRoute: AppPendingRoute,
   AppPricesRoute: AppPricesRoute,
+  AppPrintDashboardRoute: AppPrintDashboardRoute,
   AppPrintHistoryRoute: AppPrintHistoryRouteWithChildren,
   AppPrintLabelsRoute: AppPrintLabelsRoute,
   AppPrintQueueRoute: AppPrintQueueRoute,
