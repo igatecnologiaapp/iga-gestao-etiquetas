@@ -16,6 +16,7 @@ const nav: NavItem[] = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard, exact: true, group: "Geral" },
   { to: "/app/reports", label: "Relatórios", icon: BarChart3, group: "Geral" },
   { to: "/app/print-labels", label: "Emissão de Etiquetas", icon: PrinterCheck, group: "Emissão" },
+  { to: "/app/print-batch", label: "Impressão em Lote", icon: PrinterCheck, group: "Emissão" },
   { to: "/app/print-queue", label: "Fila de Impressão", icon: Printer, group: "Emissão" },
   { to: "/app/print-history", label: "Histórico de Emissões", icon: History, group: "Emissão" },
   { to: "/app/print-dashboard", label: "Dashboard", icon: BarChart3, group: "Emissão" },
