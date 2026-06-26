@@ -111,12 +111,14 @@ export type AgentErrorCode =
   | "FORBIDDEN_ORIGIN"
   | "INVALID_TOKEN"
   | "MISSING_TOKEN"
+  | "NOT_PAIRED"
   | "PRINTER_NOT_FOUND"
   | "PRINTER_OFFLINE"
   | "INVALID_PAYLOAD"
   | "JOB_NOT_FOUND"
   | "JOB_NOT_CANCELABLE"
   | "INTERNAL_ERROR";
+
 
 export interface AgentErrorBody {
   code: AgentErrorCode;
@@ -129,9 +131,13 @@ export interface AgentHealth {
   version?: string;
   status?: string;
   reachable: boolean;
+  paired?: boolean;
+  company_id?: string | null;
+  device_name?: string | null;
   error?: string;
   code?: AgentErrorCode;
 }
+
 
 export interface AgentPrinter {
   id: string;

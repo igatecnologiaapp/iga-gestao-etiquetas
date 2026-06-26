@@ -21,8 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Wifi, WifiOff, Loader2, RefreshCcw, Search, Printer as PrinterIcon,
-  Link2, Settings2, FlaskConical, CheckCircle2, ArrowLeft, ArrowRight, AlertTriangle,
+  Link2, Settings2, FlaskConical, CheckCircle2, ArrowLeft, ArrowRight, AlertTriangle, KeyRound,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { usePrintAgent } from "@/lib/print/use-print-agent";
 import { PrinterService } from "@/lib/print/printer-service";
@@ -34,7 +35,9 @@ interface Props {
   companyId: string;
   open: boolean;
   onClose: () => void;
+  onRequestPairing?: () => void;
 }
+
 
 type StepId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const STEPS: { id: StepId; title: string; icon: any }[] = [
@@ -67,10 +70,23 @@ async function logAudit(
   }
 }
 
-export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
+export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing }: Props) {
   const qc = useQueryClient();
   const agent = usePrintAgent(companyId);
   const [step, setStep] = useState<StepId>(1);
+  const isPaired = agent.health?.ok === true && agent.health?.paired !== false;
+  const authError =
+    agent.health?.code === "UNAUTHORIZED" ||
+    agent.health?.code === "INVALID_TOKEN" ||
+    agent.health?.code === "MISSING_TOKEN" ||
+    agent.health?.code === "NOT_PAIRED" ||
+    (agent.health?.ok === true && agent.health?.paired === false);
+
+  function goToPairing() {
+    onClose();
+    onRequestPairing?.();
+  }
+
 
   // Etapa 2 — impressoras detectadas
   const [detected, setDetected] = useState<AgentPrinter[] | null>(null);
@@ -129,6 +145,11 @@ export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
 
   // === Ações ===
   async function detectPrinters() {
+    if (!isPaired) {
+      setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+      setStep(1);
+      return;
+    }
     setDetectLoading(true); setDetectError(null);
     try {
       const list = await agent.client.listPrinters();
@@ -137,11 +158,19 @@ export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
       if (list.length === 0) setDetectError("Nenhuma impressora foi detectada na estação.");
     } catch (e: any) {
       setDetected([]);
-      setDetectError(e?.message ?? "Falha ao consultar o agente local.");
+      const code = e?.code as string | undefined;
+      if (code === "UNAUTHORIZED" || code === "INVALID_TOKEN" || code === "MISSING_TOKEN" || code === "NOT_PAIRED") {
+        setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+        await agent.refresh();
+        setStep(1);
+      } else {
+        setDetectError(e?.message ?? "Falha ao consultar o agente local.");
+      }
     } finally {
       setDetectLoading(false);
     }
   }
+
 
   const savePrinter = useMutation({
     mutationFn: async () => {
@@ -267,7 +296,7 @@ export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
 
   const canAdvance = useMemo(() => {
     switch (step) {
-      case 1: return !!agent.health?.ok;
+      case 1: return !!agent.health?.ok && isPaired;
       case 2: return (detected ?? []).length > 0;
       case 3: return !!savedPrinter;
       case 4: return true; // pode pular sem layouts, mas alerta
@@ -321,14 +350,36 @@ export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
                       : agent.health?.ok ? `Agente conectado${agent.health.version ? ` · v${agent.health.version}` : ""}`
                       : "Agente não encontrado ou offline"}
                   </div>
-                  {!agent.health?.ok && agent.health?.code && (
-                    <div className="text-xs text-muted-foreground">Código: {agent.health.code}</div>
-                  )}
+                  <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-1">
+                    <Badge variant={agent.health?.ok ? "default" : "outline"}>
+                      {agent.health?.ok ? "Agente conectado" : "Agente offline"}
+                    </Badge>
+                    <Badge variant={isPaired ? "default" : "destructive"}>
+                      {isPaired ? "Agente pareado" : "Não pareado"}
+                    </Badge>
+                    {agent.health?.code && (
+                      <Badge variant="outline">Código: {agent.health.code}</Badge>
+                    )}
+                  </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => agent.refresh()} disabled={agent.loading}>
                   <RefreshCcw className="size-4" /> Verificar
                 </Button>
               </Card>
+              {authError && agent.health?.ok && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="size-4" />
+                  <AlertTitle>Agente não autorizado</AlertTitle>
+                  <AlertDescription className="text-sm space-y-2">
+                    <p>O agente local respondeu, mas não está pareado ou o token foi invalidado. Realize o pareamento novamente para liberar a detecção de impressoras.</p>
+                    {onRequestPairing && (
+                      <Button size="sm" onClick={goToPairing}>
+                        <KeyRound className="size-4" /> Parear novamente
+                      </Button>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
               {!agent.health?.ok && (
                 <Alert>
                   <AlertTriangle className="size-4" />
@@ -336,11 +387,12 @@ export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
                   <AlertDescription className="text-sm space-y-1">
                     <p>1. Baixe o instalador na seção <strong>Print Agent</strong> desta tela.</p>
                     <p>2. Instale como Administrador (cria o serviço Windows <code>LovablePrintAgent</code>).</p>
-                    <p>3. Gere um código de pareamento e digite na estação. Depois clique em "Verificar".</p>
-                    {!agent.hasToken && <p>4. Cole o token desta estação no painel do Print Agent.</p>}
+                    <p>3. Gere um código de 6 dígitos no card <strong>Pareamento do Print Agent</strong> e rode na estação: <code>PrintAgent.exe pair 123456</code>.</p>
+                    <p>4. Clique em "Verificar" acima para confirmar.</p>
                   </AlertDescription>
                 </Alert>
               )}
+
             </div>
           )}
 

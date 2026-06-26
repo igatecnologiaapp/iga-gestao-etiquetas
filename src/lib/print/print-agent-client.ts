@@ -117,8 +117,22 @@ export class PrintAgentClient {
 
   async health(): Promise<AgentHealth> {
     try {
-      const data = await this.request<{ version?: string; status?: string }>("/health", { method: "GET" });
-      return { ok: true, reachable: true, version: data.version, status: data.status };
+      const data = await this.request<{
+        version?: string;
+        status?: string;
+        paired?: boolean;
+        company_id?: string | null;
+        device_name?: string | null;
+      }>("/health", { method: "GET" });
+      return {
+        ok: true,
+        reachable: true,
+        version: data.version,
+        status: data.status,
+        paired: data.paired,
+        company_id: data.company_id ?? null,
+        device_name: data.device_name ?? null,
+      };
     } catch (e: unknown) {
       if (e instanceof PrintAgentOfflineError) {
         return { ok: false, reachable: false, error: e.message, code: e.code };
@@ -129,6 +143,7 @@ export class PrintAgentClient {
       return { ok: false, reachable: true, error: (e as Error)?.message ?? "unknown", code: "INTERNAL_ERROR" };
     }
   }
+
 
   async listPrinters(): Promise<AgentPrinter[]> {
     return this.request<AgentPrinter[]>("/printers", { method: "GET" });
