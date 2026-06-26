@@ -270,7 +270,7 @@ export async function runDirectPrint(
     const offline = e instanceof PrintAgentOfflineError;
     const agentErr = e instanceof PrintAgentError ? e : null;
     const code = (agentErr?.code ?? (offline ? e.code : "INTERNAL_ERROR")) as AgentErrorCode;
-    const msg = e?.message ?? "Falha de impressão direta";
+    const msg = sanitizeErrorMessage(e?.message ?? "Falha de impressão direta");
     await PrintQueueService.recordFailure(job.id, `[${code}] ${msg}`).catch(() => undefined);
     return {
       ok: false,
