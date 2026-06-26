@@ -299,6 +299,123 @@ function startServer() {
   });
 }
 
+// -------- GUI (Windows InputBox via PowerShell) --------
+function showWindowsInputBox(prompt, title) {
+  if (process.platform !== "win32") return null;
+  const ps = `
+Add-Type -AssemblyName Microsoft.VisualBasic
+$code = [Microsoft.VisualBasic.Interaction]::InputBox(${JSON.stringify(prompt)}, ${JSON.stringify(title)}, "")
+Write-Output $code
+`.trim();
+  const r = spawnSync("powershell.exe", ["-NoProfile", "-STA", "-Command", ps], { encoding: "utf8", timeout: 300000 });
+  if (r.status !== 0) return null;
+  return String(r.stdout || "").trim();
+}
+
+function showWindowsMessage(message, title, icon = "Information") {
+  if (process.platform !== "win32") return;
+  const ps = `
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.MessageBox]::Show(${JSON.stringify(message)}, ${JSON.stringify(title)}, 'OK', '${icon}') | Out-Null
+`.trim();
+  spawnSync("powershell.exe", ["-NoProfile", "-STA", "-Command", ps], { encoding: "utf8", timeout: 60000 });
+}
+
+async function pairUI() {
+  const code = showWindowsInputBox(
+    "Cole ou digite o código de 6 dígitos gerado no painel Lovable (Impressoras → Pareamento do Print Agent).",
+    "Parear Print Agent",
+  );
+  if (!code) {
+    showWindowsMessage("Pareamento cancelado.", "Print Agent", "Warning");
+    return;
+  }
+  try {
+    const result = await pair(code);
+    showWindowsMessage(
+      `Pareamento concluído com sucesso!\n\nEmpresa: ${result.company_id}\n\nO serviço já está ativo — volte ao painel e clique em "Detectar impressoras".`,
+      "Print Agent",
+      "Information",
+    );
+  } catch (e) {
+    showWindowsMessage(
+      `Falha ao parear:\n\n${e.message}\n\nGere um novo código no painel e tente novamente.`,
+      "Print Agent",
+      "Error",
+    );
+  }
+}
+
+// -------- Self-install (Windows) --------
+function isAdmin() {
+  if (process.platform !== "win32") return false;
+  const r = spawnSync("net", ["session"], { encoding: "utf8" });
+  return r.status === 0;
+}
+
+function relaunchAsAdmin() {
+  // UAC elevation via PowerShell Start-Process -Verb RunAs.
+  const exe = process.execPath;
+  const args = process.argv.slice(1).map((a) => `"${a.replace(/"/g, '`"')}"`).join(" ");
+  const ps = `Start-Process -FilePath "${exe}" -ArgumentList "install" -Verb RunAs`;
+  spawnSync("powershell.exe", ["-NoProfile", "-Command", ps], { encoding: "utf8" });
+}
+
+async function selfInstall() {
+  if (process.platform !== "win32") {
+    console.error("Auto-instalação suportada apenas em Windows.");
+    return;
+  }
+  if (!isAdmin()) {
+    // Solicita elevação via UAC e encerra esta cópia.
+    relaunchAsAdmin();
+    return;
+  }
+
+  const installDir = path.join(process.env.ProgramFiles || "C:\\Program Files", "LovablePrintAgent");
+  const exeDst = path.join(installDir, "PrintAgent.exe");
+  const exeSrc = process.execPath;
+  const serviceName = "LovablePrintAgent";
+
+  try {
+    if (!fs.existsSync(installDir)) fs.mkdirSync(installDir, { recursive: true });
+    // Só copia se origem ≠ destino (evita EBUSY quando o usuário já roda a partir do destino).
+    if (path.resolve(exeSrc).toLowerCase() !== path.resolve(exeDst).toLowerCase()) {
+      try { spawnSync("sc", ["stop", serviceName], { encoding: "utf8" }); } catch {}
+      fs.copyFileSync(exeSrc, exeDst);
+    }
+  } catch (e) {
+    showWindowsMessage(`Falha ao copiar binário: ${e.message}`, "Print Agent", "Error");
+    return;
+  }
+
+  // (Re)cria o serviço Windows
+  const exists = spawnSync("sc", ["query", serviceName], { encoding: "utf8" });
+  if (exists.status !== 0) {
+    spawnSync("sc", ["create", serviceName, "binPath=", `"${exeDst}" start`, "start=", "auto", "DisplayName=", "Lovable Print Agent"], { encoding: "utf8" });
+    spawnSync("sc", ["description", serviceName, "Recebe comandos de impressao do painel Lovable."], { encoding: "utf8" });
+  }
+  spawnSync("sc", ["start", serviceName], { encoding: "utf8" });
+
+  // Cria atalho "Parear Print Agent" no Desktop público e Menu Iniciar
+  const publicDesktop = path.join(process.env.PUBLIC || "C:\\Users\\Public", "Desktop");
+  const startMenu = path.join(process.env.ProgramData || "C:\\ProgramData", "Microsoft", "Windows", "Start Menu", "Programs", "Lovable Print Agent");
+  try { if (!fs.existsSync(startMenu)) fs.mkdirSync(startMenu, { recursive: true }); } catch {}
+  const shortcutScript = (dest) => `
+$s=(New-Object -ComObject WScript.Shell).CreateShortcut(${JSON.stringify(dest)})
+$s.TargetPath=${JSON.stringify(exeDst)}
+$s.Arguments='pair-ui'
+$s.IconLocation=${JSON.stringify(exeDst)}
+$s.Description='Parear esta estacao com o painel Lovable'
+$s.Save()
+`.trim();
+  spawnSync("powershell.exe", ["-NoProfile", "-Command", shortcutScript(path.join(publicDesktop, "Parear Print Agent.lnk"))], { encoding: "utf8" });
+  spawnSync("powershell.exe", ["-NoProfile", "-Command", shortcutScript(path.join(startMenu, "Parear Print Agent.lnk"))], { encoding: "utf8" });
+
+  // Já abre o pareamento agora
+  await pairUI();
+}
+
 // -------- CLI --------
 async function main() {
   const [cmd, arg1, arg2] = process.argv.slice(2);
@@ -311,6 +428,14 @@ async function main() {
       } catch (e) {
         console.error("✗ Falha:", e.message); process.exit(2);
       }
+      return;
+    }
+    case "pair-ui": {
+      await pairUI();
+      return;
+    }
+    case "install": {
+      await selfInstall();
       return;
     }
     case "status": {
@@ -328,12 +453,21 @@ async function main() {
       return;
     }
     case "start":
-    case undefined:
       startServer();
       return;
+    case undefined: {
+      // Duplo-clique no .exe baixado: roda o instalador GUI, em vez de abrir
+      // uma janela de prompt confusa com o servidor HTTP em foreground.
+      if (process.platform === "win32") {
+        await selfInstall();
+      } else {
+        startServer();
+      }
+      return;
+    }
     default:
       console.error(`Comando desconhecido: ${cmd}`);
-      console.error("Comandos: start | pair <código> | status | unpair | printers");
+      console.error("Comandos: install | start | pair <código> | pair-ui | status | unpair | printers");
       process.exit(1);
   }
 }

@@ -123,13 +123,17 @@ export function PairingCodeCard({ companyId }: Props) {
 
       <div className="border-t pt-3 text-sm">
         <div className="font-medium mb-1 flex items-center gap-2">
-          <Download className="size-4" /> Instalar o Print Agent
+          <Download className="size-4" /> Como informar o código na estação
         </div>
         <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
-          <li>Baixe o instalador Windows em <code>print-agent/dist/PrintAgent-Setup.exe</code> e execute como administrador.</li>
-          <li>Abra o ícone do agente na bandeja do sistema e clique em <strong>Parear</strong>.</li>
-          <li>Digite o código de 6 dígitos gerado acima. Pronto — o token é salvo no perfil da máquina.</li>
+          <li>Já baixou e instalou o Print Agent? Se não, use o card "Instalador do Print Agent" abaixo.</li>
+          <li>Na estação Windows, dê duplo-clique no atalho <strong>Parear Print Agent</strong> (Área de Trabalho ou Menu Iniciar).</li>
+          <li>Uma janela vai abrir pedindo o código — digite os 6 dígitos acima e clique <strong>OK</strong>.</li>
+          <li>Aparece a mensagem "Pareamento concluído". Volte aqui e clique em <strong>Detectar impressoras</strong> no Assistente.</li>
         </ol>
+        <p className="text-xs text-muted-foreground mt-2">
+          Não precisa abrir Prompt de Comando — toda a configuração é por janelas. O código expira em 10 minutos e é de uso único.
+        </p>
       </div>
     </Card>
   );

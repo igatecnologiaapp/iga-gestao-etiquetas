@@ -85,15 +85,18 @@ export function PrintAgentDownloadCard({
 
       <div className="border-t pt-3 text-sm">
         <div className="font-medium mb-1 flex items-center gap-2">
-          <CheckCircle2 className="size-4" /> Como instalar
+          <CheckCircle2 className="size-4" /> Como instalar e parear (sem linha de comando)
         </div>
         <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
-          <li>Baixe o instalador clicando no botão acima.</li>
-          <li>Abra a pasta <strong>Downloads</strong>.</li>
-          <li>Clique com o botão direito em <code>{INSTALLER_FILENAME}</code>.</li>
-          <li>Selecione <strong>Executar como administrador</strong> e conclua o assistente.</li>
-          <li>Gere o código de 6 dígitos no card de pareamento e informe-o no agente.</li>
+          <li>Clique em <strong>Baixar Print Agent</strong> acima.</li>
+          <li>Na pasta <strong>Downloads</strong>, clique com o botão direito em <code>{INSTALLER_FILENAME}</code> e escolha <strong>Executar como administrador</strong>.</li>
+          <li>O Windows pedirá permissão (UAC) — clique <strong>Sim</strong>. O agente se instala automaticamente e abre uma janela perguntando o código.</li>
+          <li>Gere o código de 6 dígitos no card de pareamento ao lado e digite-o na janela. Clique <strong>OK</strong>.</li>
+          <li>Aparece "Pareamento concluído". Volte ao painel e clique em <strong>Detectar impressoras</strong>.</li>
         </ol>
+        <p className="text-xs text-muted-foreground mt-2">
+          Para parear novamente depois (ex.: trocar de empresa ou estação), use o atalho <strong>Parear Print Agent</strong> criado na Área de Trabalho e no Menu Iniciar.
+        </p>
       </div>
     </Card>
   );
