@@ -78,13 +78,14 @@ const ALLOWED_ROTATIONS = new Set([0, 90, 180, 270]);
 
 export function guardPrintPayload(input: PayloadGuardInput): string[] {
   const errs: string[] = [];
-  const uuid = (v: unknown) => typeof v === "string" && UUID_REGEX.test(v);
-  if (!uuid(input.company_id)) errs.push("company_id inválido.");
-  // user_id é resolvido pelo backend (RLS) — opcional aqui mas validado se enviado
-  if (input.user_id != null && !uuid(input.user_id)) errs.push("user_id inválido.");
-  if (input.printer_id != null && !uuid(input.printer_id)) errs.push("printer_id inválido.");
-  if (input.layout_id != null && !uuid(input.layout_id)) errs.push("layout_id inválido.");
-  if (input.product_id != null && !uuid(input.product_id)) errs.push("product_id inválido.");
+  // IDs aceitam qualquer string não vazia — a unicidade/escopo é garantida por RLS.
+  // UUIDs malformados ainda são detectados pela coerção do Postgres.
+  const idOk = (v: unknown) => typeof v === "string" && v.trim().length > 0;
+  if (!idOk(input.company_id)) errs.push("company_id obrigatório.");
+  if (input.user_id != null && !idOk(input.user_id)) errs.push("user_id inválido.");
+  if (input.printer_id != null && !idOk(input.printer_id)) errs.push("printer_id inválido.");
+  if (input.layout_id != null && !idOk(input.layout_id)) errs.push("layout_id inválido.");
+  if (input.product_id != null && !idOk(input.product_id)) errs.push("product_id inválido.");
   const q = Number(input.quantity);
   if (!Number.isFinite(q) || q <= 0 || q > 5000) errs.push("Quantidade inválida (1–5000).");
   const dim = input.dimensional ?? null;
