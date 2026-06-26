@@ -166,9 +166,35 @@ export function PairingCodeCard({ companyId }: Props) {
               Estação: <strong>{current.label}</strong>. Códigos anteriores foram
               invalidados.
             </div>
+            <div className="pt-2">
+              <Button
+                size="sm"
+                onClick={() => {
+                  setPairCode(current.code);
+                  setPairOpen(true);
+                }}
+              >
+                <Laptop className="size-4" />
+                Parear este computador agora
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}
+
+      <div className="border-t pt-3 space-y-2">
+        <div className="text-sm font-medium flex items-center gap-2">
+          <Laptop className="size-4" /> Já está no computador que vai imprimir?
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Clique abaixo para parear esta estação direto pelo navegador — sem
+          precisar abrir atalhos do Windows.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => setPairOpen(true)}>
+          <Laptop className="size-4" />
+          Parear este computador
+        </Button>
+      </div>
 
       <div className="border-t pt-3 text-sm">
         <div className="font-medium mb-1 flex items-center gap-2">
