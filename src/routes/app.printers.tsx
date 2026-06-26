@@ -57,6 +57,7 @@ function Page() {
   const [form, setForm] = useState<any>(empty);
   const [tab, setTab] = useState("basico");
   const [compatPrinter, setCompatPrinter] = useState<any | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["printers", companyId],
@@ -98,8 +99,12 @@ function Page() {
         title="Impressoras"
         description="Cadastro, configurações técnicas e compatibilidade com layouts."
         actions={canWrite && (
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setForm(empty); setTab("basico"); } }}>
-            <DialogTrigger asChild><Button><Plus className="size-4" /> Nova impressora</Button></DialogTrigger>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setWizardOpen(true)}>
+              <Wand2 className="size-4" /> Assistente de Configuração
+            </Button>
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setForm(empty); setTab("basico"); } }}>
+              <DialogTrigger asChild><Button><Plus className="size-4" /> Nova impressora</Button></DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>{form.id ? "Editar" : "Nova"} impressora</DialogTitle></DialogHeader>
               <Tabs value={tab} onValueChange={setTab}>
