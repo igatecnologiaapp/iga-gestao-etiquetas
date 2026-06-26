@@ -129,9 +129,13 @@ export interface AgentHealth {
   version?: string;
   status?: string;
   reachable: boolean;
+  paired?: boolean;
+  company_id?: string | null;
+  device_name?: string | null;
   error?: string;
   code?: AgentErrorCode;
 }
+
 
 export interface AgentPrinter {
   id: string;
