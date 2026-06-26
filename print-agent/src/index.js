@@ -222,35 +222,6 @@ function buildServer() {
     });
   });
 
-  app.get("/printers", auth, (_req, res) => {
-    res.json({ ok: true, printers: listWindowsPrinters() });
-  });
-
-  // Pareamento via API local (útil para tray UI futura ou painel).
-  app.post("/pair", async (req, res) => {
-    try {
-      const { code, api_base } = req.body || {};
-      const result = await pair(code, api_base || DEFAULT_API);
-      res.json({ ok: true, company_id: result.company_id });
-    } catch (e) {
-      res.status(400).json({ ok: false, error: e.message });
-    }
-  });
-
-  app.post("/print", auth, (req, res) => {
-    const { printer, raw, copies } = req.body || {};
-    if (!printer) return res.status(400).json({ ok: false, error: "printer obrigatório" });
-    if (!raw) return res.status(400).json({ ok: false, error: "payload sem comando raw" });
-    try {
-      const buf = Buffer.from(raw, "utf8");
-      const n = Math.min(Math.max(Number(copies) || 1, 1), 50);
-      for (let i = 0; i < n; i++) printRawToWindows(printer, buf);
-      res.json({ ok: true, job_id: `${Date.now()}`, copies: n });
-    } catch (e) {
-      log("Falha na impressão:", e.message);
-      res.status(500).json({ ok: false, error: e.message });
-    }
-  });
 
   app.get("/printers", auth, (_req, res) => {
     // Cliente espera o array cru.
