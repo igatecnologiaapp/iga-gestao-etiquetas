@@ -349,14 +349,36 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
                       : agent.health?.ok ? `Agente conectado${agent.health.version ? ` · v${agent.health.version}` : ""}`
                       : "Agente não encontrado ou offline"}
                   </div>
-                  {!agent.health?.ok && agent.health?.code && (
-                    <div className="text-xs text-muted-foreground">Código: {agent.health.code}</div>
-                  )}
+                  <div className="text-xs text-muted-foreground flex flex-wrap gap-2 mt-1">
+                    <Badge variant={agent.health?.ok ? "default" : "outline"}>
+                      {agent.health?.ok ? "Agente conectado" : "Agente offline"}
+                    </Badge>
+                    <Badge variant={isPaired ? "default" : "destructive"}>
+                      {isPaired ? "Agente pareado" : "Não pareado"}
+                    </Badge>
+                    {agent.health?.code && (
+                      <Badge variant="outline">Código: {agent.health.code}</Badge>
+                    )}
+                  </div>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => agent.refresh()} disabled={agent.loading}>
                   <RefreshCcw className="size-4" /> Verificar
                 </Button>
               </Card>
+              {authError && agent.health?.ok && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="size-4" />
+                  <AlertTitle>Agente não autorizado</AlertTitle>
+                  <AlertDescription className="text-sm space-y-2">
+                    <p>O agente local respondeu, mas não está pareado ou o token foi invalidado. Realize o pareamento novamente para liberar a detecção de impressoras.</p>
+                    {onRequestPairing && (
+                      <Button size="sm" onClick={goToPairing}>
+                        <KeyRound className="size-4" /> Parear novamente
+                      </Button>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
               {!agent.health?.ok && (
                 <Alert>
                   <AlertTriangle className="size-4" />
@@ -364,11 +386,12 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
                   <AlertDescription className="text-sm space-y-1">
                     <p>1. Baixe o instalador na seção <strong>Print Agent</strong> desta tela.</p>
                     <p>2. Instale como Administrador (cria o serviço Windows <code>LovablePrintAgent</code>).</p>
-                    <p>3. Gere um código de pareamento e digite na estação. Depois clique em "Verificar".</p>
-                    {!agent.hasToken && <p>4. Cole o token desta estação no painel do Print Agent.</p>}
+                    <p>3. Gere um código de 6 dígitos no card <strong>Pareamento do Print Agent</strong> e rode na estação: <code>PrintAgent.exe pair 123456</code>.</p>
+                    <p>4. Clique em "Verificar" acima para confirmar.</p>
                   </AlertDescription>
                 </Alert>
               )}
+
             </div>
           )}
 
