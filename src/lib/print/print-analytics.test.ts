@@ -94,8 +94,12 @@ describe("aggregateByDimension", () => {
     expect(aggregateByDimension(rows, "printer", 5)).toHaveLength(5);
   });
   it("supports user/layout/product", () => {
-    const rows = [r({ user_id: "U", user_name: "U" }), r({ layout_id: "L", layout_name: "L" })];
-    expect(aggregateByDimension(rows, "user")[0].label).toBe("U");
+    const rows = [
+      r({ user_id: "U", user_name: "U", layout_id: "X", layout_name: "X" }),
+      r({ user_id: "U2", user_name: "U2", layout_id: "L", layout_name: "L" }),
+      r({ user_id: "U2", user_name: "U2", layout_id: "L", layout_name: "L" }),
+    ];
+    expect(aggregateByDimension(rows, "user")[0].label).toBe("U2");
     expect(aggregateByDimension(rows, "layout")[0].label).toBe("L");
   });
 });
