@@ -144,6 +144,11 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
 
   // === Ações ===
   async function detectPrinters() {
+    if (!isPaired) {
+      setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+      setStep(1);
+      return;
+    }
     setDetectLoading(true); setDetectError(null);
     try {
       const list = await agent.client.listPrinters();
@@ -152,11 +157,19 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
       if (list.length === 0) setDetectError("Nenhuma impressora foi detectada na estação.");
     } catch (e: any) {
       setDetected([]);
-      setDetectError(e?.message ?? "Falha ao consultar o agente local.");
+      const code = e?.code as string | undefined;
+      if (code === "UNAUTHORIZED" || code === "INVALID_TOKEN" || code === "MISSING_TOKEN" || code === "NOT_PAIRED") {
+        setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+        await agent.refresh();
+        setStep(1);
+      } else {
+        setDetectError(e?.message ?? "Falha ao consultar o agente local.");
+      }
     } finally {
       setDetectLoading(false);
     }
   }
+
 
   const savePrinter = useMutation({
     mutationFn: async () => {
