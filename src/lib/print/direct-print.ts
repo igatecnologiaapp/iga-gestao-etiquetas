@@ -9,6 +9,7 @@
 // NÃO altera label-pdf.ts nem o fluxo PDF. O caller pode invocar PDF como
 // fallback quando `result.fallback === true`.
 
+import { renderWithAdapter } from "./drivers";
 import { buildDimensionalPayload, validateLayoutDimensions } from "./layout-engine";
 import { PrintAgentError, PrintAgentOfflineError, type PrintAgentClient } from "./print-agent-client";
 import { PrintQueueService } from "./print-queue-service";
