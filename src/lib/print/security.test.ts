@@ -16,7 +16,7 @@ describe("FASE 14 — sanitização de strings", () => {
     expect(out).not.toContain("pat_abcdefghijklmnop");
   });
   it("mascara JWT em string", () => {
-    const jwt = "eyJhbGciOi.eyJzdWIiOi.QwerTy123";
+    const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyXzEyMyIsImlhdCI6MTcwMDAwMDAwMH0.Qwerty1234567890AbcDef";
     expect(maskSecretsInString(`token=${jwt}`)).not.toContain(jwt);
   });
   it("sanitizeErrorMessage trunca e mascara", () => {
