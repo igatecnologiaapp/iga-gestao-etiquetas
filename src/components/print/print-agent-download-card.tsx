@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Download, ShieldAlert, CheckCircle2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const INSTALLER_PATH = "/print-agent/PrintAgent-Setup.exe";
 const INSTALLER_FILENAME = "PrintAgent-Setup.exe";
 
 type Availability = "checking" | "available" | "missing";
 
-export function PrintAgentDownloadCard({ canDownload }: { canDownload: boolean }) {
+export function PrintAgentDownloadCard({ canDownload, companyId }: { canDownload: boolean; companyId?: string | null }) {
   const [status, setStatus] = useState<Availability>("checking");
   const [size, setSize] = useState<number | null>(null);
 
@@ -41,7 +42,30 @@ export function PrintAgentDownloadCard({ canDownload }: { canDownload: boolean }
     };
   }, []);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
+    // Audit: registramos somente metadados (usuário, empresa, arquivo, timestamp).
+    // Nenhum token de pareamento é incluído — o instalador é estático e anônimo.
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth?.user?.id;
+      if (uid && companyId) {
+        await (supabase.from("audit_logs" as any) as any).insert({
+          user_id: uid,
+          company_id: companyId,
+          action: "OTHER",
+          table_name: "print_agent_installer",
+          record_id: INSTALLER_FILENAME,
+          reason: "download_print_agent_installer",
+          new_values: {
+            file: INSTALLER_FILENAME,
+            path: INSTALLER_PATH,
+            at: new Date().toISOString(),
+          },
+        });
+      }
+    } catch {
+      // não bloqueia o download em caso de falha de auditoria
+    }
     const a = document.createElement("a");
     a.href = INSTALLER_PATH;
     a.download = INSTALLER_FILENAME;
