@@ -28,6 +28,7 @@ import { PrintQueueService } from "@/lib/print/print-queue-service";
 import { PrintAgentError, PrintAgentOfflineError } from "@/lib/print/print-agent-client";
 import { usePrintAgent } from "@/lib/print/use-print-agent";
 import type { PrintJobStatus, PrintQueueJob } from "@/lib/print/types";
+import { sanitizePayload } from "@/lib/print/security";
 
 export const Route = createFileRoute("/app/print-queue")({ component: PrintQueuePage });
 
@@ -395,7 +396,7 @@ function JobDetailDialog({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
-                  {JSON.stringify(job.payload ?? {}, null, 2)}
+                  {JSON.stringify(sanitizePayload(job.payload ?? {}), null, 2)}
                 </pre>
               </CollapsibleContent>
             </Collapsible>

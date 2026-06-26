@@ -32,6 +32,7 @@ import {
   type HistoryRow,
 } from "@/lib/print/print-history-service";
 import type { PrintJobStatus, PrintJobSource } from "@/lib/print/types";
+import { sanitizePayload } from "@/lib/print/security";
 
 export const Route = createFileRoute("/app/print-history")({ component: Page });
 
@@ -365,7 +366,7 @@ function JobDetailDialog({ row, onOpenChange }: { row: HistoryRow | null; onOpen
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <pre className="mt-2 max-h-80 overflow-auto rounded-md bg-muted p-3 text-xs">
-                  {JSON.stringify(row.payload ?? {}, null, 2)}
+                  {JSON.stringify(sanitizePayload(row.payload ?? {}), null, 2)}
                 </pre>
               </CollapsibleContent>
             </Collapsible>
