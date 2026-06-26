@@ -95,26 +95,13 @@ export function validateDirectPrint(input: DirectPrintInput): ValidationResult {
       }),
     );
   }
-  if (!input.layout) errors.push("Layout não selecionado.");
-  else {
+  if (!input.layout) {
+    errors.push("Layout não selecionado.");
+  } else {
     if (input.layout.status !== "ativo") errors.push("Layout selecionado está inativo.");
-    if (!input.layout.format) errors.push("Layout sem formato (dimensões) definido.");
-    else {
-      const f = input.layout.format;
-      if (!(f.width > 0 && f.height > 0)) errors.push("Dimensões do layout inválidas.");
-    }
-    if (!input.layout.elements || input.layout.elements.length === 0) {
-      errors.push("Layout sem elementos cadastrados.");
-    } else {
-      const fmt = input.layout.format;
-      const w = fmt?.width ?? Infinity;
-      const h = fmt?.height ?? Infinity;
-      const bad = input.layout.elements.find(
-        (e) =>
-          typeof e.x !== "number" || typeof e.y !== "number" || e.x < 0 || e.y < 0 ||
-          e.x > w || e.y > h,
-      );
-      if (bad) errors.push("Layout possui elemento com coordenadas fora da área útil.");
+    if (input.printer) {
+      const dim = validateLayoutDimensions(input.layout, input.printer);
+      errors.push(...dim.errors);
     }
   }
   if (input.printer && input.layout && (input.compatibleLayoutIds?.length ?? 0) > 0) {
