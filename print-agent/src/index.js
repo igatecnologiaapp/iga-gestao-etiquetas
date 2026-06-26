@@ -299,6 +299,53 @@ function startServer() {
   });
 }
 
+// -------- GUI (Windows InputBox via PowerShell) --------
+function showWindowsInputBox(prompt, title) {
+  if (process.platform !== "win32") return null;
+  const ps = `
+Add-Type -AssemblyName Microsoft.VisualBasic
+$code = [Microsoft.VisualBasic.Interaction]::InputBox(${JSON.stringify(prompt)}, ${JSON.stringify(title)}, "")
+Write-Output $code
+`.trim();
+  const r = spawnSync("powershell.exe", ["-NoProfile", "-STA", "-Command", ps], { encoding: "utf8", timeout: 300000 });
+  if (r.status !== 0) return null;
+  return String(r.stdout || "").trim();
+}
+
+function showWindowsMessage(message, title, icon = "Information") {
+  if (process.platform !== "win32") return;
+  const ps = `
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.MessageBox]::Show(${JSON.stringify(message)}, ${JSON.stringify(title)}, 'OK', '${icon}') | Out-Null
+`.trim();
+  spawnSync("powershell.exe", ["-NoProfile", "-STA", "-Command", ps], { encoding: "utf8", timeout: 60000 });
+}
+
+async function pairUI() {
+  const code = showWindowsInputBox(
+    "Cole ou digite o código de 6 dígitos gerado no painel Lovable (Impressoras → Pareamento do Print Agent).",
+    "Parear Print Agent",
+  );
+  if (!code) {
+    showWindowsMessage("Pareamento cancelado.", "Print Agent", "Warning");
+    return;
+  }
+  try {
+    const result = await pair(code);
+    showWindowsMessage(
+      `Pareamento concluído com sucesso!\n\nEmpresa: ${result.company_id}\n\nO serviço já está ativo — volte ao painel e clique em "Detectar impressoras".`,
+      "Print Agent",
+      "Information",
+    );
+  } catch (e) {
+    showWindowsMessage(
+      `Falha ao parear:\n\n${e.message}\n\nGere um novo código no painel e tente novamente.`,
+      "Print Agent",
+      "Error",
+    );
+  }
+}
+
 // -------- CLI --------
 async function main() {
   const [cmd, arg1, arg2] = process.argv.slice(2);
@@ -311,6 +358,10 @@ async function main() {
       } catch (e) {
         console.error("✗ Falha:", e.message); process.exit(2);
       }
+      return;
+    }
+    case "pair-ui": {
+      await pairUI();
       return;
     }
     case "status": {
@@ -333,7 +384,7 @@ async function main() {
       return;
     default:
       console.error(`Comando desconhecido: ${cmd}`);
-      console.error("Comandos: start | pair <código> | status | unpair | printers");
+      console.error("Comandos: start | pair <código> | pair-ui | status | unpair | printers");
       process.exit(1);
   }
 }
