@@ -202,7 +202,26 @@ export async function runDirectPrint(
       errorMessage: validation.errors.join(" "),
     };
   }
-  const payload = buildAgentPayload(input);
+  const rawPayload = buildAgentPayload(input);
+  // FASE 14 — hardening: guard duro antes de qualquer side-effect.
+  const guardErrors = guardPrintPayload({
+    company_id: input.companyId,
+    printer_id: input.printer.id,
+    layout_id: input.layout.id,
+    product_id: input.productId,
+    quantity: input.quantity,
+    dimensional: (rawPayload as any).dimensional,
+  });
+  if (guardErrors.length > 0) {
+    return {
+      ok: false,
+      fallback: false,
+      errorCode: "VALIDATION",
+      errorMessage: guardErrors.join(" "),
+    };
+  }
+  // Sanitiza payload antes de persistir (defesa em profundidade — nunca grava token/segredo).
+  const payload = sanitizePayload(rawPayload);
 
   // 1. Enfileira (cria registro auditável antes mesmo do envio)
   let job: PrintQueueJob;
@@ -224,7 +243,7 @@ export async function runDirectPrint(
       fallback: true,
       fallbackReason: "Não foi possível registrar o job de impressão.",
       errorCode: "ENQUEUE_FAILED",
-      errorMessage: e?.message ?? String(e),
+      errorMessage: sanitizeErrorMessage(e),
     };
   }
 
