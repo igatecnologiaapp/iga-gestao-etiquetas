@@ -1,47 +1,26 @@
 // FASE 16.1 — Download do instalador nativo do Print Agent.
-// O arquivo deve ser publicado em /public/print-agent/PrintAgent-Setup.exe.
-// A presença é verificada via HEAD; quando ausente, mostramos mensagem amigável
-// orientando a publicar o build. Nenhum token é embutido no download.
+// O binário é grande (~38 MB) e fica fora do repositório, hospedado via
+// lovable-assets. A referência canônica é src/assets/print-agent-setup.exe.asset.json.
+// Nenhum token é embutido no download.
 
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Download, ShieldAlert, CheckCircle2, Loader2 } from "lucide-react";
+import { Download, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import installerAsset from "@/assets/print-agent-setup.exe.asset.json";
 
-const INSTALLER_PATH = "/print-agent/PrintAgent-Setup.exe";
+const INSTALLER_URL: string = installerAsset.url;
 const INSTALLER_FILENAME = "PrintAgent-Setup.exe";
+const INSTALLER_SIZE: number = installerAsset.size ?? 0;
 
-type Availability = "checking" | "available" | "missing";
-
-export function PrintAgentDownloadCard({ canDownload, companyId }: { canDownload: boolean; companyId?: string | null }) {
-  const [status, setStatus] = useState<Availability>("checking");
-  const [size, setSize] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(INSTALLER_PATH, { method: "HEAD" })
-      .then((r) => {
-        if (cancelled) return;
-        const ct = r.headers.get("content-type") ?? "";
-        // Vite dev/SPA may return index.html for missing files: detect that.
-        const isHtmlFallback = ct.includes("text/html");
-        if (r.ok && !isHtmlFallback) {
-          const len = r.headers.get("content-length");
-          setSize(len ? Number(len) : null);
-          setStatus("available");
-        } else {
-          setStatus("missing");
-        }
-      })
-      .catch(() => !cancelled && setStatus("missing"));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+export function PrintAgentDownloadCard({
+  canDownload,
+  companyId,
+}: {
+  canDownload: boolean;
+  companyId?: string | null;
+}) {
   const handleDownload = async () => {
     // Audit: registramos somente metadados (usuário, empresa, arquivo, timestamp).
     // Nenhum token de pareamento é incluído — o instalador é estático e anônimo.
@@ -58,7 +37,7 @@ export function PrintAgentDownloadCard({ canDownload, companyId }: { canDownload
           reason: "download_print_agent_installer",
           new_values: {
             file: INSTALLER_FILENAME,
-            path: INSTALLER_PATH,
+            url: INSTALLER_URL,
             at: new Date().toISOString(),
           },
         });
@@ -67,7 +46,7 @@ export function PrintAgentDownloadCard({ canDownload, companyId }: { canDownload
       // não bloqueia o download em caso de falha de auditoria
     }
     const a = document.createElement("a");
-    a.href = INSTALLER_PATH;
+    a.href = INSTALLER_URL;
     a.download = INSTALLER_FILENAME;
     document.body.appendChild(a);
     a.click();
@@ -79,8 +58,7 @@ export function PrintAgentDownloadCard({ canDownload, companyId }: { canDownload
       <div className="flex items-center gap-2">
         <Download className="size-4" />
         <div className="font-medium">Instalador do Print Agent (Windows)</div>
-        {status === "available" && <Badge variant="outline">disponível</Badge>}
-        {status === "missing" && <Badge variant="outline">pendente</Badge>}
+        <Badge variant="outline">disponível</Badge>
       </div>
 
       <p className="text-sm text-muted-foreground">
@@ -89,42 +67,21 @@ export function PrintAgentDownloadCard({ canDownload, companyId }: { canDownload
         instalar, gere um código de 6 dígitos acima e informe-o no agente.
       </p>
 
-      {status === "checking" && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Verificando disponibilidade do instalador…
-        </div>
-      )}
-
-      {status === "available" && (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleDownload} disabled={!canDownload}>
-            <Download className="size-4" /> Baixar Print Agent
-          </Button>
-          {size != null && (
-            <span className="text-xs text-muted-foreground">
-              {(size / (1024 * 1024)).toFixed(1)} MB · {INSTALLER_FILENAME}
-            </span>
-          )}
-          {!canDownload && (
-            <span className="text-xs text-muted-foreground">
-              Apenas administradores e supervisores podem baixar o instalador.
-            </span>
-          )}
-        </div>
-      )}
-
-      {status === "missing" && (
-        <Alert>
-          <ShieldAlert className="size-4" />
-          <AlertTitle>Instalador ainda não disponível</AlertTitle>
-          <AlertDescription className="text-sm">
-            Gere o build do Print Agent (<code>cd print-agent && npm run build:win</code>)
-            e publique o arquivo resultante em{" "}
-            <code>public/print-agent/PrintAgent-Setup.exe</code>. Após publicar o app,
-            o botão de download fica ativo automaticamente.
-          </AlertDescription>
-        </Alert>
-      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={handleDownload} disabled={!canDownload}>
+          <Download className="size-4" /> Baixar Print Agent
+        </Button>
+        {INSTALLER_SIZE > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {(INSTALLER_SIZE / (1024 * 1024)).toFixed(1)} MB · {INSTALLER_FILENAME}
+          </span>
+        )}
+        {!canDownload && (
+          <span className="text-xs text-muted-foreground">
+            Apenas administradores e supervisores podem baixar o instalador.
+          </span>
+        )}
+      </div>
 
       <div className="border-t pt-3 text-sm">
         <div className="font-medium mb-1 flex items-center gap-2">
