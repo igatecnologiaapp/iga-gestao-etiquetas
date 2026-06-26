@@ -20,7 +20,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Settings2, Link2, Trash2 } from "lucide-react";
+import { Plus, Pencil, Settings2, Link2, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   validateTechnicalConfig,
@@ -30,6 +30,7 @@ import {
 } from "@/lib/print";
 import { PairingCodeCard } from "@/components/print/pairing-code-card";
 import { PrintAgentDownloadCard } from "@/components/print/print-agent-download-card";
+import { PrinterSetupWizard } from "@/components/print/printer-setup-wizard";
 
 export const Route = createFileRoute("/app/printers")({ component: Page });
 

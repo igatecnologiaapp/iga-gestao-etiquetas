@@ -77,7 +77,9 @@ export function validateDirectPrint(input: DirectPrintInput): ValidationResult {
   else {
     if (input.printer.status !== "ativo") errors.push("Impressora selecionada está inativa.");
     if (!input.printer.agent_printer_id) {
-      errors.push("Impressora sem identificador do agente (agent_printer_id). Configure em Impressoras.");
+      errors.push(
+        "Esta impressora ainda não foi vinculada ao agente local (agent_printer_id). Acesse Configurações → Impressoras → Assistente de Configuração para detectar e vincular a impressora instalada.",
+      );
     }
     errors.push(
       ...validateTechnicalConfig({
