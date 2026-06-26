@@ -14,6 +14,7 @@ import { buildDimensionalPayload, validateLayoutDimensions } from "./layout-engi
 import { PrintAgentError, PrintAgentOfflineError, type PrintAgentClient } from "./print-agent-client";
 import { PrintQueueService } from "./print-queue-service";
 import { validateTechnicalConfig } from "./printer-config-validation";
+import { guardPrintPayload, sanitizeErrorMessage, sanitizePayload } from "./security";
 import type { AgentErrorCode, PrinterConfig, PrintQueueJob } from "./types";
 
 export type LayoutSnapshot = {
