@@ -34,7 +34,9 @@ interface Props {
   companyId: string;
   open: boolean;
   onClose: () => void;
+  onRequestPairing?: () => void;
 }
+
 
 type StepId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const STEPS: { id: StepId; title: string; icon: any }[] = [
