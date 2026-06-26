@@ -105,7 +105,9 @@ export function PrintAgentPanel({ companyId, canManage }: PrintAgentPanelProps) 
                 {mock ? "Desativar simulador" : "Ativar simulador"}
               </Button>
               <Link to="/app/printers">
-                <Button size="sm" variant="ghost"><Settings className="size-4 mr-1" /> Impressoras</Button>
+                <Button size="sm" variant="outline">
+                  <Settings className="size-4 mr-1" /> Configurar agora
+                </Button>
               </Link>
             </div>
           )}
