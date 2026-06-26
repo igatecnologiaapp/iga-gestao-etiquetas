@@ -233,6 +233,14 @@ function Page() {
           onClose={() => setCompatPrinter(null)}
         />
       )}
+
+      {companyId && (
+        <PrinterSetupWizard
+          companyId={companyId}
+          open={wizardOpen}
+          onClose={() => setWizardOpen(false)}
+        />
+      )}
     </>
   );
 }
