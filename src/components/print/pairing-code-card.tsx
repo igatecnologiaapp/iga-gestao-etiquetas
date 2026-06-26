@@ -210,6 +210,53 @@ export function PairingCodeCard({ companyId }: Props) {
           Não precisa abrir Prompt de Comando — toda a configuração é por janelas. O código expira em 10 minutos e é de uso único.
         </p>
       </div>
+
+      <Dialog open={pairOpen} onOpenChange={(o) => !pairLocal.isPending && setPairOpen(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Parear este computador</DialogTitle>
+            <DialogDescription>
+              Cole o código de 6 dígitos gerado acima. O navegador vai falar
+              direto com o Print Agent rodando nesta máquina (127.0.0.1) — sem
+              abrir prompt ou atalhos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="pair-code-input">Código de pareamento</Label>
+            <Input
+              id="pair-code-input"
+              autoFocus
+              inputMode="numeric"
+              maxLength={7}
+              placeholder="000 000"
+              value={pairCode}
+              onChange={(e) => setPairCode(e.target.value)}
+              className="text-2xl font-mono tracking-[0.4em] text-center"
+            />
+            <p className="text-xs text-muted-foreground">
+              Requer o Print Agent instalado e o serviço{" "}
+              <strong>LovablePrintAgent</strong> rodando nesta estação.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPairOpen(false)}
+              disabled={pairLocal.isPending}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={() => pairLocal.mutate()} disabled={pairLocal.isPending}>
+              {pairLocal.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Laptop className="size-4" />
+              )}
+              Parear agora
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
