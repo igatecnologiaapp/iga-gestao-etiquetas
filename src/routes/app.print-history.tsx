@@ -32,6 +32,7 @@ import {
   type HistoryRow,
 } from "@/lib/print/print-history-service";
 import type { PrintJobStatus, PrintJobSource } from "@/lib/print/types";
+import { sanitizePayload } from "@/lib/print/security";
 
 export const Route = createFileRoute("/app/print-history")({ component: Page });
 
