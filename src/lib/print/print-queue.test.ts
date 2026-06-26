@@ -85,9 +85,10 @@ describe("Regras de cancelamento (UI)", () => {
 });
 
 describe("Cancelamento via Print Agent", () => {
-  it("cancela com sucesso quando online", async () => {
+  it("cancela com sucesso quando job existe", async () => {
     const agent = createMockPrintAgent({ online: true });
-    const r = await agent.cancelJob("ag-job-1");
+    const sub = await agent.submit({ printerId: "p1", copies: 1 });
+    const r = await agent.cancelJob(sub.jobId);
     expect(r.canceled).toBe(true);
   });
   it("lança PrintAgentOfflineError quando offline", async () => {
