@@ -9,6 +9,7 @@
 // NÃO altera label-pdf.ts nem o fluxo PDF. O caller pode invocar PDF como
 // fallback quando `result.fallback === true`.
 
+import { renderWithAdapter } from "./drivers";
 import { buildDimensionalPayload, validateLayoutDimensions } from "./layout-engine";
 import { PrintAgentError, PrintAgentOfflineError, type PrintAgentClient } from "./print-agent-client";
 import { PrintQueueService } from "./print-queue-service";
@@ -118,6 +119,15 @@ export function validateDirectPrint(input: DirectPrintInput): ValidationResult {
 export function buildAgentPayload(input: DirectPrintInput) {
   const p = input.printer;
   const fmt = input.layout.format!;
+  const dimensional = buildDimensionalPayload(input.layout, input.printer);
+  // FASE 13 — seleciona adapter por linguagem/fabricante e gera saída controlada.
+  const adapter = renderWithAdapter(p, {
+    printer: p,
+    dimensional,
+    label: input.labelData,
+    copies: input.quantity,
+    jobName: input.layout.name,
+  });
   return {
     company_id: input.companyId,
     branch_id: input.branchId ?? null,
@@ -126,6 +136,8 @@ export function buildAgentPayload(input: DirectPrintInput) {
     printer_id: p.id,
     printer: {
       name: p.name,
+      manufacturer: p.manufacturer ?? null,
+      model: p.model ?? null,
       driver: p.driver_name ?? null,
       agent_printer_id: p.agent_printer_id ?? null,
       raw_language: p.raw_language ?? "driver",
@@ -151,8 +163,18 @@ export function buildAgentPayload(input: DirectPrintInput) {
         left: p.margin_left,
       },
     },
-    // FASE 8 — payload dimensional físico, com conversões centralizadas.
-    dimensional: buildDimensionalPayload(input.layout, input.printer),
+    dimensional,
+    adapter: {
+      requested_language: adapter.selection.requested,
+      effective_language: adapter.selection.effective,
+      fallback_used: adapter.selection.fallbackUsed,
+      reason: adapter.selection.reason ?? null,
+      maturity: adapter.output.maturity,
+      kind: adapter.output.kind,
+      warnings: adapter.output.warnings,
+      errors: adapter.errors,
+    },
+    raw: adapter.output.raw ?? null,
     label: input.labelData,
     layout: {
       id: input.layout.id,
@@ -207,11 +229,17 @@ export async function runDirectPrint(
 
   // 2. Submete ao agente
   try {
+    const rawContent = (payload as any).raw as string | null | undefined;
     const res = await client.submit({
       printerId: input.printer.agent_printer_id ?? input.printer.id,
       copies: input.quantity,
       jobName: `${input.layout.name} (${input.quantity})`,
-      metadata: { queue_id: job.id, company_id: input.companyId },
+      raw: rawContent ?? undefined,
+      metadata: {
+        queue_id: job.id,
+        company_id: input.companyId,
+        adapter: (payload as any).adapter,
+      },
     });
     await PrintQueueService.markSent(job.id, res.jobId);
     // O agente já confirmou o envio. Marcamos como completed para o caso síncrono;
