@@ -151,6 +151,8 @@ export function buildAgentPayload(input: DirectPrintInput) {
         left: p.margin_left,
       },
     },
+    // FASE 8 — payload dimensional físico, com conversões centralizadas.
+    dimensional: buildDimensionalPayload(input.layout, input.printer),
     label: input.labelData,
     layout: {
       id: input.layout.id,
