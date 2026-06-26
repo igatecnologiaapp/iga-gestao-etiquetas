@@ -29,6 +29,7 @@ import {
   PrinterCompatibilityService,
 } from "@/lib/print";
 import { PairingCodeCard } from "@/components/print/pairing-code-card";
+import { PrintAgentDownloadCard } from "@/components/print/print-agent-download-card";
 
 export const Route = createFileRoute("/app/printers")({ component: Page });
 
@@ -177,9 +178,10 @@ function Page() {
         )}
       />
 
-      {companyId && canWrite && (
-        <div className="mb-4">
-          <PairingCodeCard companyId={companyId} />
+      {companyId && (
+        <div className="mb-4 grid gap-4 md:grid-cols-2">
+          {canWrite && <PairingCodeCard companyId={companyId} />}
+          <PrintAgentDownloadCard canDownload={!!canWrite} />
         </div>
       )}
 
