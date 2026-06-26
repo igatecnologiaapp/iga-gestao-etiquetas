@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Download, ShieldAlert, CheckCircle2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const INSTALLER_PATH = "/print-agent/PrintAgent-Setup.exe";
 const INSTALLER_FILENAME = "PrintAgent-Setup.exe";
