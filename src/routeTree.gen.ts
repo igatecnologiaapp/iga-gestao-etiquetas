@@ -21,6 +21,7 @@ import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppPromotionsRouteImport } from './routes/app.promotions'
 import { Route as AppProductsRouteImport } from './routes/app.products'
 import { Route as AppPrintersRouteImport } from './routes/app.printers'
+import { Route as AppPrintQueueRouteImport } from './routes/app.print-queue'
 import { Route as AppPrintLabelsRouteImport } from './routes/app.print-labels'
 import { Route as AppPrintHistoryRouteImport } from './routes/app.print-history'
 import { Route as AppPricesRouteImport } from './routes/app.prices'
@@ -101,6 +102,11 @@ const AppProductsRoute = AppProductsRouteImport.update({
 const AppPrintersRoute = AppPrintersRouteImport.update({
   id: '/printers',
   path: '/printers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPrintQueueRoute = AppPrintQueueRouteImport.update({
+  id: '/print-queue',
+  path: '/print-queue',
   getParentRoute: () => AppRoute,
 } as any)
 const AppPrintLabelsRoute = AppPrintLabelsRouteImport.update({
@@ -232,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/app/prices': typeof AppPricesRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
+  '/app/print-queue': typeof AppPrintQueueRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/promotions': typeof AppPromotionsRoute
@@ -266,6 +273,7 @@ export interface FileRoutesByTo {
   '/app/prices': typeof AppPricesRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
+  '/app/print-queue': typeof AppPrintQueueRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/promotions': typeof AppPromotionsRoute
@@ -302,6 +310,7 @@ export interface FileRoutesById {
   '/app/prices': typeof AppPricesRoute
   '/app/print-history': typeof AppPrintHistoryRouteWithChildren
   '/app/print-labels': typeof AppPrintLabelsRoute
+  '/app/print-queue': typeof AppPrintQueueRoute
   '/app/printers': typeof AppPrintersRoute
   '/app/products': typeof AppProductsRoute
   '/app/promotions': typeof AppPromotionsRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/app/prices'
     | '/app/print-history'
     | '/app/print-labels'
+    | '/app/print-queue'
     | '/app/printers'
     | '/app/products'
     | '/app/promotions'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/app/prices'
     | '/app/print-history'
     | '/app/print-labels'
+    | '/app/print-queue'
     | '/app/printers'
     | '/app/products'
     | '/app/promotions'
@@ -408,6 +419,7 @@ export interface FileRouteTypes {
     | '/app/prices'
     | '/app/print-history'
     | '/app/print-labels'
+    | '/app/print-queue'
     | '/app/printers'
     | '/app/products'
     | '/app/promotions'
@@ -512,6 +524,13 @@ declare module '@tanstack/react-router' {
       path: '/printers'
       fullPath: '/app/printers'
       preLoaderRoute: typeof AppPrintersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/print-queue': {
+      id: '/app/print-queue'
+      path: '/print-queue'
+      fullPath: '/app/print-queue'
+      preLoaderRoute: typeof AppPrintQueueRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/print-labels': {
@@ -719,6 +738,7 @@ interface AppRouteChildren {
   AppPricesRoute: typeof AppPricesRoute
   AppPrintHistoryRoute: typeof AppPrintHistoryRouteWithChildren
   AppPrintLabelsRoute: typeof AppPrintLabelsRoute
+  AppPrintQueueRoute: typeof AppPrintQueueRoute
   AppPrintersRoute: typeof AppPrintersRoute
   AppProductsRoute: typeof AppProductsRoute
   AppPromotionsRoute: typeof AppPromotionsRoute
@@ -748,6 +768,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPricesRoute: AppPricesRoute,
   AppPrintHistoryRoute: AppPrintHistoryRouteWithChildren,
   AppPrintLabelsRoute: AppPrintLabelsRoute,
+  AppPrintQueueRoute: AppPrintQueueRoute,
   AppPrintersRoute: AppPrintersRoute,
   AppProductsRoute: AppProductsRoute,
   AppPromotionsRoute: AppPromotionsRoute,
