@@ -233,10 +233,7 @@ export function PrinterSetupWizard({ companyId, open, onClose }: Props) {
       await agent.client.printTestPage(savedPrinter.agent_printer_id);
       setTestStatus("ok");
       await PrinterService.update(savedPrinter.id, {
-        // colunas opcionais — ignoradas se não existirem
-        // @ts-expect-error campos persistidos quando disponíveis
         last_test_at: new Date().toISOString(),
-        // @ts-expect-error
         last_status: "ok",
       } as any).catch(() => undefined);
       await logAudit(companyId, "wizard.test_print_ok", savedPrinter.id, {
