@@ -240,8 +240,15 @@ function Page() {
           companyId={companyId}
           open={wizardOpen}
           onClose={() => setWizardOpen(false)}
+          onRequestPairing={() => {
+            setWizardOpen(false);
+            setTimeout(() => {
+              document.getElementById("pairing-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 100);
+          }}
         />
       )}
+
     </>
   );
 }
