@@ -70,6 +70,47 @@ export function PairingCodeCard({ companyId }: Props) {
   const current = active.data?.[0] ?? null;
   const countdown = useCountdown(current?.expires_at ?? null);
 
+  // Pareamento direto via agente local (sem precisar do atalho/CLI)
+  const [pairOpen, setPairOpen] = useState(false);
+  const [pairCode, setPairCode] = useState("");
+  const pairLocal = useMutation({
+    mutationFn: async () => {
+      const code = pairCode.replace(/\D/g, "");
+      if (code.length !== 6) throw new Error("Digite os 6 dígitos do código.");
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 4000);
+      try {
+        const res = await fetch("http://127.0.0.1:17777/pair", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ code }),
+          signal: ctrl.signal,
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || !body?.ok) {
+          throw new Error(body?.error || `Agente respondeu ${res.status}`);
+        }
+        return body;
+      } catch (e: any) {
+        if (e?.name === "AbortError" || e instanceof TypeError) {
+          throw new Error(
+            "Não foi possível falar com o Print Agent nesta estação. Verifique se ele está instalado e o serviço 'LovablePrintAgent' está rodando.",
+          );
+        }
+        throw e;
+      } finally {
+        clearTimeout(timer);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Esta estação foi pareada com sucesso!");
+      setPairOpen(false);
+      setPairCode("");
+      qc.invalidateQueries({ queryKey: ["pairing-codes", companyId] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "Falha no pareamento"),
+  });
+
   return (
     <Card className="p-4 space-y-3">
       <div className="flex items-center gap-2">
