@@ -21,8 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Wifi, WifiOff, Loader2, RefreshCcw, Search, Printer as PrinterIcon,
-  Link2, Settings2, FlaskConical, CheckCircle2, ArrowLeft, ArrowRight, AlertTriangle,
+  Link2, Settings2, FlaskConical, CheckCircle2, ArrowLeft, ArrowRight, AlertTriangle, KeyRound,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { usePrintAgent } from "@/lib/print/use-print-agent";
 import { PrinterService } from "@/lib/print/printer-service";
