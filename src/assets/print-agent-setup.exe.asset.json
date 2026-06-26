@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "asset_id": "0e0c9fab-b610-48ca-8aeb-5ceac6bee606",
+  "asset_id": "8d8103b8-dce4-4121-8844-87a30294fd05",
   "project_id": "c43457fb-4e63-49d9-9d16-56fffee03149",
-  "url": "/__l5e/assets-v1/0e0c9fab-b610-48ca-8aeb-5ceac6bee606/PrintAgent-Setup.exe",
-  "r2_key": "a/v1/c43457fb-4e63-49d9-9d16-56fffee03149/0e0c9fab-b610-48ca-8aeb-5ceac6bee606/PrintAgent-Setup.exe",
+  "url": "/__l5e/assets-v1/8d8103b8-dce4-4121-8844-87a30294fd05/PrintAgent-Setup.exe",
+  "r2_key": "a/v1/c43457fb-4e63-49d9-9d16-56fffee03149/8d8103b8-dce4-4121-8844-87a30294fd05/PrintAgent-Setup.exe",
   "original_filename": "PrintAgent-Setup.exe",
-  "size": 39101147,
+  "size": 39103453,
   "content_type": "application/octet-stream",
-  "created_at": "2026-06-26T02:30:41Z"
+  "created_at": "2026-06-26T09:43:36Z"
 }

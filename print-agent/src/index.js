@@ -131,16 +131,41 @@ function listWindowsPrinters() {
     if (r.status !== 0) return [];
     const parsed = JSON.parse(r.stdout || "[]");
     const arr = Array.isArray(parsed) ? parsed : [parsed];
-    return arr.map((p) => ({
-      name: p.Name,
-      driver: p.DriverName,
-      port: p.PortName,
-      status: String(p.PrinterStatus ?? "Unknown"),
-    }));
+    return arr.map((p) => {
+      const statusRaw = String(p.PrinterStatus ?? "Unknown").toLowerCase();
+      const status = statusRaw.includes("normal") || statusRaw === "0" || statusRaw === "online"
+        ? "online"
+        : statusRaw === "unknown" ? "unknown" : "offline";
+      return {
+        id: p.Name,            // no Windows o nome é o identificador estável
+        name: p.Name,
+        driver: p.DriverName,
+        port: p.PortName,
+        default: false,
+        status,
+      };
+    });
   } catch (e) {
     log("Falha ao listar impressoras:", e.message);
     return [];
   }
+}
+
+// Mini-ZPL de teste — funciona em qualquer Zebra ZPL; fallback genérico para outras
+// linguagens é apenas um texto ASCII, que a maioria dos drivers Windows aceita via spooler.
+function buildTestPayload(driver) {
+  const d = String(driver || "").toLowerCase();
+  if (d.includes("zpl") || d.includes("zebra")) {
+    return "^XA^CF0,30^FO50,50^FDLovable Print Agent^FS^FO50,90^FDTeste OK^FS^XZ\n";
+  }
+  if (d.includes("epl")) {
+    return "N\nA50,50,0,3,1,1,N,\"Lovable Print Agent\"\nA50,90,0,3,1,1,N,\"Teste OK\"\nP1\n";
+  }
+  if (d.includes("tspl") || d.includes("tsc")) {
+    return "SIZE 50 mm,30 mm\nCLS\nTEXT 50,50,\"3\",0,1,1,\"Lovable Print Agent\"\nTEXT 50,90,\"3\",0,1,1,\"Teste OK\"\nPRINT 1\n";
+  }
+  // Argox PPLB ~ EPL2; e fallback texto puro
+  return "Lovable Print Agent - Teste OK\r\n\f";
 }
 
 function printRawToWindows(printerName, rawBytes) {
@@ -197,8 +222,10 @@ function buildServer() {
     });
   });
 
+
   app.get("/printers", auth, (_req, res) => {
-    res.json({ ok: true, printers: listWindowsPrinters() });
+    // Cliente espera o array cru.
+    res.json(listWindowsPrinters());
   });
 
   // Pareamento via API local (útil para tray UI futura ou painel).
@@ -212,28 +239,48 @@ function buildServer() {
     }
   });
 
+  // Página de teste: gera raw mínimo conforme o driver e envia ao spooler.
+  app.post("/printers/:id/test-page", auth, (req, res) => {
+    const printer = decodeURIComponent(req.params.id);
+    try {
+      const list = listWindowsPrinters();
+      const found = list.find((p) => p.name === printer);
+      if (!found) return res.status(404).json({ code: "PRINTER_NOT_FOUND", message: `Impressora '${printer}' não encontrada no Windows.` });
+      const raw = buildTestPayload(found.driver);
+      printRawToWindows(printer, Buffer.from(raw, "utf8"));
+      res.json({ jobId: `test-${Date.now()}` });
+    } catch (e) {
+      log("Falha test-page:", e.message);
+      res.status(500).json({ code: "INTERNAL_ERROR", message: e.message });
+    }
+  });
+
+  // Impressão real. Aceita o contrato AgentPrintRequest do cliente
+  // (printerId, copies, raw, jobName, metadata).
   app.post("/print", auth, (req, res) => {
-    const { printer, raw, copies } = req.body || {};
-    if (!printer) return res.status(400).json({ ok: false, error: "printer obrigatório" });
-    if (!raw) return res.status(400).json({ ok: false, error: "payload sem comando raw" });
+    const { printerId, printer: legacyPrinter, raw, copies, jobName } = req.body || {};
+    const printer = printerId || legacyPrinter;
+    if (!printer) return res.status(400).json({ code: "INVALID_PAYLOAD", message: "printerId obrigatório" });
+    if (!raw) return res.status(400).json({ code: "INVALID_PAYLOAD", message: "payload sem comando raw (PDF fallback ainda não suportado pelo agente)" });
     try {
       const buf = Buffer.from(raw, "utf8");
       const n = Math.min(Math.max(Number(copies) || 1, 1), 50);
       for (let i = 0; i < n; i++) printRawToWindows(printer, buf);
-      res.json({ ok: true, job_id: `${Date.now()}`, copies: n });
+      log(`Job ${jobName || "(sem nome)"} → ${printer} × ${n}`);
+      res.json({ jobId: `${Date.now()}` });
     } catch (e) {
       log("Falha na impressão:", e.message);
-      res.status(500).json({ ok: false, error: e.message });
+      res.status(500).json({ code: "INTERNAL_ERROR", message: e.message });
     }
   });
 
   app.post("/jobs/:id/cancel", auth, (req, res) => {
     // Impressão direta é síncrona no MVP — cancelamento é no-op.
-    res.json({ ok: true, job_id: req.params.id, status: "completed" });
+    res.json({ jobId: req.params.id, canceled: false, code: "JOB_NOT_CANCELABLE", message: "job já concluído" });
   });
 
   app.get("/jobs/:id", auth, (req, res) => {
-    res.json({ ok: true, job_id: req.params.id, status: "completed" });
+    res.json({ jobId: req.params.id, status: "completed" });
   });
 
   return app;
