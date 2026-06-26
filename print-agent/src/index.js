@@ -131,16 +131,41 @@ function listWindowsPrinters() {
     if (r.status !== 0) return [];
     const parsed = JSON.parse(r.stdout || "[]");
     const arr = Array.isArray(parsed) ? parsed : [parsed];
-    return arr.map((p) => ({
-      name: p.Name,
-      driver: p.DriverName,
-      port: p.PortName,
-      status: String(p.PrinterStatus ?? "Unknown"),
-    }));
+    return arr.map((p) => {
+      const statusRaw = String(p.PrinterStatus ?? "Unknown").toLowerCase();
+      const status = statusRaw.includes("normal") || statusRaw === "0" || statusRaw === "online"
+        ? "online"
+        : statusRaw === "unknown" ? "unknown" : "offline";
+      return {
+        id: p.Name,            // no Windows o nome é o identificador estável
+        name: p.Name,
+        driver: p.DriverName,
+        port: p.PortName,
+        default: false,
+        status,
+      };
+    });
   } catch (e) {
     log("Falha ao listar impressoras:", e.message);
     return [];
   }
+}
+
+// Mini-ZPL de teste — funciona em qualquer Zebra ZPL; fallback genérico para outras
+// linguagens é apenas um texto ASCII, que a maioria dos drivers Windows aceita via spooler.
+function buildTestPayload(driver) {
+  const d = String(driver || "").toLowerCase();
+  if (d.includes("zpl") || d.includes("zebra")) {
+    return "^XA^CF0,30^FO50,50^FDLovable Print Agent^FS^FO50,90^FDTeste OK^FS^XZ\n";
+  }
+  if (d.includes("epl")) {
+    return "N\nA50,50,0,3,1,1,N,\"Lovable Print Agent\"\nA50,90,0,3,1,1,N,\"Teste OK\"\nP1\n";
+  }
+  if (d.includes("tspl") || d.includes("tsc")) {
+    return "SIZE 50 mm,30 mm\nCLS\nTEXT 50,50,\"3\",0,1,1,\"Lovable Print Agent\"\nTEXT 50,90,\"3\",0,1,1,\"Teste OK\"\nPRINT 1\n";
+  }
+  // Argox PPLB ~ EPL2; e fallback texto puro
+  return "Lovable Print Agent - Teste OK\r\n\f";
 }
 
 function printRawToWindows(printerName, rawBytes) {
