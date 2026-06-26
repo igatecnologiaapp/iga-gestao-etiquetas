@@ -229,11 +229,17 @@ export async function runDirectPrint(
 
   // 2. Submete ao agente
   try {
+    const rawContent = (payload as any).raw as string | null | undefined;
     const res = await client.submit({
       printerId: input.printer.agent_printer_id ?? input.printer.id,
       copies: input.quantity,
       jobName: `${input.layout.name} (${input.quantity})`,
-      metadata: { queue_id: job.id, company_id: input.companyId },
+      raw: rawContent ?? undefined,
+      metadata: {
+        queue_id: job.id,
+        company_id: input.companyId,
+        adapter: (payload as any).adapter,
+      },
     });
     await PrintQueueService.markSent(job.id, res.jobId);
     // O agente já confirmou o envio. Marcamos como completed para o caso síncrono;
