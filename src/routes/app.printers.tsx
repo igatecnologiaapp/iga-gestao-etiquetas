@@ -181,7 +181,7 @@ function Page() {
       {companyId && (
         <div className="mb-4 grid gap-4 md:grid-cols-2">
           {canWrite && <PairingCodeCard companyId={companyId} />}
-          <PrintAgentDownloadCard canDownload={!!canWrite} />
+          <PrintAgentDownloadCard canDownload={!!canWrite} companyId={companyId} />
         </div>
       )}
 
