@@ -1443,6 +1443,60 @@ export type Database = {
         }
         Relationships: []
       }
+      print_agent_pairing_codes: {
+        Row: {
+          code: string
+          company_id: string
+          consumed_at: string | null
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          label: string
+          pairing_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          company_id: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          label: string
+          pairing_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          company_id?: string
+          consumed_at?: string | null
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          label?: string
+          pairing_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_agent_pairing_codes_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_agent_pairing_codes_pairing_id_fkey"
+            columns: ["pairing_id"]
+            isOneToOne: false
+            referencedRelation: "print_agent_pairings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       print_agent_pairings: {
         Row: {
           company_id: string
