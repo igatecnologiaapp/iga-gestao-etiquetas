@@ -16,7 +16,7 @@ const INSTALLER_FILENAME = "PrintAgent-Setup.exe";
 
 type Availability = "checking" | "available" | "missing";
 
-export function PrintAgentDownloadCard({ canDownload }: { canDownload: boolean }) {
+export function PrintAgentDownloadCard({ canDownload, companyId }: { canDownload: boolean; companyId?: string | null }) {
   const [status, setStatus] = useState<Availability>("checking");
   const [size, setSize] = useState<number | null>(null);
 
