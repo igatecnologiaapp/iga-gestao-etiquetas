@@ -94,6 +94,9 @@ export const Route = createFileRoute("/api/public/print-agent/exchange")({
         return Response.json({
           ok: true,
           token: raw,
+          token_prefix: prefix,
+          token_length: raw.length,
+          paired: true,
           pairing,
           company_id: row.company_id,
         });
