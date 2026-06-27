@@ -53,7 +53,11 @@ export function buildAgentClient(companyId: string | null | undefined): PrintAge
     return createMockPrintAgent({ online: true });
   }
   return new PrintAgentClient({
-    token: getStoredAgentToken(companyId),
+    // O token gravado no navegador pode ficar obsoleto após novo pareamento.
+    // O Print Agent local lê o agent.json a cada requisição; para evitar 401 por
+    // token antigo no browser, a autenticação operacional usa o pareamento local
+    // + X-Company-Id. O token armazenado fica apenas para diagnóstico/legado.
+    token: null,
     companyId: companyId ?? null,
   });
 }

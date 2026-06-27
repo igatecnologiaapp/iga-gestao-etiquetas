@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { buildAgentClient } from "@/lib/print/use-print-agent";
+import { buildAgentClient, getStoredAgentToken } from "@/lib/print/use-print-agent";
 import type { AgentDiagnosticStep, AgentDiagnosticsReport } from "@/lib/print/types";
 import { AlertTriangle, CheckCircle2, ClipboardList, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -47,7 +47,90 @@ export function PrintAgentDiagnosticsCard({ companyId }: Props) {
     setOpen(true);
     try {
       const client = buildAgentClient(companyId);
-      const data = await client.diagnostics();
+      const data = await client.diagnostics().catch(async () => {
+        const health = await client.health();
+        const browserToken = getStoredAgentToken(companyId);
+        if (!health.ok) {
+          return {
+            ok: false,
+            generated_at: new Date().toISOString(),
+            base_url: "http://127.0.0.1:17777",
+            port: 17777,
+            health,
+            auth: {
+              token_found: tokenSummary(browserToken),
+              token_sent: tokenSummary(null),
+              token_expected: tokenSummary(null),
+              company_id_sent: companyId,
+              company_id_expected: health.company_id ?? null,
+              device_id_expected: health.device_id ?? null,
+              validation_result: health.code ?? "AGENT_OFFLINE",
+              failure_reason: health.reachable ? "outro motivo" : "agente offline",
+              token_valid: null,
+            },
+            printers_check: { ok: false, status: 0, code: health.code, message: health.error },
+            steps: legacySteps(health, false, health.error ?? "Agente não respondeu."),
+          } satisfies AgentDiagnosticsReport;
+        }
+        try {
+          const printers = await client.listPrinters();
+          return {
+            ok: true,
+            generated_at: new Date().toISOString(),
+            base_url: "http://127.0.0.1:17777",
+            port: health.port ?? 17777,
+            version: health.version,
+            health,
+            agent_json: health.profile ?? { paired: health.paired, company_id: health.company_id },
+            service: health.service ?? null,
+            auth: {
+              token_found: tokenSummary(browserToken),
+              token_sent: tokenSummary(null),
+              token_expected: tokenSummary(health.token_prefix ?? null),
+              company_id_sent: companyId,
+              company_id_expected: health.company_id ?? null,
+              device_id_expected: health.device_id ?? null,
+              validation_result: "valid_legacy_agent",
+              failure_reason: null,
+              token_valid: true,
+            },
+            exchange: null,
+            printers_check: { ok: true, status: 200, count: printers.length, printers },
+            steps: legacySteps(health, true, `${printers.length} impressora(s) retornada(s).`),
+          } satisfies AgentDiagnosticsReport;
+        } catch (printerError: any) {
+          return {
+            ok: false,
+            generated_at: new Date().toISOString(),
+            base_url: "http://127.0.0.1:17777",
+            port: health.port ?? 17777,
+            version: health.version,
+            health,
+            agent_json: health.profile ?? { paired: health.paired, company_id: health.company_id },
+            service: health.service ?? null,
+            auth: {
+              token_found: tokenSummary(browserToken),
+              token_sent: tokenSummary(null),
+              token_expected: tokenSummary(health.token_prefix ?? null),
+              company_id_sent: companyId,
+              company_id_expected: health.company_id ?? null,
+              device_id_expected: health.device_id ?? null,
+              validation_result: printerError?.code ?? "PRINTERS_FAILED",
+              failure_reason: explainFailure(printerError?.code, printerError?.message),
+              token_valid: false,
+            },
+            exchange: null,
+            printers_check: {
+              ok: false,
+              status: printerError?.status ?? 0,
+              code: printerError?.code,
+              message: printerError?.message,
+              details: printerError?.details,
+            },
+            steps: legacySteps(health, false, printerError?.message ?? "Falha ao consultar impressoras."),
+          } satisfies AgentDiagnosticsReport;
+        }
+      });
       setReport(data);
       if (data.ok) toast.success("Diagnóstico concluído sem falhas bloqueantes.");
       else toast.warning("Diagnóstico concluído com falha identificada.");
@@ -183,6 +266,41 @@ export function PrintAgentDiagnosticsCard({ companyId }: Props) {
       </Dialog>
     </Card>
   );
+}
+
+function tokenSummary(token: string | null) {
+  const value = token ?? "";
+  return {
+    present: value.length > 0,
+    prefix: value ? value.slice(0, 12) : null,
+    suffix: value ? value.slice(-6) : null,
+    length: value.length,
+  };
+}
+
+function explainFailure(code?: string, message?: string): string {
+  if (code === "MISSING_TOKEN") return "token inexistente";
+  if (code === "INVALID_TOKEN") return "token inválido";
+  if (code === "TOKEN_EXPIRED") return "token expirado";
+  if (code === "COMPANY_ID_MISMATCH" || code === "UNAUTHORIZED") return "company_id divergente";
+  if (code === "DEVICE_ID_MISMATCH") return "device_id divergente";
+  if (code === "NOT_PAIRED") return "estação não pareada";
+  return message || "outro motivo";
+}
+
+function legacySteps(health: any, printersOk: boolean, printersMessage: string): AgentDiagnosticStep[] {
+  const paired = health?.paired !== false && !!health?.ok;
+  return [
+    { key: "installation", label: "Verificar instalação do agente", ok: !!health?.reachable, message: health?.reachable ? "Agente respondeu em 127.0.0.1." : "Agente não respondeu." },
+    { key: "windows_service", label: "Verificar serviço Windows", ok: !!health?.reachable, message: health?.service ? "Serviço informado no /health." : "Agente legado não informa status detalhado do serviço." },
+    { key: "port", label: "Verificar porta 17777", ok: !!health?.reachable, message: health?.reachable ? "Porta HTTP local respondeu." : "Porta sem resposta." },
+    { key: "health", label: "Verificar /health", ok: !!health?.ok, message: health?.ok ? "Health respondeu." : health?.error },
+    { key: "token", label: "Verificar token", ok: paired, message: paired ? "Agente informa pareamento ativo." : "Agente informa estação não pareada." },
+    { key: "agent_json", label: "Verificar agent.json", ok: paired, message: health?.profile ? "agent.json informado pelo agente." : "Agente legado não expõe agent.json; pareamento inferido via /health." },
+    { key: "pairing", label: "Verificar pareamento", ok: paired, message: paired ? `Pareado com empresa ${health?.company_id ?? "não informada"}.` : "Estação não pareada." },
+    { key: "auth", label: "Verificar autenticação", ok: printersOk, message: printersOk ? "Autenticação aceita pelo agente." : printersMessage },
+    { key: "printers", label: "Verificar GET /printers", ok: printersOk, message: printersMessage },
+  ];
 }
 
 function SummaryItem({ label, value, ok }: { label: string; value: string; ok: boolean }) {
