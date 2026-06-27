@@ -86,7 +86,7 @@ export function PrintAgentDiagnosticsCard({ companyId }: Props) {
             auth: {
               token_found: tokenSummary(browserToken),
               token_sent: tokenSummary(null),
-              token_expected: tokenSummary(health.token_prefix ?? null),
+              token_expected: tokenSummaryFromMeta(health.token_prefix ?? null, health.token_length ?? null),
               company_id_sent: companyId,
               company_id_expected: health.company_id ?? null,
               device_id_expected: health.device_id ?? null,
@@ -111,7 +111,7 @@ export function PrintAgentDiagnosticsCard({ companyId }: Props) {
             auth: {
               token_found: tokenSummary(browserToken),
               token_sent: tokenSummary(null),
-              token_expected: tokenSummary(health.token_prefix ?? null),
+              token_expected: tokenSummaryFromMeta(health.token_prefix ?? null, health.token_length ?? null),
               company_id_sent: companyId,
               company_id_expected: health.company_id ?? null,
               device_id_expected: health.device_id ?? null,
@@ -275,6 +275,15 @@ function tokenSummary(token: string | null) {
     prefix: value ? value.slice(0, 12) : null,
     suffix: value ? value.slice(-6) : null,
     length: value.length,
+  };
+}
+
+function tokenSummaryFromMeta(prefix: string | null, length: number | null) {
+  return {
+    present: !!prefix || !!length,
+    prefix: prefix ?? null,
+    suffix: null,
+    length: length ?? prefix?.length ?? 0,
   };
 }
 
