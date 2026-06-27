@@ -255,6 +255,12 @@ function Page() {
               document.getElementById("pairing-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
             }, 100);
           }}
+          onRequestDiagnostics={() => {
+            setWizardOpen(false);
+            setTimeout(() => {
+              document.getElementById("print-agent-diagnostics")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 100);
+          }}
         />
       )}
 

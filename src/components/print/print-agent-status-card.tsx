@@ -76,8 +76,8 @@ export function PrintAgentStatusCard({ companyId }: PrintAgentStatusCardProps) {
       )}
       {!loading && running && installed === false && (
         <div className="text-xs text-amber-700 dark:text-amber-400">
-          O serviço está em execução, mas esta estação ainda não está pareada. Use o card "Pareamento do Print Agent"
-          para gerar um código e parear.
+          O serviço está em execução, mas o pareamento ainda não foi reconhecido. Execute o Diagnóstico Completo antes
+          de realizar qualquer novo pareamento.
         </div>
       )}
     </Card>

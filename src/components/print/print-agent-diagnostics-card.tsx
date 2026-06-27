@@ -157,7 +157,7 @@ export function PrintAgentDiagnosticsCard({ companyId }: Props) {
   }
 
   return (
-    <Card className="p-4 space-y-3">
+    <Card id="print-agent-diagnostics" className="p-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 font-medium">
