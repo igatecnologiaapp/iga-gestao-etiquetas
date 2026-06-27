@@ -420,34 +420,32 @@ function buildServer() {
   app.use(express.json({ limit: "10mb" }));
 
   function auth(req, res, next) {
-    const profile = loadProfile();
-    if (!profile?.token) {
-      return res.status(401).json({ ok: false, code: "NOT_PAIRED", error: "Agente não pareado." });
-    }
-    const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
-    // O painel envia o token armazenado localmente no navegador (mesma estação).
-    // Para reduzir fricção, aceitamos qualquer requisição local; o emparelhamento
-    // serve para identificar a estação, não para autenticar o navegador local.
-    // Mantemos verificação opcional: se o caller enviar token, ele deve bater.
-    if (token && token !== profile.token) {
-      return res.status(403).json({ ok: false, code: "INVALID_TOKEN", error: "Token inválido." });
-    }
-    req.profile = profile;
+    const report = buildAuthReport(req);
+    log(
+      "AUTH", req.method, req.path,
+      "result=", report.auth.validation_result,
+      "reason=", report.auth.failure_reason || "ok",
+      "found=", JSON.stringify(report.auth.token_found),
+      "sent=", JSON.stringify(report.auth.token_sent),
+      "expected=", JSON.stringify(report.auth.token_expected),
+      "company_sent=", report.auth.company_id_sent,
+      "company_expected=", report.auth.company_id_expected,
+    );
+    if (!report.ok) return res.status(report.status).json(authErrorBody(report));
+    req.profile = loadProfile();
     next();
   }
 
   app.get("/health", (_req, res) => {
-    const profile = loadProfile();
-    res.json({
-      ok: true,
-      reachable: true,
-      version: VERSION,
-      paired: !!profile?.token,
-      company_id: profile?.company_id ?? null,
-      device_name: profile?.device_name ?? os.hostname(),
-      platform: process.platform,
-    });
+    res.json(buildHealth());
+  });
+
+  app.get("/auth/status", (req, res) => {
+    res.json(buildDiagnostics(req));
+  });
+
+  app.get("/diagnostics", (req, res) => {
+    res.json(buildDiagnostics(req));
   });
 
 
@@ -461,7 +459,17 @@ function buildServer() {
     try {
       const { code, api_base } = req.body || {};
       const result = await pair(code, api_base || DEFAULT_API);
-      res.json({ ok: true, token: result.token, company_id: result.company_id, pairing_id: result.pairing?.id });
+      res.json({
+        ok: true,
+        token: result.token,
+        company_id: result.company_id,
+        device_id: loadProfile()?.device_id ?? null,
+        pairing_id: result.pairing?.id,
+        paired: true,
+        token_prefix: tokenInfo(result.token).prefix,
+        token_length: tokenInfo(result.token).length,
+        exchange: sanitizeExchangePayload(result),
+      });
     } catch (e) {
       res.status(400).json({ ok: false, error: e.message });
     }
