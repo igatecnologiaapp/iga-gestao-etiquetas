@@ -250,6 +250,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex-1 flex justify-end md:justify-start">
             <CompanySwitcher />
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+            title={theme === "dark" ? "Modo claro" : "Modo escuro"}
+          >
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </Button>
           <Button variant="ghost" size="sm" className="md:hidden" onClick={handleSignOut} aria-label="Sair">
             <LogOut className="size-4" />
           </Button>
