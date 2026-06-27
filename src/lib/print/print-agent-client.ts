@@ -11,6 +11,7 @@
 
 import type {
   AgentCancelResponse,
+  AgentDiagnosticsReport,
   AgentErrorBody,
   AgentErrorCode,
   AgentHealth,
@@ -91,7 +92,7 @@ export class PrintAgentClient {
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as AgentErrorBody | null;
         const code = (body?.code ?? this.statusToCode(res.status)) as AgentErrorCode;
-        const msg = body?.message ?? `Agent ${res.status}: ${res.statusText}`;
+        const msg = body?.message ?? body?.error ?? `Agent ${res.status}: ${res.statusText}`;
         throw new PrintAgentError(code, msg, res.status, body?.details);
       }
       return (await res.json()) as T;
@@ -117,21 +118,23 @@ export class PrintAgentClient {
 
   async health(): Promise<AgentHealth> {
     try {
-      const data = await this.request<{
-        version?: string;
-        status?: string;
-        paired?: boolean;
-        company_id?: string | null;
-        device_name?: string | null;
-      }>("/health", { method: "GET" });
+      const data = await this.request<AgentHealth>("/health", { method: "GET" });
       return {
         ok: true,
         reachable: true,
         version: data.version,
         status: data.status,
+        connected: data.connected ?? true,
         paired: data.paired,
+        token_valid: data.token_valid ?? null,
+        token_prefix: data.token_prefix ?? null,
+        token_length: data.token_length ?? null,
         company_id: data.company_id ?? null,
+        device_id: data.device_id ?? null,
         device_name: data.device_name ?? null,
+        port: data.port,
+        service: data.service,
+        profile: data.profile,
       };
     } catch (e: unknown) {
       if (e instanceof PrintAgentOfflineError) {
@@ -147,6 +150,14 @@ export class PrintAgentClient {
 
   async listPrinters(): Promise<AgentPrinter[]> {
     return this.request<AgentPrinter[]>("/printers", { method: "GET" });
+  }
+
+  async authStatus(): Promise<AgentDiagnosticsReport> {
+    return this.request<AgentDiagnosticsReport>("/auth/status", { method: "GET" });
+  }
+
+  async diagnostics(): Promise<AgentDiagnosticsReport> {
+    return this.request<AgentDiagnosticsReport>("/diagnostics", { method: "GET" });
   }
 
   async testPrinter(printerId: string): Promise<{ ok: boolean }> {
@@ -220,7 +231,33 @@ export function createMockAgentTransport(opts: MockAgentOptions = {}): AgentTran
         if (auth !== `Bearer ${opts.requireToken}`) return err(401, "INVALID_TOKEN", "token inválido");
       }
 
-      if (path === "/health") return json({ version: "mock-0.0.1", status: "ok" });
+      if (path === "/health") return json({ version: "mock-0.0.1", status: "ok", paired: true, token_valid: true });
+      if (path === "/auth/status" || path === "/diagnostics") return json({
+        ok: true,
+        generated_at: new Date().toISOString(),
+        version: "mock-0.0.1",
+        port: 17777,
+        health: { ok: true, reachable: true, connected: true, paired: true, token_valid: true },
+        agent_json: { exists: true, paired: true, token_present: true },
+        service: { running: true, mock: true },
+        auth: {
+          token_found: { present: true, prefix: "mock", suffix: "oken", length: 10 },
+          token_sent: { present: !!auth, prefix: auth?.slice(7, 19) ?? null, suffix: auth?.slice(-6) ?? null, length: auth ? auth.length - 7 : 0 },
+          token_expected: { present: true, prefix: "mock", suffix: "oken", length: 10 },
+          company_id_sent: headers.get("x-company-id"),
+          company_id_expected: null,
+          device_id_expected: "mock-device",
+          validation_result: "valid",
+          failure_reason: null,
+          token_valid: true,
+        },
+        exchange: null,
+        printers_check: { ok: true, status: 200, count: printers.length, printers },
+        steps: [
+          { key: "agent", label: "Verificar instalação do agente", ok: true },
+          { key: "printers", label: "Verificar GET /printers", ok: true },
+        ],
+      } satisfies AgentDiagnosticsReport);
       if (path === "/printers") return json(printers);
       if (path.match(/^\/printers\/[^/]+\/test$/) && method === "POST") return json({ ok: true });
       if (path.match(/^\/printers\/[^/]+\/test-page$/) && method === "POST") {
