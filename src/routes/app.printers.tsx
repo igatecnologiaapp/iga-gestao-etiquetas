@@ -32,6 +32,7 @@ import { PairingCodeCard } from "@/components/print/pairing-code-card";
 import { PrintAgentDownloadCard } from "@/components/print/print-agent-download-card";
 import { PrinterSetupWizard } from "@/components/print/printer-setup-wizard";
 import { PrintAgentStatusCard } from "@/components/print/print-agent-status-card";
+import { PrintAgentDiagnosticsCard } from "@/components/print/print-agent-diagnostics-card";
 
 export const Route = createFileRoute("/app/printers")({ component: Page });
 
@@ -187,8 +188,9 @@ function Page() {
       />
 
       {companyId && (
-        <div className="mb-4">
+        <div className="mb-4 grid gap-4">
           <PrintAgentStatusCard companyId={companyId} />
+          <PrintAgentDiagnosticsCard companyId={companyId} />
         </div>
       )}
 
