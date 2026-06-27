@@ -305,10 +305,10 @@ function Stat({
   label, value, tone = "muted",
 }: { label: string; value: number | string; tone?: "muted" | "destructive" | "warn" | "secondary" | "success" }) {
   const cls =
-    tone === "destructive" ? "border-destructive/40 bg-destructive/5" :
-    tone === "warn" ? "border-amber-300 bg-amber-50" :
-    tone === "secondary" ? "border-primary/30 bg-primary/5" :
-    tone === "success" ? "border-emerald-300/40 bg-emerald-50/40" : "";
+    tone === "destructive" ? "border-red-300/60 bg-red-50/60 dark:border-red-900/40 dark:bg-red-950/30" :
+    tone === "warn" ? "border-amber-300/60 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/30" :
+    tone === "secondary" ? "border-violet-300/60 bg-violet-50/60 dark:border-violet-900/40 dark:bg-violet-950/30" :
+    tone === "success" ? "border-emerald-300/60 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/30" : "";
   return (
     <Card className={`p-3 ${cls}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
