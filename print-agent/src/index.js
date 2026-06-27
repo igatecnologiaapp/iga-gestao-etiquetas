@@ -328,16 +328,22 @@ async function pair(code, apiBase = DEFAULT_API) {
     agent_version: VERSION,
   });
   if (!result.ok || !result.token) throw new Error("Resposta sem token.");
+  const existing = loadProfile();
+  const deviceId = existing?.device_id || generateDeviceId();
+  const sanitizedExchange = sanitizeExchangePayload(result);
   saveProfile({
+    paired: true,
     token: result.token,
     company_id: result.company_id,
+    device_id: deviceId,
     pairing_id: result.pairing?.id ?? null,
     label: result.pairing?.label ?? null,
     api_base: apiBase,
     paired_at: new Date().toISOString(),
     device_name: os.hostname(),
+    last_exchange: sanitizedExchange,
   });
-  log("Pareamento concluído. Empresa:", result.company_id);
+  log("Pareamento concluído. Empresa:", result.company_id, "Device:", deviceId, "Token:", tokenInfo(result.token).prefix);
   return result;
 }
 
