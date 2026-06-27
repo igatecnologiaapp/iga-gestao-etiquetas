@@ -50,6 +50,7 @@ const groups = ["Geral", "Emissão", "Cadastros", "Layouts", "Administração", 
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
