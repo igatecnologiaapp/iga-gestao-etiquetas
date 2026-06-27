@@ -381,13 +381,27 @@ function Dashboard() {
   );
 }
 
+type KpiTone = "blue" | "emerald" | "amber" | "violet" | "sky" | "red" | "pink" | "rose" | "slate";
+const TONE_STYLES: Record<KpiTone, { card: string; icon: string }> = {
+  blue:    { card: "border-blue-200/60 dark:border-blue-900/40",       icon: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+  emerald: { card: "border-emerald-200/60 dark:border-emerald-900/40", icon: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  amber:   { card: "border-amber-200/60 dark:border-amber-900/40",     icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  violet:  { card: "border-violet-200/60 dark:border-violet-900/40",   icon: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
+  sky:     { card: "border-sky-200/60 dark:border-sky-900/40",         icon: "bg-sky-500/10 text-sky-600 dark:text-sky-400" },
+  red:     { card: "border-red-300/60 dark:border-red-900/40",         icon: "bg-red-500/10 text-red-600 dark:text-red-400" },
+  pink:    { card: "border-pink-200/60 dark:border-pink-900/40",       icon: "bg-pink-500/10 text-pink-600 dark:text-pink-400" },
+  rose:    { card: "border-rose-200/60 dark:border-rose-900/40",       icon: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
+  slate:   { card: "border-border",                                    icon: "bg-muted text-muted-foreground" },
+};
+
 function Kpi({
-  icon: Icon, label, value, accent, link,
-}: { icon: any; label: string; value: number | string; accent?: "warning"; link?: { to: string; label: string } }) {
+  icon: Icon, label, value, tone = "slate", link,
+}: { icon: any; label: string; value: number | string; tone?: KpiTone; link?: { to: string; label: string } }) {
+  const t = TONE_STYLES[tone];
   return (
-    <Card className={accent === "warning" ? "border-warning/40" : ""}>
+    <Card className={`transition-shadow hover:shadow-md ${t.card}`}>
       <CardContent className="p-5 flex items-start gap-4">
-        <div className={`size-10 rounded-md grid place-items-center ${accent === "warning" ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"}`}>
+        <div className={`size-10 rounded-lg grid place-items-center ${t.icon}`}>
           <Icon className="size-5" />
         </div>
         <div className="flex-1 min-w-0">
