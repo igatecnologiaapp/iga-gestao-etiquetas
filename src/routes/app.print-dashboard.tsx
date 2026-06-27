@@ -252,9 +252,9 @@ function Page() {
                   <YAxis fontSize={11} />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="jobs" stroke="hsl(var(--primary))" name="Jobs" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="labels" stroke="#10b981" name="Etiquetas" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="failed" stroke="hsl(var(--destructive))" name="Falhas" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="jobs" stroke="#3b82f6" name="Jobs" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="labels" stroke="#10b981" name="Etiquetas" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="failed" stroke="#ef4444" name="Falhas" strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
