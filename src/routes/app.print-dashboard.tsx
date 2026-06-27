@@ -37,7 +37,7 @@ export const Route = createFileRoute("/app/print-dashboard")({
   component: Page,
 });
 
-const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground))", "hsl(var(--destructive))", "#f59e0b", "#10b981"];
+const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899"];
 
 function Page() {
   const { companyId, role } = useActiveCompany();
