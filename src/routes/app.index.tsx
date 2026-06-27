@@ -246,17 +246,17 @@ function Dashboard() {
 
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Kpi icon={TagIcon} label="Etiquetas emitidas" value={summary?.total_labels ?? 0} />
-        <Kpi icon={Activity} label="Nutricionais" value={summary?.total_nutritional ?? 0} />
-        <Kpi icon={TagIcon} label="Gôndola" value={summary?.total_gondola ?? 0} />
-        <Kpi icon={RotateCcw} label="Reimpressões" value={summary?.total_reprints ?? 0} />
-        <Kpi icon={Printer} label="Lotes" value={summary?.total_batches ?? 0} />
+        <Kpi icon={TagIcon} label="Etiquetas emitidas" value={summary?.total_labels ?? 0} tone="blue" />
+        <Kpi icon={Activity} label="Nutricionais" value={summary?.total_nutritional ?? 0} tone="emerald" />
+        <Kpi icon={TagIcon} label="Gôndola" value={summary?.total_gondola ?? 0} tone="amber" />
+        <Kpi icon={RotateCcw} label="Reimpressões" value={summary?.total_reprints ?? 0} tone="violet" />
+        <Kpi icon={Printer} label="Lotes" value={summary?.total_batches ?? 0} tone="sky" />
         <Kpi icon={AlertCircle} label="Pendências regulatórias" value={pending ?? 0}
-          accent={pending && pending > 0 ? "warning" : undefined}
+          tone={pending && pending > 0 ? "red" : "slate"}
           link={{ to: "/app/pending", label: "Ver" }} />
         <Kpi icon={Percent} label="Promoções ativas"
-          value={(promotions ?? []).filter((p: any) => p.status === "active").length} />
-        <Kpi icon={TrendingUp} label="Canceladas" value={summary?.total_cancelled ?? 0} />
+          value={(promotions ?? []).filter((p: any) => p.status === "active").length} tone="pink" />
+        <Kpi icon={TrendingUp} label="Canceladas" value={summary?.total_cancelled ?? 0} tone="rose" />
       </div>
 
       {/* Time series */}
