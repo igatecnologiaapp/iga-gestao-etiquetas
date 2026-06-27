@@ -31,6 +31,7 @@ import {
 import { PairingCodeCard } from "@/components/print/pairing-code-card";
 import { PrintAgentDownloadCard } from "@/components/print/print-agent-download-card";
 import { PrinterSetupWizard } from "@/components/print/printer-setup-wizard";
+import { PrintAgentStatusCard } from "@/components/print/print-agent-status-card";
 
 export const Route = createFileRoute("/app/printers")({ component: Page });
 
