@@ -104,7 +104,10 @@ export function PairingCodeCard({ companyId }: Props) {
         clearTimeout(timer);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data?.token) {
+        agent.setToken(data.token);
+      }
       toast.success("Esta estação foi pareada com sucesso!");
       setPairOpen(false);
       setPairCode("");
