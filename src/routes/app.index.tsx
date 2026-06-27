@@ -191,7 +191,7 @@ function Dashboard() {
     );
   }
 
-  const COLORS = ["hsl(var(--primary))", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#8b5cf6"];
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
 
   return (
     <div className="space-y-6">
@@ -246,17 +246,17 @@ function Dashboard() {
 
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Kpi icon={TagIcon} label="Etiquetas emitidas" value={summary?.total_labels ?? 0} />
-        <Kpi icon={Activity} label="Nutricionais" value={summary?.total_nutritional ?? 0} />
-        <Kpi icon={TagIcon} label="Gôndola" value={summary?.total_gondola ?? 0} />
-        <Kpi icon={RotateCcw} label="Reimpressões" value={summary?.total_reprints ?? 0} />
-        <Kpi icon={Printer} label="Lotes" value={summary?.total_batches ?? 0} />
+        <Kpi icon={TagIcon} label="Etiquetas emitidas" value={summary?.total_labels ?? 0} tone="blue" />
+        <Kpi icon={Activity} label="Nutricionais" value={summary?.total_nutritional ?? 0} tone="emerald" />
+        <Kpi icon={TagIcon} label="Gôndola" value={summary?.total_gondola ?? 0} tone="amber" />
+        <Kpi icon={RotateCcw} label="Reimpressões" value={summary?.total_reprints ?? 0} tone="violet" />
+        <Kpi icon={Printer} label="Lotes" value={summary?.total_batches ?? 0} tone="sky" />
         <Kpi icon={AlertCircle} label="Pendências regulatórias" value={pending ?? 0}
-          accent={pending && pending > 0 ? "warning" : undefined}
+          tone={pending && pending > 0 ? "red" : "slate"}
           link={{ to: "/app/pending", label: "Ver" }} />
         <Kpi icon={Percent} label="Promoções ativas"
-          value={(promotions ?? []).filter((p: any) => p.status === "active").length} />
-        <Kpi icon={TrendingUp} label="Canceladas" value={summary?.total_cancelled ?? 0} />
+          value={(promotions ?? []).filter((p: any) => p.status === "active").length} tone="pink" />
+        <Kpi icon={TrendingUp} label="Canceladas" value={summary?.total_cancelled ?? 0} tone="rose" />
       </div>
 
       {/* Time series */}
@@ -269,7 +269,7 @@ function Dashboard() {
               <XAxis dataKey="day" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
               <Tooltip />
-              <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={2.5} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -285,7 +285,7 @@ function Dashboard() {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={70} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="total" fill="hsl(var(--primary))" />
+                <Bar dataKey="total" fill="#3b82f6" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -299,7 +299,7 @@ function Dashboard() {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={70} />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="total" fill="#10b981" />
+                <Bar dataKey="total" fill="#10b981" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -381,13 +381,27 @@ function Dashboard() {
   );
 }
 
+type KpiTone = "blue" | "emerald" | "amber" | "violet" | "sky" | "red" | "pink" | "rose" | "slate";
+const TONE_STYLES: Record<KpiTone, { card: string; icon: string }> = {
+  blue:    { card: "border-blue-200/60 dark:border-blue-900/40",       icon: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+  emerald: { card: "border-emerald-200/60 dark:border-emerald-900/40", icon: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
+  amber:   { card: "border-amber-200/60 dark:border-amber-900/40",     icon: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+  violet:  { card: "border-violet-200/60 dark:border-violet-900/40",   icon: "bg-violet-500/10 text-violet-600 dark:text-violet-400" },
+  sky:     { card: "border-sky-200/60 dark:border-sky-900/40",         icon: "bg-sky-500/10 text-sky-600 dark:text-sky-400" },
+  red:     { card: "border-red-300/60 dark:border-red-900/40",         icon: "bg-red-500/10 text-red-600 dark:text-red-400" },
+  pink:    { card: "border-pink-200/60 dark:border-pink-900/40",       icon: "bg-pink-500/10 text-pink-600 dark:text-pink-400" },
+  rose:    { card: "border-rose-200/60 dark:border-rose-900/40",       icon: "bg-rose-500/10 text-rose-600 dark:text-rose-400" },
+  slate:   { card: "border-border",                                    icon: "bg-muted text-muted-foreground" },
+};
+
 function Kpi({
-  icon: Icon, label, value, accent, link,
-}: { icon: any; label: string; value: number | string; accent?: "warning"; link?: { to: string; label: string } }) {
+  icon: Icon, label, value, tone = "slate", link,
+}: { icon: any; label: string; value: number | string; tone?: KpiTone; link?: { to: string; label: string } }) {
+  const t = TONE_STYLES[tone];
   return (
-    <Card className={accent === "warning" ? "border-warning/40" : ""}>
+    <Card className={`transition-shadow hover:shadow-md ${t.card}`}>
       <CardContent className="p-5 flex items-start gap-4">
-        <div className={`size-10 rounded-md grid place-items-center ${accent === "warning" ? "bg-warning/10 text-warning" : "bg-primary/10 text-primary"}`}>
+        <div className={`size-10 rounded-lg grid place-items-center ${t.icon}`}>
           <Icon className="size-5" />
         </div>
         <div className="flex-1 min-w-0">

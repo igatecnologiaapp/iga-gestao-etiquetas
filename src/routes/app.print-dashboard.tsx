@@ -37,7 +37,7 @@ export const Route = createFileRoute("/app/print-dashboard")({
   component: Page,
 });
 
-const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--muted-foreground))", "hsl(var(--destructive))", "#f59e0b", "#10b981"];
+const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899"];
 
 function Page() {
   const { companyId, role } = useActiveCompany();
@@ -252,18 +252,18 @@ function Page() {
                   <YAxis fontSize={11} />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="jobs" stroke="hsl(var(--primary))" name="Jobs" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="labels" stroke="#10b981" name="Etiquetas" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="failed" stroke="hsl(var(--destructive))" name="Falhas" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="jobs" stroke="#3b82f6" name="Jobs" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="labels" stroke="#10b981" name="Etiquetas" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="failed" stroke="#ef4444" name="Falhas" strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </Card>
 
           <div className="grid lg:grid-cols-2 gap-4">
-            <DimChart title="Impressões por impressora" data={byPrinter} fill="hsl(var(--primary))" />
-            <DimChart title="Falhas por impressora" data={byPrinter.map((d) => ({ ...d, jobs: d.failed }))} fill="hsl(var(--destructive))" emptyHint="Sem falhas no período." />
-            <DimChart title="Impressões por layout" data={byLayout} fill="#0ea5e9" />
+            <DimChart title="Impressões por impressora" data={byPrinter} fill="#3b82f6" />
+            <DimChart title="Falhas por impressora" data={byPrinter.map((d) => ({ ...d, jobs: d.failed }))} fill="#ef4444" emptyHint="Sem falhas no período." />
+            <DimChart title="Impressões por layout" data={byLayout} fill="#06b6d4" />
             <DimChart title="Impressões por usuário" data={byUser} fill="#8b5cf6" />
             <DimChart title="Top produtos" data={byProduct} fill="#10b981" />
             <Card className="p-4">
@@ -305,10 +305,10 @@ function Stat({
   label, value, tone = "muted",
 }: { label: string; value: number | string; tone?: "muted" | "destructive" | "warn" | "secondary" | "success" }) {
   const cls =
-    tone === "destructive" ? "border-destructive/40 bg-destructive/5" :
-    tone === "warn" ? "border-amber-300 bg-amber-50" :
-    tone === "secondary" ? "border-primary/30 bg-primary/5" :
-    tone === "success" ? "border-emerald-300/40 bg-emerald-50/40" : "";
+    tone === "destructive" ? "border-red-300/60 bg-red-50/60 dark:border-red-900/40 dark:bg-red-950/30" :
+    tone === "warn" ? "border-amber-300/60 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/30" :
+    tone === "secondary" ? "border-violet-300/60 bg-violet-50/60 dark:border-violet-900/40 dark:bg-violet-950/30" :
+    tone === "success" ? "border-emerald-300/60 bg-emerald-50/60 dark:border-emerald-900/40 dark:bg-emerald-950/30" : "";
   return (
     <Card className={`p-3 ${cls}`}>
       <div className="text-xs text-muted-foreground">{label}</div>
