@@ -4,9 +4,11 @@ import {
   LogOut, Tag, Package, FolderTree, Bookmark, Leaf, AlertCircle, Activity,
   LayoutTemplate, Ruler, FolderKanban, Printer, PrinterCheck, History, DollarSign, Percent,
   BarChart3, Plug, MessageSquare, PanelLeftClose, PanelLeftOpen, Menu, ChevronDown,
+  Sun, Moon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompanySwitcher } from "@/components/company-switcher";
