@@ -53,9 +53,17 @@ export function buildAgentClient(companyId: string | null | undefined): PrintAge
     return createMockPrintAgent({ online: true });
   }
   return new PrintAgentClient({
-    token: getStoredAgentToken(companyId),
+    // O token gravado no navegador pode ficar obsoleto após novo pareamento.
+    // O Print Agent local lê o agent.json a cada requisição; para evitar 401 por
+    // token antigo no browser, a autenticação operacional usa o pareamento local
+    // + X-Company-Id. O token armazenado fica apenas para diagnóstico/legado.
+    token: null,
     companyId: companyId ?? null,
   });
+}
+
+function tokenPrefix(token: string | null): string | null {
+  return token ? token.slice(0, 12) : null;
 }
 
 export interface UsePrintAgentResult {
@@ -98,6 +106,15 @@ export function usePrintAgent(companyId: string | null | undefined): UsePrintAge
       alive = false;
     };
   }, [client]);
+
+  useEffect(() => {
+    if (!companyId || !token || !health?.token_prefix) return;
+    if (tokenPrefix(token) !== health.token_prefix) {
+      setStoredAgentToken(companyId, null);
+      setTokenState(null);
+      setTick((n) => n + 1);
+    }
+  }, [companyId, health?.token_prefix, token]);
 
   return {
     health,

@@ -112,6 +112,9 @@ export type AgentErrorCode =
   | "INVALID_TOKEN"
   | "MISSING_TOKEN"
   | "NOT_PAIRED"
+  | "TOKEN_EXPIRED"
+  | "COMPANY_ID_MISMATCH"
+  | "DEVICE_ID_MISMATCH"
   | "PRINTER_NOT_FOUND"
   | "PRINTER_OFFLINE"
   | "INVALID_PAYLOAD"
@@ -122,7 +125,8 @@ export type AgentErrorCode =
 
 export interface AgentErrorBody {
   code: AgentErrorCode;
-  message: string;
+  message?: string;
+  error?: string;
   details?: Record<string, unknown>;
 }
 
@@ -131,11 +135,68 @@ export interface AgentHealth {
   version?: string;
   status?: string;
   reachable: boolean;
+  connected?: boolean;
   paired?: boolean;
+  token_valid?: boolean | null;
+  token_prefix?: string | null;
+  token_length?: number | null;
   company_id?: string | null;
+  device_id?: string | null;
   device_name?: string | null;
+  port?: number;
+  service?: Record<string, unknown>;
+  profile?: Record<string, unknown>;
   error?: string;
   code?: AgentErrorCode;
+}
+
+export interface AgentTokenDiagnostic {
+  present: boolean;
+  prefix: string | null;
+  suffix: string | null;
+  length: number;
+}
+
+export interface AgentDiagnosticStep {
+  key: string;
+  label: string;
+  ok: boolean;
+  status?: string;
+  message?: string;
+  details?: Record<string, unknown>;
+}
+
+export interface AgentDiagnosticsReport {
+  ok: boolean;
+  generated_at: string;
+  version?: string;
+  base_url?: string;
+  port?: number;
+  health?: AgentHealth | null;
+  agent_json?: Record<string, unknown> | null;
+  service?: Record<string, unknown> | null;
+  auth?: {
+    token_found: AgentTokenDiagnostic;
+    token_sent: AgentTokenDiagnostic;
+    token_expected: AgentTokenDiagnostic;
+    company_id_sent: string | null;
+    company_id_expected: string | null;
+    device_id_expected: string | null;
+    validation_result: string;
+    failure_reason: string | null;
+    token_valid: boolean | null;
+  };
+  exchange?: Record<string, unknown> | null;
+  printers_check?: {
+    ok: boolean;
+    status: number;
+    code?: AgentErrorCode | string;
+    message?: string;
+    count?: number;
+    printers?: AgentPrinter[];
+    details?: Record<string, unknown>;
+  };
+  steps: AgentDiagnosticStep[];
 }
 
 

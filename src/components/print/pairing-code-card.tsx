@@ -22,6 +22,7 @@ import {
 import { KeyRound, Copy, Loader2, Download, Clock, Laptop } from "lucide-react";
 import { toast } from "sonner";
 import { createPairingCode, listActivePairingCodes } from "@/lib/print/pairing-codes.functions";
+import { usePrintAgent } from "@/lib/print/use-print-agent";
 
 interface Props {
   companyId: string;
@@ -48,6 +49,7 @@ function useCountdown(expiresAt: string | null): string {
 
 export function PairingCodeCard({ companyId }: Props) {
   const qc = useQueryClient();
+  const agent = usePrintAgent(companyId);
   const [label, setLabel] = useState("Estação principal");
   const create = useServerFn(createPairingCode);
   const list = useServerFn(listActivePairingCodes);
@@ -102,7 +104,10 @@ export function PairingCodeCard({ companyId }: Props) {
         clearTimeout(timer);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data?.token) {
+        agent.setToken(data.token);
+      }
       toast.success("Esta estação foi pareada com sucesso!");
       setPairOpen(false);
       setPairCode("");

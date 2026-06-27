@@ -21,7 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Wifi, WifiOff, Loader2, RefreshCcw, Search, Printer as PrinterIcon,
-  Link2, Settings2, FlaskConical, CheckCircle2, ArrowLeft, ArrowRight, AlertTriangle, KeyRound,
+  Link2, Settings2, FlaskConical, CheckCircle2, ArrowLeft, ArrowRight, AlertTriangle, ClipboardList,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onRequestPairing?: () => void;
+  onRequestDiagnostics?: () => void;
 }
 
 
@@ -70,7 +71,7 @@ async function logAudit(
   }
 }
 
-export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing }: Props) {
+export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnostics }: Props) {
   const qc = useQueryClient();
   const agent = usePrintAgent(companyId);
   const [step, setStep] = useState<StepId>(1);
@@ -82,9 +83,9 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
     agent.health?.code === "NOT_PAIRED" ||
     (agent.health?.ok === true && agent.health?.paired === false);
 
-  function goToPairing() {
+  function goToDiagnostics() {
     onClose();
-    onRequestPairing?.();
+    onRequestDiagnostics?.();
   }
 
 
@@ -146,7 +147,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
   // === Ações ===
   async function detectPrinters() {
     if (!isPaired) {
-      setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+      setDetectError("Agente não autorizado. Execute o Diagnóstico Completo em Configurações > Impressoras para identificar a causa antes de parear novamente.");
       setStep(1);
       return;
     }
@@ -160,7 +161,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
       setDetected([]);
       const code = e?.code as string | undefined;
       if (code === "UNAUTHORIZED" || code === "INVALID_TOKEN" || code === "MISSING_TOKEN" || code === "NOT_PAIRED") {
-        setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+        setDetectError(`Agente não autorizado (${code}). Execute o Diagnóstico Completo para ver se o token está ausente, inválido, divergente ou se o agent.json não foi reconhecido.`);
         await agent.refresh();
         setStep(1);
       } else {
@@ -371,10 +372,10 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
                   <AlertTriangle className="size-4" />
                   <AlertTitle>Agente não autorizado</AlertTitle>
                   <AlertDescription className="text-sm space-y-2">
-                    <p>O agente local respondeu, mas não está pareado ou o token foi invalidado. Realize o pareamento novamente para liberar a detecção de impressoras.</p>
-                    {onRequestPairing && (
-                      <Button size="sm" onClick={goToPairing}>
-                        <KeyRound className="size-4" /> Parear novamente
+                    <p>O agente local respondeu, mas a autenticação ainda não foi reconhecida. Execute o Diagnóstico Completo para identificar a causa antes de qualquer novo pareamento.</p>
+                    {onRequestDiagnostics && (
+                      <Button size="sm" onClick={goToDiagnostics}>
+                        <ClipboardList className="size-4" /> Abrir diagnóstico
                       </Button>
                     )}
                   </AlertDescription>
@@ -387,7 +388,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
                   <AlertDescription className="text-sm space-y-1">
                     <p>1. Baixe o instalador na seção <strong>Print Agent</strong> desta tela.</p>
                     <p>2. Instale como Administrador (cria o serviço Windows <code>LovablePrintAgent</code>).</p>
-                    <p>3. Gere um código de 6 dígitos no card <strong>Pareamento do Print Agent</strong> e rode na estação: <code>PrintAgent.exe pair 123456</code>.</p>
+                    <p>3. Gere um código de 6 dígitos no card <strong>Pareamento do Print Agent</strong> e use o botão <strong>Parear este computador</strong>, sem Prompt de Comando.</p>
                     <p>4. Clique em "Verificar" acima para confirmar.</p>
                   </AlertDescription>
                 </Alert>

@@ -1499,9 +1499,12 @@ export type Database = {
       }
       print_agent_pairings: {
         Row: {
+          agent_version: string | null
           company_id: string
           created_at: string
           created_by: string | null
+          device_id: string | null
+          device_name: string | null
           id: string
           label: string
           last_seen_at: string | null
@@ -1514,9 +1517,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agent_version?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
+          device_id?: string | null
+          device_name?: string | null
           id?: string
           label: string
           last_seen_at?: string | null
@@ -1529,9 +1535,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agent_version?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
+          device_id?: string | null
+          device_name?: string | null
           id?: string
           label?: string
           last_seen_at?: string | null
