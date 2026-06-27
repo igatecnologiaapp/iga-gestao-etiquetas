@@ -146,7 +146,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
   // === Ações ===
   async function detectPrinters() {
     if (!isPaired) {
-      setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+      setDetectError("Agente não autorizado. Execute o Diagnóstico Completo em Configurações > Impressoras para identificar a causa antes de parear novamente.");
       setStep(1);
       return;
     }
@@ -160,7 +160,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
       setDetected([]);
       const code = e?.code as string | undefined;
       if (code === "UNAUTHORIZED" || code === "INVALID_TOKEN" || code === "MISSING_TOKEN" || code === "NOT_PAIRED") {
-        setDetectError("Agente não autorizado. Realize o pareamento novamente.");
+        setDetectError(`Agente não autorizado (${code}). Execute o Diagnóstico Completo para ver se o token está ausente, inválido, divergente ou se o agent.json não foi reconhecido.`);
         await agent.refresh();
         setStep(1);
       } else {
@@ -371,10 +371,10 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestPairing 
                   <AlertTriangle className="size-4" />
                   <AlertTitle>Agente não autorizado</AlertTitle>
                   <AlertDescription className="text-sm space-y-2">
-                    <p>O agente local respondeu, mas não está pareado ou o token foi invalidado. Realize o pareamento novamente para liberar a detecção de impressoras.</p>
+                    <p>O agente local respondeu, mas a autenticação ainda não foi reconhecida. Execute o Diagnóstico Completo na tela de Impressoras antes de parear novamente.</p>
                     {onRequestPairing && (
                       <Button size="sm" onClick={goToPairing}>
-                        <KeyRound className="size-4" /> Parear novamente
+                        <KeyRound className="size-4" /> Abrir pareamento
                       </Button>
                     )}
                   </AlertDescription>
