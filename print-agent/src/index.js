@@ -322,14 +322,15 @@ async function pair(code, apiBase = DEFAULT_API) {
   if (cleaned.length !== 6) throw new Error("Código deve ter 6 dígitos.");
   const url = `${apiBase.replace(/\/$/, "")}/api/public/print-agent/exchange`;
   log("Trocando código por token em", url);
+  const existing = loadProfile();
+  const deviceId = existing?.device_id || generateDeviceId();
   const result = await postJson(url, {
     code: cleaned,
+    device_id: deviceId,
     device_name: os.hostname(),
     agent_version: VERSION,
   });
   if (!result.ok || !result.token) throw new Error("Resposta sem token.");
-  const existing = loadProfile();
-  const deviceId = existing?.device_id || generateDeviceId();
   const sanitizedExchange = sanitizeExchangePayload(result);
   saveProfile({
     paired: true,

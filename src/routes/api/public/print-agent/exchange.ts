@@ -15,6 +15,7 @@ import { z } from "zod";
 
 const BodySchema = z.object({
   code: z.string().regex(/^\d{6}$/),
+  device_id: z.string().trim().min(1).max(80).optional(),
   device_name: z.string().trim().min(1).max(120).optional(),
   agent_version: z.string().trim().max(40).optional(),
 });
@@ -75,9 +76,12 @@ export const Route = createFileRoute("/api/public/print-agent/exchange")({
             label: finalLabel.slice(0, 200),
             token_prefix: prefix,
             token_hash: hash,
+            device_id: parsed.device_id ?? null,
+            device_name: parsed.device_name ?? null,
+            agent_version: parsed.agent_version ?? null,
             status: "active",
           } as never)
-          .select("id,company_id,label,token_prefix,created_at")
+          .select("id,company_id,label,token_prefix,device_id,device_name,agent_version,created_at")
           .single();
 
         if (pairErr || !pairing) return jsonError("Falha ao registrar pareamento", 500, "PAIRING_FAILED");
