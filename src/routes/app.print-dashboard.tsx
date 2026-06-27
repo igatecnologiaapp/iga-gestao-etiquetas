@@ -261,9 +261,9 @@ function Page() {
           </Card>
 
           <div className="grid lg:grid-cols-2 gap-4">
-            <DimChart title="Impressões por impressora" data={byPrinter} fill="hsl(var(--primary))" />
-            <DimChart title="Falhas por impressora" data={byPrinter.map((d) => ({ ...d, jobs: d.failed }))} fill="hsl(var(--destructive))" emptyHint="Sem falhas no período." />
-            <DimChart title="Impressões por layout" data={byLayout} fill="#0ea5e9" />
+            <DimChart title="Impressões por impressora" data={byPrinter} fill="#3b82f6" />
+            <DimChart title="Falhas por impressora" data={byPrinter.map((d) => ({ ...d, jobs: d.failed }))} fill="#ef4444" emptyHint="Sem falhas no período." />
+            <DimChart title="Impressões por layout" data={byLayout} fill="#06b6d4" />
             <DimChart title="Impressões por usuário" data={byUser} fill="#8b5cf6" />
             <DimChart title="Top produtos" data={byProduct} fill="#10b981" />
             <Card className="p-4">
