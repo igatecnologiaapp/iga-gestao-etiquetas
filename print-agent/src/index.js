@@ -18,13 +18,14 @@ const https = require("https");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const crypto = require("crypto");
 const { spawnSync, spawn } = require("child_process");
 const express = require("express");
 const cors = require("cors");
 
 // -------- Config --------
 const PORT = Number(process.env.PRINT_AGENT_PORT || 17777);
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 const BASE_DIR = process.platform === "win32"
   ? path.join(process.env.PROGRAMDATA || "C:\\ProgramData", "LovablePrintAgent")
   : path.join(os.homedir(), ".lovable-print-agent");
@@ -56,6 +57,227 @@ function saveProfile(profile) {
   ensureDir();
   fs.writeFileSync(PROFILE_PATH, JSON.stringify(profile, null, 2), "utf8");
   try { fs.chmodSync(PROFILE_PATH, 0o600); } catch {}
+}
+
+function generateDeviceId() {
+  return `lpa_${crypto.randomBytes(12).toString("hex")}`;
+}
+
+function tokenInfo(token) {
+  const value = typeof token === "string" ? token : "";
+  return {
+    present: value.length > 0,
+    prefix: value ? value.slice(0, 12) : null,
+    suffix: value ? value.slice(-6) : null,
+    length: value.length,
+  };
+}
+
+function sanitizeProfile(profile) {
+  if (!profile) return { exists: false, path: PROFILE_PATH, paired: false, token_present: false };
+  const info = tokenInfo(profile.token);
+  return {
+    exists: true,
+    path: PROFILE_PATH,
+    paired: profile.paired !== false && !!profile.token,
+    company_id: profile.company_id ?? null,
+    device_id: profile.device_id ?? null,
+    device_name: profile.device_name ?? os.hostname(),
+    pairing_id: profile.pairing_id ?? null,
+    label: profile.label ?? null,
+    api_base: profile.api_base ?? null,
+    paired_at: profile.paired_at ?? null,
+    token_present: info.present,
+    token_prefix: info.prefix,
+    token_suffix: info.suffix,
+    token_length: info.length,
+    last_exchange: profile.last_exchange ?? null,
+    credentials_reload: "agent.json é lido novamente a cada requisição; reinício do serviço não é necessário para trocar token.",
+  };
+}
+
+function queryWindowsService() {
+  const serviceName = "LovablePrintAgent";
+  const base = {
+    service_name: serviceName,
+    platform: process.platform,
+    pid: process.pid,
+    process_path: process.execPath,
+    running: true,
+    port: PORT,
+  };
+  if (process.platform !== "win32") return { ...base, installed: null, state: "not_windows" };
+  try {
+    const r = spawnSync("sc", ["query", serviceName], { encoding: "utf8", timeout: 5000 });
+    const out = `${r.stdout || ""}\n${r.stderr || ""}`;
+    const stateMatch = out.match(/STATE\s*:\s*\d+\s+(\w+)/i);
+    return {
+      ...base,
+      installed: r.status === 0,
+      state: stateMatch?.[1] ?? (r.status === 0 ? "UNKNOWN" : "NOT_INSTALLED"),
+      raw_status: out.slice(0, 800),
+    };
+  } catch (e) {
+    return { ...base, installed: null, state: "QUERY_FAILED", error: e.message };
+  }
+}
+
+function sanitizeExchangePayload(result) {
+  if (!result || typeof result !== "object") return null;
+  const info = tokenInfo(result.token);
+  return {
+    ok: !!result.ok,
+    company_id: result.company_id ?? result.pairing?.company_id ?? null,
+    pairing_id: result.pairing?.id ?? null,
+    label: result.pairing?.label ?? null,
+    token_returned: info.present,
+    token_prefix: info.prefix,
+    token_length: info.length,
+    paired: result.paired ?? true,
+    exchanged_at: new Date().toISOString(),
+  };
+}
+
+function buildHealth() {
+  const profile = loadProfile();
+  const info = tokenInfo(profile?.token);
+  const paired = !!profile?.token && profile.paired !== false;
+  return {
+    ok: true,
+    reachable: true,
+    connected: true,
+    status: "ok",
+    version: VERSION,
+    port: PORT,
+    paired,
+    token_valid: paired ? true : false,
+    token_prefix: info.prefix,
+    token_length: info.length || null,
+    company_id: profile?.company_id ?? null,
+    device_id: profile?.device_id ?? null,
+    device_name: profile?.device_name ?? os.hostname(),
+    platform: process.platform,
+    service: queryWindowsService(),
+    profile: sanitizeProfile(profile),
+  };
+}
+
+function buildAuthReport(req) {
+  const profile = loadProfile();
+  const header = req.headers.authorization || "";
+  const sentToken = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const sentCompanyId = req.headers["x-company-id"] ? String(req.headers["x-company-id"]) : null;
+  let validation_result = "valid";
+  let failure_reason = null;
+  let status = 200;
+  let code = null;
+  let message = "Autenticação local válida.";
+
+  if (!profile || !profile.token || profile.paired === false) {
+    validation_result = "failed";
+    failure_reason = "estação não pareada";
+    status = 401;
+    code = "NOT_PAIRED";
+    message = "Estação não pareada: agent.json ausente ou sem token.";
+  } else if (!sentCompanyId) {
+    validation_result = "failed";
+    failure_reason = "company_id ausente";
+    status = 401;
+    code = "UNAUTHORIZED";
+    message = "Cabeçalho X-Company-Id não foi enviado.";
+  } else if (sentCompanyId !== profile.company_id) {
+    validation_result = "failed";
+    failure_reason = "company_id divergente";
+    status = 401;
+    code = "COMPANY_ID_MISMATCH";
+    message = "Empresa enviada não corresponde ao pareamento gravado no agent.json.";
+  } else if (sentToken && sentToken !== profile.token) {
+    validation_result = "failed";
+    failure_reason = "token inválido";
+    status = 401;
+    code = "INVALID_TOKEN";
+    message = "Token enviado pelo navegador é diferente do token gravado no agent.json.";
+  } else if (!sentToken) {
+    validation_result = "valid_without_browser_token";
+    message = "Token do navegador não foi enviado; aceito porque a estação local está pareada e a empresa confere.";
+  }
+
+  const auth = {
+    token_found: tokenInfo(profile?.token),
+    token_sent: tokenInfo(sentToken),
+    token_expected: tokenInfo(profile?.token),
+    company_id_sent: sentCompanyId,
+    company_id_expected: profile?.company_id ?? null,
+    device_id_expected: profile?.device_id ?? null,
+    validation_result,
+    failure_reason,
+    token_valid: status === 200,
+  };
+  return { ok: status === 200, status, code, message, auth };
+}
+
+function authErrorBody(report) {
+  return {
+    ok: false,
+    code: report.code || "UNAUTHORIZED",
+    message: report.message,
+    error: report.message,
+    details: {
+      reason: report.auth.failure_reason || "outro motivo",
+      validation_result: report.auth.validation_result,
+      token_found: report.auth.token_found,
+      token_sent: report.auth.token_sent,
+      token_expected: report.auth.token_expected,
+      company_id_sent: report.auth.company_id_sent,
+      company_id_expected: report.auth.company_id_expected,
+      device_id_expected: report.auth.device_id_expected,
+    },
+  };
+}
+
+function buildDiagnostics(req) {
+  const health = buildHealth();
+  const profile = loadProfile();
+  const service = queryWindowsService();
+  const authReport = buildAuthReport(req);
+  let printersCheck;
+  if (!authReport.ok) {
+    printersCheck = {
+      ok: false,
+      status: authReport.status,
+      code: authReport.code,
+      message: authReport.message,
+      details: authErrorBody(authReport).details,
+    };
+  } else {
+    const printers = listWindowsPrinters();
+    printersCheck = { ok: true, status: 200, count: printers.length, printers };
+  }
+  const steps = [
+    { key: "installation", label: "Verificar instalação do agente", ok: true, message: `Processo ativo em ${process.execPath}` },
+    { key: "windows_service", label: "Verificar serviço Windows", ok: service.platform !== "win32" || service.installed !== false, status: service.state, message: service.platform === "win32" ? `Serviço ${service.service_name}: ${service.state}` : "Não aplicável fora do Windows." },
+    { key: "port", label: "Verificar porta 17777", ok: true, message: `Servidor respondendo em 127.0.0.1:${PORT}` },
+    { key: "health", label: "Verificar /health", ok: health.ok && health.reachable, message: health.paired ? "Health respondeu com estação pareada." : "Health respondeu, mas estação não está pareada." },
+    { key: "token", label: "Verificar token", ok: !!profile?.token, status: profile?.token ? "TOKEN_FOUND" : "MISSING_TOKEN", message: profile?.token ? "Token encontrado no agent.json." : "Token inexistente no agent.json." },
+    { key: "agent_json", label: "Verificar agent.json", ok: !!profile, message: profile ? `agent.json lido em ${PROFILE_PATH}` : `agent.json não encontrado em ${PROFILE_PATH}` },
+    { key: "pairing", label: "Verificar pareamento", ok: !!profile?.token && profile.paired !== false, message: profile?.token ? `Pareado com empresa ${profile.company_id}` : "Estação não pareada." },
+    { key: "auth", label: "Verificar autenticação", ok: authReport.ok, status: authReport.code || authReport.auth.validation_result, message: authReport.message },
+    { key: "printers", label: "Verificar GET /printers", ok: printersCheck.ok, status: printersCheck.code || String(printersCheck.status), message: printersCheck.ok ? `${printersCheck.count} impressora(s) retornada(s).` : printersCheck.message },
+  ];
+  return {
+    ok: steps.every((s) => s.ok),
+    generated_at: new Date().toISOString(),
+    version: VERSION,
+    base_url: `http://127.0.0.1:${PORT}`,
+    port: PORT,
+    health,
+    agent_json: sanitizeProfile(profile),
+    service,
+    auth: authReport.auth,
+    exchange: profile?.last_exchange ?? null,
+    printers_check: printersCheck,
+    steps,
+  };
 }
 
 // -------- Pareamento --------
