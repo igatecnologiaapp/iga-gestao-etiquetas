@@ -233,7 +233,7 @@ function buildServer() {
     try {
       const { code, api_base } = req.body || {};
       const result = await pair(code, api_base || DEFAULT_API);
-      res.json({ ok: true, company_id: result.company_id });
+      res.json({ ok: true, token: result.token, company_id: result.company_id, pairing_id: result.pairing?.id });
     } catch (e) {
       res.status(400).json({ ok: false, error: e.message });
     }
