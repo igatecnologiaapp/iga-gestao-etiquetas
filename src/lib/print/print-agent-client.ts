@@ -161,7 +161,8 @@ export class PrintAgentClient {
   }
 
   async testPrinter(printerId: string): Promise<{ ok: boolean }> {
-    return this.request<{ ok: boolean }>(`/printers/${encodeURIComponent(printerId)}/test`, { method: "POST" });
+    await this.printTestPage(printerId);
+    return { ok: true };
   }
 
   async printTestPage(printerId: string): Promise<AgentPrintResponse> {
