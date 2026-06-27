@@ -58,6 +58,10 @@ export function buildAgentClient(companyId: string | null | undefined): PrintAge
   });
 }
 
+function tokenPrefix(token: string | null): string | null {
+  return token ? token.slice(0, 12) : null;
+}
+
 export interface UsePrintAgentResult {
   health: AgentHealth | null;
   loading: boolean;
@@ -98,6 +102,15 @@ export function usePrintAgent(companyId: string | null | undefined): UsePrintAge
       alive = false;
     };
   }, [client]);
+
+  useEffect(() => {
+    if (!companyId || !token || !health?.token_prefix) return;
+    if (tokenPrefix(token) !== health.token_prefix) {
+      setStoredAgentToken(companyId, null);
+      setTokenState(null);
+      setTick((n) => n + 1);
+    }
+  }, [companyId, health?.token_prefix, token]);
 
   return {
     health,
