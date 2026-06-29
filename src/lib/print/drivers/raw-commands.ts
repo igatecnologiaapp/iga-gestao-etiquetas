@@ -123,7 +123,7 @@ export function normalizeRawLanguage(
 }
 
 export function toDriverLanguage(language: DirectRawLanguage | null): DriverLanguage {
-  if (language === "ZPL" || language === "EPL" || language === "PPLA" || language === "PPLB" || language === "TSPL") return language;
+  if (language === "ZPL" || language === "EPL" || language === "PPLA" || language === "PPLB" || language === "TSPL" || language === "ESCPOS" || language === "GDI") return language;
   return "driver";
 }
 
