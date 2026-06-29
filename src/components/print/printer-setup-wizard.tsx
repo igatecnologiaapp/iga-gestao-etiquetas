@@ -116,6 +116,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
   const [testLanguage, setTestLanguage] = useState<string>("driver");
   const [testProgress, setTestProgress] = useState<string[]>([]);
   const [testDetails, setTestDetails] = useState<Record<string, unknown> | null>(null);
+  const [testTimeoutMs, setTestTimeoutMs] = useState<number>(60000);
 
   // Etapa 7 — ativação
   const [activateDefault, setActivateDefault] = useState(false);
@@ -134,6 +135,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
       setTestLanguage("driver");
       setTestProgress([]);
       setTestDetails(null);
+      setTestTimeoutMs(60000);
       setActivateDefault(false);
     }
   }, [open]);
@@ -274,7 +276,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
         ? normalizeRawLanguage(savedPrinter.raw_language, savedPrinter.driver_name, savedPrinter.manufacturer, savedPrinter.model)
         : testLanguage;
       setTestProgress((p) => [...p, "Enviando ao spooler", "Aguardando impressora"]);
-      const res = await agent.client.printTestPage(savedPrinter.agent_printer_id, { language, timeoutMs: 60000 });
+      const res = await agent.client.printTestPage(savedPrinter.agent_printer_id, { language, timeoutMs: testTimeoutMs });
       setTestStatus("ok");
       setTestDetails(res as any);
       await PrinterService.update(savedPrinter.id, {
@@ -310,7 +312,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
     setTestStatus("running"); setTestError(null); setTestDetails(null);
     setTestProgress(["Gerando comando", "Enviando ao agente", "Testando comunicação com spooler"]);
     try {
-      const res = await agent.client.testSpooler(savedPrinter.agent_printer_id, testLanguage, 60000);
+      const res = await agent.client.testSpooler(savedPrinter.agent_printer_id, testLanguage, testTimeoutMs);
       setTestStatus("ok");
       setTestDetails(res as any);
       await logAudit(companyId, "wizard.spooler_test_ok", savedPrinter.id, res as any);
@@ -336,7 +338,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
         driver: savedPrinter.driver_name,
         language,
         copies: 1,
-        timeoutMs: 60000,
+        timeoutMs: testTimeoutMs,
       });
       setTestStatus("ok");
       setTestDetails(res as any);
