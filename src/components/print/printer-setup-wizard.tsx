@@ -647,7 +647,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
           {step === 6 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Envia uma etiqueta de teste real à impressora via <code>POST /printers/{`{id}`}/test-page</code>.
+                Envia uma etiqueta de teste real à impressora via <code>POST /printers/{`{id}`}/test-page</code> ou RAW mínimo via <code>POST /print</code>.
               </p>
               <Card className="p-3 flex items-center gap-3">
                 <FlaskConical className="size-5" />
@@ -659,12 +659,26 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
                   Imprimir teste
                 </Button>
               </Card>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={runSimpleRawTest} disabled={testStatus === "running" || !savedPrinter?.agent_printer_id}>
+                  {testStatus === "running" ? <Loader2 className="size-4 animate-spin" /> : <FlaskConical className="size-4" />}
+                  Testar impressão direta simples
+                </Button>
+                <Button variant="outline" onClick={runSpoolerTest} disabled={testStatus === "running" || !savedPrinter?.agent_printer_id}>
+                  Testar comunicação com spooler
+                </Button>
+              </div>
+              {testProgress.length > 0 && (
+                <Card className="p-3 text-xs space-y-1">
+                  {testProgress.map((p) => <div key={p}>• {p}</div>)}
+                </Card>
+              )}
               {testStatus === "ok" && (
                 <Alert>
                   <CheckCircle2 className="size-4" />
                   <AlertTitle>Teste enviado com sucesso</AlertTitle>
                   <AlertDescription className="text-xs">
-                    Verifique fisicamente se a etiqueta saiu correta antes de avançar.
+                    Verifique fisicamente se a etiqueta saiu correta antes de avançar. Endpoint: <code>{String((testDetails as any)?.endpoint ?? `/printers/${savedPrinter?.agent_printer_id}/test-page`)}</code>; RAW: <code>{String((testDetails as any)?.rawBytes ?? "—")}</code> bytes; linguagem: <code>{String((testDetails as any)?.language ?? testLanguage)}</code>.
                   </AlertDescription>
                 </Alert>
               )}
@@ -672,7 +686,10 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
                 <Alert variant="destructive">
                   <AlertTriangle className="size-4" />
                   <AlertTitle>Falha no teste</AlertTitle>
-                  <AlertDescription className="text-xs">{testError}</AlertDescription>
+                  <AlertDescription className="text-xs space-y-2">
+                    <div>{testError}</div>
+                    {testDetails && <pre className="max-h-40 overflow-auto rounded bg-muted p-2 whitespace-pre-wrap">{JSON.stringify(testDetails, null, 2)}</pre>}
+                  </AlertDescription>
                 </Alert>
               )}
             </div>
