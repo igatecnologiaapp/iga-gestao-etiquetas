@@ -1,8 +1,8 @@
 // FASE 6 — Validações de configurações técnicas de impressora.
 // Espelham as CHECK constraints do banco para feedback imediato no front.
 
-export type RawLanguage = "driver" | "ZPL" | "EPL" | "PPLB" | "TSPL";
-export const RAW_LANGUAGES: RawLanguage[] = ["driver", "ZPL", "EPL", "PPLB", "TSPL"];
+export type RawLanguage = "driver" | "ZPL" | "EPL" | "PPLA" | "PPLB" | "TSPL" | "ESCPOS" | "GDI";
+export const RAW_LANGUAGES: RawLanguage[] = ["driver", "ZPL", "EPL", "PPLA", "PPLB", "TSPL", "ESCPOS", "GDI"];
 export const ROTATION_VALUES = [0, 90, 180, 270] as const;
 
 export interface PrinterTechnicalConfig {

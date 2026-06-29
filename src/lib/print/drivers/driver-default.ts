@@ -3,6 +3,7 @@
 // ao driver nativo instalado no SO. Sempre disponível como fallback final.
 
 import type { AdapterContext, AdapterOutput, PrintDriver } from "./types";
+import { buildPlainTextRaw } from "./raw-commands";
 
 export const DefaultDriver: PrintDriver = {
   language: "driver",
@@ -13,7 +14,8 @@ export const DefaultDriver: PrintDriver = {
   render(ctx: AdapterContext): AdapterOutput {
     return {
       language: "driver",
-      kind: "dimensional",
+      kind: "raw",
+      raw: buildPlainTextRaw(ctx),
       dimensional: ctx.dimensional,
       warnings: [],
       maturity: "stable",

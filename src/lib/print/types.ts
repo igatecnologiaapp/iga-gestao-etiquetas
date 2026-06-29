@@ -204,6 +204,7 @@ export interface AgentPrinter {
   id: string;
   name: string;
   driver?: string;
+  port?: string;
   default?: boolean;
   status?: "online" | "offline" | "unknown";
 }
@@ -215,11 +216,20 @@ export interface AgentPrintRequest {
   raw?: string;
   pdfBase64?: string;
   jobName?: string;
+  language?: string;
   metadata?: Record<string, unknown>;
 }
 
 export interface AgentPrintResponse {
   jobId: string;
+  ok?: boolean;
+  endpoint?: string;
+  status?: string;
+  printerId?: string;
+  rawBytes?: number;
+  language?: string | null;
+  copies?: number;
+  spooler?: Record<string, unknown>;
 }
 
 export interface AgentJobStatus {
