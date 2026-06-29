@@ -35,7 +35,7 @@ export interface PrintAgentClientOptions {
 }
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:17777";
-const DEFAULT_TIMEOUT = 15000;
+const DEFAULT_TIMEOUT = 30000;
 
 export class PrintAgentOfflineError extends Error {
   code: AgentErrorCode = "AGENT_OFFLINE";
@@ -81,9 +81,9 @@ export class PrintAgentClient {
     return base;
   }
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async request<T>(path: string, init: RequestInit = {}, timeoutMs?: number): Promise<T> {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs ?? this.timeoutMs);
     try {
       const res = await this.fetchImpl(`${this.baseUrl}${path}`, {
         ...init,
@@ -170,7 +170,7 @@ export class PrintAgentClient {
     return this.request<AgentPrintResponse>(`/printers/${encodeURIComponent(printerId)}/test-page`, {
       method: "POST",
       body: JSON.stringify({ language: opts.language ?? null, raw: opts.raw ?? null, timeoutMs: opts.timeoutMs ?? null }),
-    });
+    }, opts.timeoutMs ?? 60000);
   }
 
   async printSimpleRawTest(input: { printerId: string; printerName?: string | null; driver?: string | null; language?: string | null; copies?: number; timeoutMs?: number }): Promise<AgentPrintResponse> {
@@ -186,14 +186,14 @@ export class PrintAgentClient {
         jobName: "Teste de impressão direta simples",
         metadata: { test: true, rawBytes: rawSize(raw), language, endpoint: "/print" },
       }),
-    });
+    }, input.timeoutMs ?? 60000);
   }
 
-  async testSpooler(printerId: string, language?: string | null): Promise<AgentPrintResponse> {
+  async testSpooler(printerId: string, language?: string | null, timeoutMs = 60000): Promise<AgentPrintResponse> {
     return this.request<AgentPrintResponse>(`/printers/${encodeURIComponent(printerId)}/spooler-test`, {
       method: "POST",
-      body: JSON.stringify({ language: language ?? null }),
-    });
+      body: JSON.stringify({ language: language ?? null, timeoutMs }),
+    }, timeoutMs);
   }
 
   async testConnection(): Promise<boolean> {
