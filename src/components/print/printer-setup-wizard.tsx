@@ -191,6 +191,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
         name,
         agent_printer_id: selectedAgentPrinter.id,
         driver_name: selectedAgentPrinter.driver ?? null,
+        raw_language: normalizeRawLanguage(null, selectedAgentPrinter.driver, null, selectedAgentPrinter.name) ?? "driver",
         status: "ativo",
       };
       let saved: PrinterConfig;
@@ -222,6 +223,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
         rotation: saved.rotation ?? 0, auto_cut: !!saved.auto_cut,
         label_advance: saved.label_advance ?? 0,
       });
+      setTestLanguage(saved.raw_language ?? normalizeRawLanguage(null, saved.driver_name, saved.manufacturer, saved.model) ?? "driver");
       qc.invalidateQueries({ queryKey: ["printers"] });
       setStep(4);
     },
