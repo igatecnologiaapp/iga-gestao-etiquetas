@@ -257,9 +257,9 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
   const saveTech = useMutation({
     mutationFn: async () => {
       if (!savedPrinter) throw new Error("Impressora não definida.");
-      const updated = await PrinterService.update(savedPrinter.id, tech as any);
+      const updated = await PrinterService.update(savedPrinter.id, { ...tech, raw_language: testLanguage } as any);
       setSavedPrinter(updated);
-      await logAudit(companyId, "wizard.update_tech_config", savedPrinter.id, tech);
+      await logAudit(companyId, "wizard.update_tech_config", savedPrinter.id, { ...tech, raw_language: testLanguage });
     },
     onSuccess: () => { setStep(6); qc.invalidateQueries({ queryKey: ["printers"] }); },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar configurações."),
@@ -267,23 +267,85 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
 
   async function runTestPrint() {
     if (!savedPrinter?.agent_printer_id) return;
-    setTestStatus("running"); setTestError(null);
+    setTestStatus("running"); setTestError(null); setTestDetails(null);
+    setTestProgress(["Gerando comando", "Enviando ao agente"]);
     try {
-      await agent.client.printTestPage(savedPrinter.agent_printer_id);
+      const language = testLanguage === "driver"
+        ? normalizeRawLanguage(savedPrinter.raw_language, savedPrinter.driver_name, savedPrinter.manufacturer, savedPrinter.model)
+        : testLanguage;
+      setTestProgress((p) => [...p, "Enviando ao spooler", "Aguardando impressora"]);
+      const res = await agent.client.printTestPage(savedPrinter.agent_printer_id, { language, timeoutMs: 60000 });
       setTestStatus("ok");
+      setTestDetails(res as any);
       await PrinterService.update(savedPrinter.id, {
         last_test_at: new Date().toISOString(),
         last_status: "ok",
+        raw_language: language ?? savedPrinter.raw_language ?? "driver",
       } as any).catch(() => undefined);
       await logAudit(companyId, "wizard.test_print_ok", savedPrinter.id, {
         agent_printer_id: savedPrinter.agent_printer_id,
+        endpoint: res.endpoint ?? `/printers/${savedPrinter.agent_printer_id}/test-page`,
+        rawBytes: res.rawBytes ?? null,
+        language: res.language ?? language ?? null,
+        spooler: res.spooler ?? null,
       });
     } catch (e: any) {
       setTestStatus("fail");
-      setTestError(e?.message ?? "Falha ao executar teste de impressão.");
+      const status = e?.status ? `HTTP ${e.status}` : e?.code ?? "erro";
+      setTestError(`${status}: ${e?.message ?? "Falha ao executar teste de impressão."}`);
+      setTestDetails(e?.details ?? null);
       await logAudit(companyId, "wizard.test_print_fail", savedPrinter.id, {
+        endpoint: `/printers/${savedPrinter.agent_printer_id}/test-page`,
+        status: e?.status ?? null,
+        code: e?.code ?? null,
+        language: testLanguage,
         error: e?.message ?? "unknown",
+        details: e?.details ?? null,
       });
+    }
+  }
+
+  async function runSpoolerTest() {
+    if (!savedPrinter?.agent_printer_id) return;
+    setTestStatus("running"); setTestError(null); setTestDetails(null);
+    setTestProgress(["Gerando comando", "Enviando ao agente", "Testando comunicação com spooler"]);
+    try {
+      const res = await agent.client.testSpooler(savedPrinter.agent_printer_id, testLanguage, 60000);
+      setTestStatus("ok");
+      setTestDetails(res as any);
+      await logAudit(companyId, "wizard.spooler_test_ok", savedPrinter.id, res as any);
+    } catch (e: any) {
+      setTestStatus("fail");
+      setTestError(`${e?.status ? `HTTP ${e.status}` : e?.code ?? "erro"}: ${e?.message ?? "Falha no spooler."}`);
+      setTestDetails(e?.details ?? null);
+      await logAudit(companyId, "wizard.spooler_test_fail", savedPrinter.id, { error: e?.message, details: e?.details });
+    }
+  }
+
+  async function runSimpleRawTest() {
+    if (!savedPrinter?.agent_printer_id) return;
+    setTestStatus("running"); setTestError(null); setTestDetails(null);
+    setTestProgress(["Gerando comando", "Enviando ao agente", "Enviando ao spooler", "Aguardando impressora"]);
+    try {
+      const language = testLanguage === "driver"
+        ? normalizeRawLanguage(savedPrinter.raw_language, savedPrinter.driver_name, savedPrinter.manufacturer, savedPrinter.model)
+        : testLanguage;
+      const res = await agent.client.printSimpleRawTest({
+        printerId: savedPrinter.agent_printer_id,
+        printerName: savedPrinter.name,
+        driver: savedPrinter.driver_name,
+        language,
+        copies: 1,
+        timeoutMs: 60000,
+      });
+      setTestStatus("ok");
+      setTestDetails(res as any);
+      await logAudit(companyId, "wizard.simple_raw_test_ok", savedPrinter.id, res as any);
+    } catch (e: any) {
+      setTestStatus("fail");
+      setTestError(`${e?.status ? `HTTP ${e.status}` : e?.code ?? "erro"}: ${e?.message ?? "Falha no teste RAW simples."}`);
+      setTestDetails(e?.details ?? null);
+      await logAudit(companyId, "wizard.simple_raw_test_fail", savedPrinter.id, { error: e?.message, details: e?.details });
     }
   }
 
