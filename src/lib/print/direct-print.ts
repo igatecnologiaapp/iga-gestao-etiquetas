@@ -146,7 +146,9 @@ export function buildAgentPayload(input: DirectPrintInput) {
     printer: adapterPrinter,
     dimensional,
     label: input.labelData,
-    copies: input.quantity,
+    // O RAW representa UMA etiqueta; a multiplicidade deve viajar em `copies`
+    // para evitar duplicidade (ex.: ^PQ3 + copies=3 imprimiria 9 etiquetas).
+    copies: 1,
     jobName: input.layout.name,
   });
   const effectiveRaw = adapter.output.raw ?? null;
@@ -342,12 +344,12 @@ export async function runDirectPrint(
     const res = await client.submit({
       ...submitSpec.request,
       metadata: { ...submitSpec.request.metadata, queue_id: job.id },
-    });
+    }, 60000);
     await PrintQueueService.markSent(job.id, res.jobId);
     // O agente já confirmou o envio. Marcamos como completed para o caso síncrono;
     // implementações reais podem fazer polling em /jobs/{id} (fora do escopo desta fase).
     await PrintQueueService.updateStatus(job.id, "completed", { agent_job_id: res.jobId } as any);
-    return { ok: true, jobId: job.id, agentJobId: res.jobId, queueJob: job, ...submitSpec.debug, debug: { ...submitSpec.debug, response: res } };
+    return { ok: true, jobId: job.id, agentJobId: res.jobId, queueJob: job, status: 200, ...submitSpec.debug, debug: { ...submitSpec.debug, response: res } };
   } catch (e: any) {
     const offline = e instanceof PrintAgentOfflineError;
     const agentErr = e instanceof PrintAgentError ? e : null;
