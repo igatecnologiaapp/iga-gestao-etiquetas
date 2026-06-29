@@ -634,6 +634,8 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
                     <SelectContent>{DIRECT_RAW_LANGUAGES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
+                <div><Label>Timeout do teste (seg.)</Label><Input type="number" min={10} max={180} value={Math.round(testTimeoutMs / 1000)}
+                  onChange={(e) => setTestTimeoutMs(Math.min(180000, Math.max(10000, (Number(e.target.value) || 60) * 1000)))} /></div>
                 <label className="flex items-center gap-2 col-span-full">
                   <Checkbox checked={tech.auto_cut} onCheckedChange={(c) => setTech({ ...tech, auto_cut: !!c })} />
                   Corte automático
