@@ -25,7 +25,7 @@ const cors = require("cors");
 
 // -------- Config --------
 const PORT = Number(process.env.PRINT_AGENT_PORT || 17777);
-const VERSION = "1.2.0";
+const VERSION = "1.2.1";
 const BASE_DIR = process.platform === "win32"
   ? path.join(process.env.PROGRAMDATA || "C:\\ProgramData", "LovablePrintAgent")
   : path.join(os.homedir(), ".lovable-print-agent");
@@ -425,6 +425,20 @@ function buildTestPayload(driver, language, printerName) {
   return { language: lang, raw: `${lines.join("\r\n")}\r\n\f` };
 }
 
+function translateSpoolerStderr(text) {
+  const t = String(text || "");
+  if (/n[ãa]o foi encontrad|cannot find the network|network name cannot be found|0x80070043|error 67/i.test(t)) {
+    return "Impressora não está compartilhada localmente (\\\\localhost\\<nome>). Use winspool_raw ou habilite compartilhamento.";
+  }
+  if (/acesso negado|access is denied|0x80070005/i.test(t)) {
+    return "Acesso negado ao spooler. Execute o serviço LovablePrintAgent como Administrador / LocalSystem.";
+  }
+  if (/n[ãa]o foi poss[ií]vel|not a valid Win32 application|0x800700C1/i.test(t)) {
+    return "Arquivo inválido enviado ao spooler.";
+  }
+  return t.trim();
+}
+
 function writeRawViaWinspool(printerName, rawBytes, jobName, timeoutMs) {
   const tmpScript = path.join(os.tmpdir(), `lpa-winspool-${Date.now()}-${Math.random().toString(36).slice(2)}.ps1`);
   const script = `
@@ -461,12 +475,24 @@ try {
   } finally { [RawPrinterHelper]::EndDocPrinter($h) | Out-Null }
 } finally { [RawPrinterHelper]::ClosePrinter($h) | Out-Null }
 `.trim();
-  fs.writeFileSync(tmpScript, script, "utf8");
+  // BOM UTF-8 — algumas instalações falham no Add-Type sem ele
+  fs.writeFileSync(tmpScript, "\ufeff" + script, "utf8");
   try {
-    return spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", tmpScript, printerName, rawBytes.toString("base64"), jobName || "Lovable Print Job"], { encoding: "utf8", timeout: timeoutMs });
+    return spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", tmpScript, printerName, rawBytes.toString("base64"), jobName || "Lovable Print Job"], { encoding: "utf8", timeout: timeoutMs, windowsHide: true });
   } finally {
     try { fs.unlinkSync(tmpScript); } catch {}
   }
+}
+
+function ensureLocalShare(printerName) {
+  // Compartilha a impressora localmente (necessário para o fallback \\localhost\nome).
+  // Idempotente: se já estiver compartilhada, ignora.
+  const shareName = `LPA_${printerName.replace(/[^A-Za-z0-9_]/g, "_").slice(0, 60)}`;
+  const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command",
+    `try { $p=Get-Printer -Name ${JSON.stringify(printerName)} -ErrorAction Stop; if(-not $p.Shared){ Set-Printer -Name ${JSON.stringify(printerName)} -Shared $true -ShareName ${JSON.stringify(shareName)} -ErrorAction Stop }; (Get-Printer -Name ${JSON.stringify(printerName)}).ShareName } catch { Write-Error $_.Exception.Message }`,
+  ], { encoding: "utf8", timeout: 15000, windowsHide: true });
+  const out = String(ps.stdout || "").trim();
+  return { ok: ps.status === 0, shareName: out || shareName, status: ps.status, stderr: String(ps.stderr || "").slice(0, 500) };
 }
 
 function printRawToWindows(printerName, rawBytes, opts = {}) {
@@ -483,26 +509,36 @@ function printRawToWindows(printerName, rawBytes, opts = {}) {
   const tmp = path.join(os.tmpdir(), `lpa-${Date.now()}-${Math.random().toString(36).slice(2)}.bin`);
   fs.writeFileSync(tmp, rawBytes);
   try {
-    const copy = spawnSync("cmd.exe", ["/c", "copy", "/B", tmp, `\\\\localhost\\${printerName}`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000) });
-    attempts.push({ method: "copy_unc", target: `\\\\localhost\\${printerName}`, status: copy.status, stdout: String(copy.stdout || "").slice(0, 1000), stderr: String(copy.stderr || "").slice(0, 1000), signal: copy.signal || null });
+    // Garante share local antes do copy_unc.
+    const share = ensureLocalShare(printerName);
+    attempts.push({ method: "ensure_share", status: share.status, stdout: share.shareName, stderr: share.stderr, signal: null });
+    const shareTarget = share.ok ? share.shareName : printerName;
+    const copy = spawnSync("cmd.exe", ["/c", "copy", "/B", tmp, `\\\\localhost\\${shareTarget}`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000), windowsHide: true });
+    const copyStderr = translateSpoolerStderr(copy.stderr || copy.stdout);
+    attempts.push({ method: "copy_unc", target: `\\\\localhost\\${shareTarget}`, status: copy.status, stdout: String(copy.stdout || "").slice(0, 1000), stderr: copyStderr.slice(0, 1000), signal: copy.signal || null });
     if (copy.status === 0) return { ok: true, method: "copy_unc", attempts };
 
-    const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", `Get-Content -Raw -Path ${JSON.stringify(tmp)} | Out-Printer -Name ${JSON.stringify(printerName)}`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000) });
+    const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", `Get-Content -Raw -Path ${JSON.stringify(tmp)} | Out-Printer -Name ${JSON.stringify(printerName)}`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000), windowsHide: true });
     attempts.push({ method: "powershell_out_printer", status: ps.status, stdout: String(ps.stdout || "").slice(0, 1000), stderr: String(ps.stderr || "").slice(0, 1000), signal: ps.signal || null });
     if (ps.status === 0) return { ok: true, method: "powershell_out_printer", attempts, warning: "Fallback GDI/texto usado; linguagens RAW podem não ser interpretadas." };
 
-    const start = spawnSync("powershell.exe", ["-NoProfile", "-Command", `$f=${JSON.stringify(tmp)}; $p=${JSON.stringify(printerName)}; Start-Process -FilePath notepad.exe -ArgumentList @('/pt',$f,$p) -Wait`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000) });
+    const start = spawnSync("powershell.exe", ["-NoProfile", "-Command", `$f=${JSON.stringify(tmp)}; $p=${JSON.stringify(printerName)}; Start-Process -FilePath notepad.exe -ArgumentList @('/pt',$f,$p) -Wait`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000), windowsHide: true });
     attempts.push({ method: "powershell_start_process_printto", status: start.status, stdout: String(start.stdout || "").slice(0, 1000), stderr: String(start.stderr || "").slice(0, 1000), signal: start.signal || null });
     if (start.status === 0) return { ok: true, method: "powershell_start_process_printto", attempts, warning: "Fallback Start-Process/PrintTo usado; indicado para GDI/texto." };
   } finally {
     try { fs.unlinkSync(tmp); } catch {}
   }
+  // Prioriza o erro do método PRINCIPAL (winspool_raw) — é o mais informativo.
+  const primary = attempts.find((a) => a.method === "winspool_raw");
   const last = attempts[attempts.length - 1] || {};
-  const msg = last.stderr || last.stdout || `Falha no spooler (${last.method || "desconhecido"})`;
+  const primaryMsg = primary ? translateSpoolerStderr(primary.stderr || primary.stdout) : "";
+  const fallbackMsg = translateSpoolerStderr(last.stderr || last.stdout);
+  const msg = (primaryMsg && primaryMsg !== "0") ? `winspool_raw: ${primaryMsg}` : (fallbackMsg || `Falha no spooler (${last.method || "desconhecido"})`);
   const err = new Error(msg);
   err.attempts = attempts;
   throw err;
 }
+
 
 // -------- HTTP server --------
 function buildServer() {
