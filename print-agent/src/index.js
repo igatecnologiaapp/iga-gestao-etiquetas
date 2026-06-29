@@ -25,7 +25,7 @@ const cors = require("cors");
 
 // -------- Config --------
 const PORT = Number(process.env.PRINT_AGENT_PORT || 17777);
-const VERSION = "1.1.0";
+const VERSION = "1.2.0";
 const BASE_DIR = process.platform === "win32"
   ? path.join(process.env.PROGRAMDATA || "C:\\ProgramData", "LovablePrintAgent")
   : path.join(os.homedir(), ".lovable-print-agent");
@@ -380,38 +380,124 @@ function listWindowsPrinters() {
   }
 }
 
-// Mini-ZPL de teste — funciona em qualquer Zebra ZPL; fallback genérico para outras
-// linguagens é apenas um texto ASCII, que a maioria dos drivers Windows aceita via spooler.
-function buildTestPayload(driver) {
+function normalizeLanguage(language, driver) {
+  const raw = String(language || "").trim().toUpperCase().replace(/[\s/_-]/g, "");
+  if (["ZPL", "EPL", "PPLA", "PPLB", "TSPL", "ESCPOS", "GDI"].includes(raw)) return raw;
   const d = String(driver || "").toLowerCase();
-  if (d.includes("zpl") || d.includes("zebra")) {
-    return "^XA^CF0,30^FO50,50^FDLovable Print Agent^FS^FO50,90^FDTeste OK^FS^XZ\n";
-  }
-  if (d.includes("epl")) {
-    return "N\nA50,50,0,3,1,1,N,\"Lovable Print Agent\"\nA50,90,0,3,1,1,N,\"Teste OK\"\nP1\n";
-  }
-  if (d.includes("tspl") || d.includes("tsc")) {
-    return "SIZE 50 mm,30 mm\nCLS\nTEXT 50,50,\"3\",0,1,1,\"Lovable Print Agent\"\nTEXT 50,90,\"3\",0,1,1,\"Teste OK\"\nPRINT 1\n";
-  }
-  // Argox PPLB ~ EPL2; e fallback texto puro
-  return "Lovable Print Agent - Teste OK\r\n\f";
+  if (d.includes("zpl") || d.includes("zebra") || d.includes("zdesigner")) return "ZPL";
+  if (d.includes("epl") || d.includes("eltron")) return "EPL";
+  if (d.includes("ppla")) return "PPLA";
+  if (d.includes("pplb") || d.includes("argox")) return "PPLB";
+  if (d.includes("tspl") || d.includes("tsc") || d.includes("elgin") || d.includes("4barcode")) return "TSPL";
+  if (d.includes("esc/pos") || d.includes("escpos")) return "ESCPOS";
+  return "GDI";
 }
 
-function printRawToWindows(printerName, rawBytes) {
-  // Estratégia: gravar em arquivo temporário e usar `copy /B file "\\localhost\printer"`.
+function safeText(s) {
+  return String(s || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, " ")
+    .replace(/"/g, "'")
+    .trim()
+    .slice(0, 120);
+}
+
+function buildTestPayload(driver, language, printerName) {
+  const lang = normalizeLanguage(language, driver);
+  const lines = [
+    "TESTE DE IMPRESSAO DIRETA",
+    "Produto Teste",
+    new Date().toLocaleString("pt-BR"),
+    "Quantidade: 1",
+    `Impressora: ${safeText(printerName)}`,
+  ];
+  if (lang === "ZPL") {
+    return { language: lang, raw: ["^XA", "^CI28", "^PW812", "^LL406", ...lines.map((l, i) => `^FO40,${40 + i * 38}^A0N,28,28^FD${safeText(l).replace(/[\\^~]/g, " ")}^FS`), "^PQ1", "^XZ"].join("\n") };
+  }
+  if (lang === "TSPL") {
+    return { language: lang, raw: ["SIZE 100 mm,50 mm", "GAP 2 mm,0 mm", "DIRECTION 1", "CLS", ...lines.map((l, i) => `TEXT 35,${30 + i * 38},\"3\",0,1,1,\"${safeText(l)}\"`), "PRINT 1,1"].join("\n") };
+  }
+  if (lang === "EPL" || lang === "PPLA" || lang === "PPLB") {
+    return { language: lang, raw: ["N", "q800", "Q400,24", ...lines.map((l, i) => `A35,${30 + i * 36},0,3,1,1,N,\"${safeText(l)}\"`), "P1"].join("\n") };
+  }
+  if (lang === "ESCPOS") return { language: lang, raw: `\x1b@${lines.join("\r\n")}\r\n\x1dV\x00` };
+  return { language: lang, raw: `${lines.join("\r\n")}\r\n\f` };
+}
+
+function writeRawViaWinspool(printerName, rawBytes, jobName, timeoutMs) {
+  const tmpScript = path.join(os.tmpdir(), `lpa-winspool-${Date.now()}-${Math.random().toString(36).slice(2)}.ps1`);
+  const script = `
+param([string]$PrinterName,[string]$Base64,[string]$JobName)
+$ErrorActionPreference='Stop'
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class RawPrinterHelper {
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)] public class DOCINFOA { [MarshalAs(UnmanagedType.LPStr)] public string pDocName; [MarshalAs(UnmanagedType.LPStr)] public string pOutputFile; [MarshalAs(UnmanagedType.LPStr)] public string pDataType; }
+  [DllImport("winspool.Drv", EntryPoint="OpenPrinterA", SetLastError=true, CharSet=CharSet.Ansi, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)] public static extern bool OpenPrinter(string szPrinter, out IntPtr hPrinter, IntPtr pd);
+  [DllImport("winspool.Drv", EntryPoint="ClosePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)] public static extern bool ClosePrinter(IntPtr hPrinter);
+  [DllImport("winspool.Drv", EntryPoint="StartDocPrinterA", SetLastError=true, CharSet=CharSet.Ansi, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)] public static extern bool StartDocPrinter(IntPtr hPrinter, Int32 level, [In, MarshalAs(UnmanagedType.LPStruct)] DOCINFOA di);
+  [DllImport("winspool.Drv", EntryPoint="EndDocPrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)] public static extern bool EndDocPrinter(IntPtr hPrinter);
+  [DllImport("winspool.Drv", EntryPoint="StartPagePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)] public static extern bool StartPagePrinter(IntPtr hPrinter);
+  [DllImport("winspool.Drv", EntryPoint="EndPagePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)] public static extern bool EndPagePrinter(IntPtr hPrinter);
+  [DllImport("winspool.Drv", EntryPoint="WritePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)] public static extern bool WritePrinter(IntPtr hPrinter, byte[] pBytes, Int32 dwCount, out Int32 dwWritten);
+}
+"@
+$bytes=[Convert]::FromBase64String($Base64)
+$h=[IntPtr]::Zero
+if(-not [RawPrinterHelper]::OpenPrinter($PrinterName,[ref]$h,[IntPtr]::Zero)){ throw "OpenPrinter falhou: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())" }
+try {
+  $di=New-Object RawPrinterHelper+DOCINFOA
+  $di.pDocName=$JobName; $di.pDataType='RAW'
+  if(-not [RawPrinterHelper]::StartDocPrinter($h,1,$di)){ throw "StartDocPrinter falhou: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())" }
+  try {
+    if(-not [RawPrinterHelper]::StartPagePrinter($h)){ throw "StartPagePrinter falhou: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())" }
+    try {
+      $written=0
+      if(-not [RawPrinterHelper]::WritePrinter($h,$bytes,$bytes.Length,[ref]$written)){ throw "WritePrinter falhou: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())" }
+      Write-Output "RAW_OK bytes=$written"
+    } finally { [RawPrinterHelper]::EndPagePrinter($h) | Out-Null }
+  } finally { [RawPrinterHelper]::EndDocPrinter($h) | Out-Null }
+} finally { [RawPrinterHelper]::ClosePrinter($h) | Out-Null }
+`.trim();
+  fs.writeFileSync(tmpScript, script, "utf8");
+  try {
+    return spawnSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", tmpScript, printerName, rawBytes.toString("base64"), jobName || "Lovable Print Job"], { encoding: "utf8", timeout: timeoutMs });
+  } finally {
+    try { fs.unlinkSync(tmpScript); } catch {}
+  }
+}
+
+function printRawToWindows(printerName, rawBytes, opts = {}) {
+  const timeoutMs = Number(opts.timeoutMs || 60000);
+  const jobName = opts.jobName || "Lovable Print Job";
+  const attempts = [];
+
+  if (process.platform !== "win32") throw new Error("Impressão direta disponível apenas no Windows.");
+
+  const raw = writeRawViaWinspool(printerName, rawBytes, jobName, timeoutMs);
+  attempts.push({ method: "winspool_raw", status: raw.status, stdout: String(raw.stdout || "").slice(0, 1000), stderr: String(raw.stderr || "").slice(0, 1000), signal: raw.signal || null });
+  if (raw.status === 0) return { ok: true, method: "winspool_raw", attempts };
+
   const tmp = path.join(os.tmpdir(), `lpa-${Date.now()}-${Math.random().toString(36).slice(2)}.bin`);
   fs.writeFileSync(tmp, rawBytes);
   try {
-    const r = spawnSync(
-      "cmd.exe",
-      ["/c", "copy", "/B", tmp, `\\\\localhost\\${printerName}`],
-      { encoding: "utf8", timeout: 15000 },
-    );
-    if (r.status !== 0) throw new Error(r.stderr || r.stdout || "copy falhou");
-    return true;
+    const copy = spawnSync("cmd.exe", ["/c", "copy", "/B", tmp, `\\\\localhost\\${printerName}`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000) });
+    attempts.push({ method: "copy_unc", target: `\\\\localhost\\${printerName}`, status: copy.status, stdout: String(copy.stdout || "").slice(0, 1000), stderr: String(copy.stderr || "").slice(0, 1000), signal: copy.signal || null });
+    if (copy.status === 0) return { ok: true, method: "copy_unc", attempts };
+
+    const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", `Get-Content -Raw -Path ${JSON.stringify(tmp)} | Out-Printer -Name ${JSON.stringify(printerName)}`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000) });
+    attempts.push({ method: "powershell_out_printer", status: ps.status, stdout: String(ps.stdout || "").slice(0, 1000), stderr: String(ps.stderr || "").slice(0, 1000), signal: ps.signal || null });
+    if (ps.status === 0) return { ok: true, method: "powershell_out_printer", attempts, warning: "Fallback GDI/texto usado; linguagens RAW podem não ser interpretadas." };
   } finally {
     try { fs.unlinkSync(tmp); } catch {}
   }
+  const last = attempts[attempts.length - 1] || {};
+  const msg = last.stderr || last.stdout || `Falha no spooler (${last.method || "desconhecido"})`;
+  const err = new Error(msg);
+  err.attempts = attempts;
+  throw err;
 }
 
 // -------- HTTP server --------
