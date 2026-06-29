@@ -490,6 +490,10 @@ function printRawToWindows(printerName, rawBytes, opts = {}) {
     const ps = spawnSync("powershell.exe", ["-NoProfile", "-Command", `Get-Content -Raw -Path ${JSON.stringify(tmp)} | Out-Printer -Name ${JSON.stringify(printerName)}`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000) });
     attempts.push({ method: "powershell_out_printer", status: ps.status, stdout: String(ps.stdout || "").slice(0, 1000), stderr: String(ps.stderr || "").slice(0, 1000), signal: ps.signal || null });
     if (ps.status === 0) return { ok: true, method: "powershell_out_printer", attempts, warning: "Fallback GDI/texto usado; linguagens RAW podem não ser interpretadas." };
+
+    const start = spawnSync("powershell.exe", ["-NoProfile", "-Command", `$f=${JSON.stringify(tmp)}; $p=${JSON.stringify(printerName)}; Start-Process -FilePath notepad.exe -ArgumentList @('/pt',$f,$p) -Wait`], { encoding: "utf8", timeout: Math.min(timeoutMs, 30000) });
+    attempts.push({ method: "powershell_start_process_printto", status: start.status, stdout: String(start.stdout || "").slice(0, 1000), stderr: String(start.stderr || "").slice(0, 1000), signal: start.signal || null });
+    if (start.status === 0) return { ok: true, method: "powershell_start_process_printto", attempts, warning: "Fallback Start-Process/PrintTo usado; indicado para GDI/texto." };
   } finally {
     try { fs.unlinkSync(tmp); } catch {}
   }
