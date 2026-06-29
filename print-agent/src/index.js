@@ -565,35 +565,101 @@ function buildServer() {
   // Página de teste: gera raw mínimo conforme o driver e envia ao spooler.
   app.post("/printers/:id/test-page", auth, (req, res) => {
     const printer = decodeURIComponent(req.params.id);
+    const startedAt = Date.now();
     try {
       const list = listWindowsPrinters();
       const found = list.find((p) => p.name === printer);
       if (!found) return res.status(404).json({ code: "PRINTER_NOT_FOUND", message: `Impressora '${printer}' não encontrada no Windows.` });
-      const raw = buildTestPayload(found.driver);
-      printRawToWindows(printer, Buffer.from(raw, "utf8"));
-      res.json({ jobId: `test-${Date.now()}` });
+      const built = buildTestPayload(found.driver, req.body?.language, printer);
+      const raw = req.body?.raw ? String(req.body.raw) : built.raw;
+      const rawBytes = Buffer.from(raw, "utf8");
+      log("TEST_PAGE", "endpoint=/printers/:id/test-page", "printer=", printer, "driver=", found.driver, "language=", built.language, "bytes=", rawBytes.length);
+      const spooler = printRawToWindows(printer, rawBytes, { jobName: "Teste de impressão direta", timeoutMs: req.body?.timeoutMs || 60000 });
+      res.json({
+        ok: true,
+        jobId: `test-${Date.now()}`,
+        endpoint: `/printers/${printer}/test-page`,
+        printerId: printer,
+        language: built.language,
+        rawBytes: rawBytes.length,
+        copies: 1,
+        durationMs: Date.now() - startedAt,
+        spooler,
+        progress: ["Gerando comando", "Enviando ao agente", "Enviando ao spooler", "Aguardando impressora"],
+      });
     } catch (e) {
-      log("Falha test-page:", e.message);
-      res.status(500).json({ code: "INTERNAL_ERROR", message: e.message });
+      log("Falha test-page:", e.message, JSON.stringify(e.attempts || []));
+      res.status(500).json({
+        ok: false,
+        code: "INTERNAL_ERROR",
+        message: e.message,
+        endpoint: `/printers/${printer}/test-page`,
+        printerId: printer,
+        durationMs: Date.now() - startedAt,
+        details: { attempts: e.attempts || [] },
+      });
+    }
+  });
+
+  app.post("/printers/:id/spooler-test", auth, (req, res) => {
+    const printer = decodeURIComponent(req.params.id);
+    try {
+      const list = listWindowsPrinters();
+      const found = list.find((p) => p.name === printer);
+      if (!found) return res.status(404).json({ code: "PRINTER_NOT_FOUND", message: `Impressora '${printer}' não encontrada no Windows.` });
+      const built = buildTestPayload(found.driver, req.body?.language || "GDI", printer);
+      const rawBytes = Buffer.from(built.raw, "utf8");
+      const spooler = printRawToWindows(printer, rawBytes, { jobName: "Teste de comunicação com spooler", timeoutMs: 60000 });
+      res.json({ ok: true, jobId: `spooler-${Date.now()}`, endpoint: `/printers/${printer}/spooler-test`, printerId: printer, language: built.language, rawBytes: rawBytes.length, copies: 1, spooler });
+    } catch (e) {
+      res.status(500).json({ ok: false, code: "INTERNAL_ERROR", message: e.message, endpoint: `/printers/${printer}/spooler-test`, printerId: printer, details: { attempts: e.attempts || [] } });
     }
   });
 
   // Impressão real. Aceita o contrato AgentPrintRequest do cliente
   // (printerId, copies, raw, jobName, metadata).
   app.post("/print", auth, (req, res) => {
-    const { printerId, printer: legacyPrinter, raw, copies, jobName } = req.body || {};
+    const startedAt = Date.now();
+    const { printerId, printer: legacyPrinter, raw, copies, jobName, language } = req.body || {};
     const printer = printerId || legacyPrinter;
     if (!printer) return res.status(400).json({ code: "INVALID_PAYLOAD", message: "printerId obrigatório" });
-    if (!raw) return res.status(400).json({ code: "INVALID_PAYLOAD", message: "payload sem comando raw (PDF fallback ainda não suportado pelo agente)" });
+    if (typeof raw !== "string" || raw.length === 0) return res.status(400).json({ code: "INVALID_PAYLOAD", message: "payload sem comando raw (vazio, null ou undefined)" });
     try {
+      const list = listWindowsPrinters();
+      const found = list.find((p) => p.id === printer || p.name === printer);
+      if (!found) return res.status(404).json({ code: "PRINTER_NOT_FOUND", message: `Impressora '${printer}' não encontrada. O printerId deve ser exatamente um id retornado por GET /printers.`, details: { endpoint: "/print", printerIdSent: printer, availablePrinters: list.map((p) => p.id) } });
       const buf = Buffer.from(raw, "utf8");
       const n = Math.min(Math.max(Number(copies) || 1, 1), 50);
-      for (let i = 0; i < n; i++) printRawToWindows(printer, buf);
-      log(`Job ${jobName || "(sem nome)"} → ${printer} × ${n}`);
-      res.json({ jobId: `${Date.now()}` });
+      const lang = normalizeLanguage(language, found.driver);
+      log("PRINT", "endpoint=/print", "printer=", found.id, "driver=", found.driver, "language=", lang, "copies=", n, "bytes=", buf.length, "job=", jobName || "(sem nome)");
+      const spoolerResults = [];
+      for (let i = 0; i < n; i++) spoolerResults.push(printRawToWindows(found.id, buf, { jobName: jobName || "Lovable Print Job", timeoutMs: 60000 }));
+      res.json({
+        ok: true,
+        jobId: `${Date.now()}`,
+        endpoint: "/print",
+        status: "completed",
+        printerId: found.id,
+        rawBytes: buf.length,
+        language: lang,
+        copies: n,
+        durationMs: Date.now() - startedAt,
+        spooler: spoolerResults[0],
+      });
     } catch (e) {
-      log("Falha na impressão:", e.message);
-      res.status(500).json({ code: "INTERNAL_ERROR", message: e.message });
+      log("Falha na impressão:", e.message, JSON.stringify(e.attempts || []));
+      res.status(500).json({
+        ok: false,
+        code: "INTERNAL_ERROR",
+        message: e.message,
+        endpoint: "/print",
+        printerId,
+        language: language || null,
+        rawBytes: raw ? Buffer.from(String(raw), "utf8").length : 0,
+        copies: Number(copies) || 1,
+        durationMs: Date.now() - startedAt,
+        details: { attempts: e.attempts || [], stack: e.stack },
+      });
     }
   });
 
