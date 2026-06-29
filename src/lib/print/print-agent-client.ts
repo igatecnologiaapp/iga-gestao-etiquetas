@@ -94,7 +94,17 @@ export class PrintAgentClient {
         const body = (await res.json().catch(() => null)) as AgentErrorBody | null;
         const code = (body?.code ?? this.statusToCode(res.status)) as AgentErrorCode;
         const msg = body?.message ?? body?.error ?? `Agent ${res.status}: ${res.statusText}`;
-        throw new PrintAgentError(code, msg, res.status, body?.details);
+        const b = (body ?? {}) as Record<string, unknown>;
+        const details = {
+          ...(body?.details ?? {}),
+          endpoint: b.endpoint ?? path,
+          printerId: b.printerId ?? b.printerIdSent ?? null,
+          language: b.language ?? null,
+          rawBytes: b.rawBytes ?? null,
+          copies: b.copies ?? null,
+          durationMs: b.durationMs ?? null,
+        };
+        throw new PrintAgentError(code, msg, res.status, details);
       }
       return (await res.json()) as T;
     } catch (e: unknown) {
