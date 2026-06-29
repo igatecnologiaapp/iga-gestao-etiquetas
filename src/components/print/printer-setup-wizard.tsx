@@ -604,7 +604,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
 
           {step === 5 && (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Ajuste DPI, escala, margens e offsets físicos da impressora.</p>
+              <p className="text-sm text-muted-foreground">Ajuste DPI, escala, margens, offsets físicos e linguagem RAW da impressora.</p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div><Label>DPI</Label><Input type="number" min={72} max={2400} value={tech.dpi}
                   onChange={(e) => setTech({ ...tech, dpi: Number(e.target.value) || 0 })} /></div>
@@ -626,6 +626,12 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
                   onChange={(e) => setTech({ ...tech, offset_x: Number(e.target.value) || 0 })} /></div>
                 <div><Label>Offset vertical</Label><Input type="number" value={tech.offset_y}
                   onChange={(e) => setTech({ ...tech, offset_y: Number(e.target.value) || 0 })} /></div>
+                <div><Label>Linguagem RAW</Label>
+                  <Select value={testLanguage} onValueChange={setTestLanguage}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{DIRECT_RAW_LANGUAGES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
                 <label className="flex items-center gap-2 col-span-full">
                   <Checkbox checked={tech.auto_cut} onCheckedChange={(c) => setTech({ ...tech, auto_cut: !!c })} />
                   Corte automático
