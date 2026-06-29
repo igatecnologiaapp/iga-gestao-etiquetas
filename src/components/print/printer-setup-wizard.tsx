@@ -29,6 +29,7 @@ import { usePrintAgent } from "@/lib/print/use-print-agent";
 import { PrinterService } from "@/lib/print/printer-service";
 import { PrinterCompatibilityService } from "@/lib/print/printer-compatibility-service";
 import { ROTATION_VALUES } from "@/lib/print/printer-config-validation";
+import { DIRECT_RAW_LANGUAGES, normalizeRawLanguage } from "@/lib/print/drivers/raw-commands";
 import type { AgentPrinter, PrinterConfig } from "@/lib/print/types";
 
 interface Props {
@@ -112,6 +113,9 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
   // Etapa 6 — teste
   const [testStatus, setTestStatus] = useState<"idle" | "running" | "ok" | "fail">("idle");
   const [testError, setTestError] = useState<string | null>(null);
+  const [testLanguage, setTestLanguage] = useState<string>("driver");
+  const [testProgress, setTestProgress] = useState<string[]>([]);
+  const [testDetails, setTestDetails] = useState<Record<string, unknown> | null>(null);
 
   // Etapa 7 — ativação
   const [activateDefault, setActivateDefault] = useState(false);
@@ -127,6 +131,9 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
       setSelectedLayouts(new Set());
       setTestStatus("idle");
       setTestError(null);
+      setTestLanguage("driver");
+      setTestProgress([]);
+      setTestDetails(null);
       setActivateDefault(false);
     }
   }, [open]);
