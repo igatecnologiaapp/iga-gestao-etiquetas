@@ -201,11 +201,11 @@ export class PrintAgentClient {
     return h.ok;
   }
 
-  async submit(req: AgentPrintRequest): Promise<AgentPrintResponse> {
+  async submit(req: AgentPrintRequest, timeoutMs = 60000): Promise<AgentPrintResponse> {
     return this.request<AgentPrintResponse>("/print", {
       method: "POST",
       body: JSON.stringify(req),
-    });
+    }, timeoutMs);
   }
 
   async getJob(jobId: string): Promise<AgentJobStatus> {
