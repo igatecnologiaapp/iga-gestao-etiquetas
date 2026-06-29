@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Printer as PrinterIcon, Wand2, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertTriangle, FileDown, FlaskConical, Loader2, Printer as PrinterIcon, Wand2, Send } from "lucide-react";
 import { toast } from "sonner";
 import {
   LABEL_TYPES,
@@ -31,6 +32,8 @@ import { PrintAgentPanel } from "@/components/print/print-agent-panel";
 import { usePrintAgent } from "@/lib/print/use-print-agent";
 import { runDirectPrint, validateDirectPrint } from "@/lib/print/direct-print";
 import { PrinterCompatibilityService } from "@/lib/print/printer-compatibility-service";
+import { DIRECT_RAW_LANGUAGES, normalizeRawLanguage } from "@/lib/print/drivers/raw-commands";
+import type { DirectPrintResult } from "@/lib/print/direct-print";
 
 export const Route = createFileRoute("/app/print-labels")({ component: PrintLabelsPage });
 
@@ -57,6 +60,9 @@ function PrintLabelsPage() {
   const [notes, setNotes] = useState<string>("");
   const [shelfModel, setShelfModel] = useState<ShelfModel>("simples");
   const [promotionId, setPromotionId] = useState<string>("");
+  const [directLanguage, setDirectLanguage] = useState<string>("driver");
+  const [lastDirectResult, setLastDirectResult] = useState<DirectPrintResult | null>(null);
+  const [fallbackPrompt, setFallbackPrompt] = useState<DirectPrintResult | null>(null);
 
   const isShelf = isShelfLabel(labelType);
 
@@ -110,6 +116,19 @@ function PrintLabelsPage() {
     () => printers.data?.find((p: any) => p.id === printerId) ?? null,
     [printers.data, printerId],
   );
+  const selectedPrinterForPrint = useMemo(() => {
+    if (!selectedPrinter) return null;
+    const normalized = directLanguage === "driver"
+      ? normalizeRawLanguage(selectedPrinter.raw_language, selectedPrinter.driver_name, selectedPrinter.manufacturer, selectedPrinter.model)
+      : directLanguage;
+    return { ...selectedPrinter, raw_language: normalized ?? selectedPrinter.raw_language ?? "driver" };
+  }, [selectedPrinter, directLanguage]);
+
+  useEffect(() => {
+    if (!selectedPrinter) return;
+    const inferred = normalizeRawLanguage(selectedPrinter.raw_language, selectedPrinter.driver_name, selectedPrinter.manufacturer, selectedPrinter.model);
+    setDirectLanguage(inferred ?? selectedPrinter.raw_language ?? "driver");
+  }, [selectedPrinter?.id, selectedPrinter?.raw_language, selectedPrinter?.driver_name, selectedPrinter?.manufacturer, selectedPrinter?.model]);
 
   // Compatibilidade impressora x layout (FASE 7).
   const compatibility = useQuery({
@@ -583,12 +602,12 @@ function PrintLabelsPage() {
 
   // ===== FASE 7 — Impressão direta via Print Agent =====
   const directValidation = useMemo(() => {
-    if (!companyId || !product || !layout.data || !version.data || !selectedPrinter) return null;
+    if (!companyId || !product || !layout.data || !version.data || !selectedPrinterForPrint) return null;
     return validateDirectPrint({
       companyId,
       branchId: branchId || null,
       productId: product.id,
-      printer: selectedPrinter as any,
+      printer: selectedPrinterForPrint as any,
       layout: {
         id: layout.data.id,
         name: layout.data.name,
@@ -601,7 +620,7 @@ function PrintLabelsPage() {
       compatibleLayoutIds,
       labelData: previewData,
     });
-  }, [companyId, product, layout.data, version.data, selectedPrinter, branchId, previewFormat, elements.data, quantity, compatibleLayoutIds, previewData]);
+  }, [companyId, product, layout.data, version.data, selectedPrinterForPrint, branchId, previewFormat, elements.data, quantity, compatibleLayoutIds, previewData]);
 
   async function openPdfFallback() {
     if (!previewFormat || !elements.data) return;
@@ -613,14 +632,14 @@ function PrintLabelsPage() {
 
   const directPrint = useMutation({
     mutationFn: async () => {
-      if (!companyId || !product || !layout.data || !version.data || !selectedPrinter) {
+      if (!companyId || !product || !layout.data || !version.data || !selectedPrinterForPrint) {
         throw new Error("Dados incompletos para impressão direta.");
       }
       return runDirectPrint(agent.client, {
         companyId,
         branchId: branchId || null,
         productId: product.id,
-        printer: selectedPrinter as any,
+        printer: selectedPrinterForPrint as any,
         layout: {
           id: layout.data.id,
           name: layout.data.name,
@@ -635,20 +654,58 @@ function PrintLabelsPage() {
       });
     },
     onSuccess: async (res) => {
+      setLastDirectResult(res);
       if (res.ok) {
         toast.success(`Enviado ao Print Agent (job ${res.agentJobId ?? res.jobId?.slice(0, 8)})`);
         return;
       }
       if (res.fallback) {
-        toast.warning(`${res.fallbackReason ?? "Falha no agente"} — abrindo PDF como fallback.`);
-        await openPdfFallback();
+        setFallbackPrompt(res);
+        toast.error(`Falha na impressão direta: ${res.errorMessage ?? res.fallbackReason ?? "motivo não informado"}`);
         return;
       }
       toast.error(res.errorMessage ?? "Não foi possível imprimir.");
     },
-    onError: async (e: any) => {
-      toast.error(e?.message ?? "Falha inesperada — usando PDF.");
-      await openPdfFallback();
+    onError: (e: any) => {
+      const res: DirectPrintResult = {
+        ok: false,
+        fallback: true,
+        fallbackReason: "Falha inesperada na impressão direta.",
+        errorMessage: e?.message ?? "Falha inesperada.",
+        endpoint: "/print",
+        printerIdSent: selectedPrinterForPrint?.agent_printer_id ?? undefined,
+        language: directLanguage,
+        copies: quantity,
+      };
+      setLastDirectResult(res);
+      setFallbackPrompt(res);
+      toast.error(`Falha na impressão direta: ${res.errorMessage}`);
+    },
+  });
+
+  const simpleDirectTest = useMutation({
+    mutationFn: async () => {
+      if (!selectedPrinterForPrint?.agent_printer_id) throw new Error("Impressora sem identificador do agente.");
+      const language = directLanguage === "driver"
+        ? normalizeRawLanguage(selectedPrinterForPrint.raw_language, selectedPrinterForPrint.driver_name, selectedPrinterForPrint.manufacturer, selectedPrinterForPrint.model)
+        : directLanguage;
+      return agent.client.printSimpleRawTest({
+        printerId: selectedPrinterForPrint.agent_printer_id,
+        printerName: selectedPrinterForPrint.name,
+        driver: selectedPrinterForPrint.driver_name,
+        language,
+        copies: 1,
+        timeoutMs: 60000,
+      });
+    },
+    onSuccess: (res) => {
+      toast.success(`Teste RAW enviado (${res.endpoint ?? "/print"}, ${res.rawBytes ?? "?"} bytes)`);
+      setLastDirectResult({ ok: true, agentJobId: res.jobId, endpoint: res.endpoint ?? "/print", printerIdSent: res.printerId, rawBytes: res.rawBytes, language: res.language, copies: res.copies, debug: res as any });
+    },
+    onError: (e: any) => {
+      const status = e?.status ? `HTTP ${e.status}` : e?.code ?? "erro";
+      toast.error(`Falha no teste simples: ${status} — ${e?.message ?? "sem mensagem"}`);
+      setLastDirectResult({ ok: false, fallback: false, errorCode: e?.code ?? "UNKNOWN", errorMessage: e?.message ?? "Falha no teste simples", endpoint: "/print", status: e?.status, printerIdSent: selectedPrinterForPrint?.agent_printer_id ?? undefined, language: directLanguage, copies: 1, debug: e?.details ?? e });
     },
   });
 
@@ -656,7 +713,7 @@ function PrintLabelsPage() {
     !isReadOnly &&
     canCreateProduct &&
     blocking.length === 0 &&
-    !!selectedPrinter &&
+    !!selectedPrinterForPrint &&
     !!directValidation?.ok &&
     !!agent.health?.ok;
 
@@ -775,9 +832,23 @@ function PrintLabelsPage() {
                 </SelectContent>
               </Select>
               <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
-                A escolha é registrada na emissão. Por limitação do navegador, a impressão é feita pelo diálogo nativo do sistema operacional ao abrir o PDF.
+                Na impressão direta, o identificador enviado deve ser exatamente o retornado pelo Print Agent.
               </p>
             </div>
+            {selectedPrinter && (
+              <div>
+                <Label>Linguagem da impressora</Label>
+                <Select value={directLanguage} onValueChange={setDirectLanguage}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DIRECT_RAW_LANGUAGES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
+                  agent_id: <code>{selectedPrinter.agent_printer_id ?? "não vinculado"}</code>
+                </p>
+              </div>
+            )}
             <div>
               <Label>Quantidade</Label>
               <Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
@@ -837,6 +908,18 @@ function PrintLabelsPage() {
             </Alert>
           )}
 
+          {lastDirectResult && (
+            <Alert variant={lastDirectResult.ok ? "default" : "destructive"}>
+              {lastDirectResult.ok ? <FlaskConical className="size-4" /> : <AlertTriangle className="size-4" />}
+              <AlertTitle>{lastDirectResult.ok ? "Última impressão direta" : "Falha na impressão direta"}</AlertTitle>
+              <AlertDescription className="text-xs space-y-1">
+                <div>Endpoint: <code>{lastDirectResult.endpoint ?? "/print"}</code> · HTTP: <code>{lastDirectResult.status ?? (lastDirectResult.ok ? 200 : "—")}</code></div>
+                <div>printerId: <code>{lastDirectResult.printerIdSent ?? "—"}</code> · RAW: <code>{lastDirectResult.rawBytes ?? "—"} bytes</code> · Linguagem: <code>{lastDirectResult.language ?? directLanguage}</code> · Cópias: <code>{lastDirectResult.copies ?? quantity}</code></div>
+                {!lastDirectResult.ok && <div>{lastDirectResult.errorMessage}</div>}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex flex-wrap justify-end gap-2">
             <Button
               variant="outline"
@@ -860,6 +943,15 @@ function PrintLabelsPage() {
               <Send className="size-4 mr-2" />
               {directPrint.isPending ? "Enviando..." : `Imprimir direto (${quantity})`}
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => simpleDirectTest.mutate()}
+              disabled={!selectedPrinterForPrint?.agent_printer_id || !agent.health?.ok || simpleDirectTest.isPending}
+              title="Envia uma etiqueta RAW mínima via POST /print"
+            >
+              {simpleDirectTest.isPending ? <Loader2 className="size-4 mr-2 animate-spin" /> : <FlaskConical className="size-4 mr-2" />}
+              Testar impressão direta simples
+            </Button>
             <Button onClick={() => emit.mutate()} disabled={!canEmit || emit.isPending}>
               <PrinterIcon className="size-4 mr-2" />
               {emit.isPending ? "Emitindo..." : `Confirmar emissão (${quantity})`}
@@ -880,6 +972,31 @@ function PrintLabelsPage() {
         </Card>
 
       </div>
+
+      <Dialog open={!!fallbackPrompt} onOpenChange={(open) => !open && setFallbackPrompt(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Falha na impressão direta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>{fallbackPrompt?.errorMessage ?? fallbackPrompt?.fallbackReason ?? "O Print Agent recusou ou não concluiu o envio."}</p>
+            <div className="rounded-md border p-3 text-xs space-y-1">
+              <div>Endpoint: <code>{fallbackPrompt?.endpoint ?? "/print"}</code></div>
+              <div>Status HTTP: <code>{fallbackPrompt?.status ?? "sem resposta"}</code></div>
+              <div>printerId enviado: <code>{fallbackPrompt?.printerIdSent ?? "—"}</code></div>
+              <div>RAW gerado: <code>{fallbackPrompt?.rawBytes ?? "—"} bytes</code></div>
+              <div>Linguagem: <code>{fallbackPrompt?.language ?? directLanguage}</code> · Cópias: <code>{fallbackPrompt?.copies ?? quantity}</code></div>
+            </div>
+            <p>Deseja abrir PDF como alternativa?</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFallbackPrompt(null)}>Cancelar</Button>
+            <Button onClick={async () => { setFallbackPrompt(null); await openPdfFallback(); }}>
+              <FileDown className="size-4 mr-2" /> Abrir PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

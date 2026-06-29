@@ -1,6 +1,7 @@
 // FASE 13 — Adapter PPLB (Argox). Maturity: "prepared".
 
 import type { AdapterContext, AdapterOutput, PrintDriver } from "./types";
+import { buildTextLinesFromElements, quotedText } from "./raw-commands";
 
 export function buildPplbPreview(ctx: AdapterContext): string {
   const d = ctx.dimensional;
@@ -9,10 +10,18 @@ export function buildPplbPreview(ctx: AdapterContext): string {
   lines.push(`Q${Math.round(d.height_mm * dpmm)},24`);
   lines.push(`q${Math.round(d.width_mm * dpmm)}`);
   lines.push("N");
-  for (const el of d.element_bounds) {
-    lines.push(
-      `LO${Math.round(el.x_mm * dpmm)},${Math.round(el.y_mm * dpmm)},${Math.round(el.width_mm * dpmm)},${Math.round(el.height_mm * dpmm)}`,
-    );
+  for (const item of buildTextLinesFromElements(ctx)) {
+    const x = Math.round(item.x * dpmm);
+    const y = Math.round(item.y * dpmm);
+    const w = Math.round(Math.max(item.w, 1) * dpmm);
+    const h = Math.round(Math.max(item.h, 1) * dpmm);
+    if (item.type === "box" || item.type === "line") {
+      lines.push(`LO${x},${y},${w},${h}`);
+    } else if (item.type === "barcode") {
+      lines.push(`B${x},${y},0,1,2,4,${Math.max(40, h)},B,"${quotedText(item.text)}"`);
+    } else {
+      lines.push(`A${x},${y},0,3,1,1,N,"${quotedText(item.text)}"`);
+    }
   }
   lines.push(`P${Math.max(1, ctx.copies)}`);
   return lines.join("\n");

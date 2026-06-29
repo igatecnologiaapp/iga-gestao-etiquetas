@@ -11,8 +11,11 @@ export type DriverLanguage =
   | "driver" // driver nativo do SO (default — saída dimensional/estruturada)
   | "ZPL"   // Zebra
   | "EPL"   // Zebra/Eltron legado
+  | "PPLA"  // Argox
   | "PPLB"  // Argox
   | "TSPL"  // TSC, Elgin (linha térmica)
+  | "ESCPOS" // ESC/POS
+  | "GDI"   // Windows GDI/texto
   | "DPL"   // Datamax (preparado, ainda não funcional)
   | "PCL"   // laser/inkjet de uso geral (preparado, ainda não funcional)
   | "ESCP"; // Epson matricial (preparado, ainda não funcional)

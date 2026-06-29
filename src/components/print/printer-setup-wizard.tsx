@@ -29,6 +29,7 @@ import { usePrintAgent } from "@/lib/print/use-print-agent";
 import { PrinterService } from "@/lib/print/printer-service";
 import { PrinterCompatibilityService } from "@/lib/print/printer-compatibility-service";
 import { ROTATION_VALUES } from "@/lib/print/printer-config-validation";
+import { DIRECT_RAW_LANGUAGES, normalizeRawLanguage } from "@/lib/print/drivers/raw-commands";
 import type { AgentPrinter, PrinterConfig } from "@/lib/print/types";
 
 interface Props {
@@ -112,6 +113,10 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
   // Etapa 6 — teste
   const [testStatus, setTestStatus] = useState<"idle" | "running" | "ok" | "fail">("idle");
   const [testError, setTestError] = useState<string | null>(null);
+  const [testLanguage, setTestLanguage] = useState<string>("driver");
+  const [testProgress, setTestProgress] = useState<string[]>([]);
+  const [testDetails, setTestDetails] = useState<Record<string, unknown> | null>(null);
+  const [testTimeoutMs, setTestTimeoutMs] = useState<number>(60000);
 
   // Etapa 7 — ativação
   const [activateDefault, setActivateDefault] = useState(false);
@@ -127,6 +132,10 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
       setSelectedLayouts(new Set());
       setTestStatus("idle");
       setTestError(null);
+      setTestLanguage("driver");
+      setTestProgress([]);
+      setTestDetails(null);
+      setTestTimeoutMs(60000);
       setActivateDefault(false);
     }
   }, [open]);
@@ -184,6 +193,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
         name,
         agent_printer_id: selectedAgentPrinter.id,
         driver_name: selectedAgentPrinter.driver ?? null,
+        raw_language: normalizeRawLanguage(null, selectedAgentPrinter.driver, null, selectedAgentPrinter.name) ?? "driver",
         status: "ativo",
       };
       let saved: PrinterConfig;
@@ -215,6 +225,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
         rotation: saved.rotation ?? 0, auto_cut: !!saved.auto_cut,
         label_advance: saved.label_advance ?? 0,
       });
+      setTestLanguage(saved.raw_language ?? normalizeRawLanguage(null, saved.driver_name, saved.manufacturer, saved.model) ?? "driver");
       qc.invalidateQueries({ queryKey: ["printers"] });
       setStep(4);
     },
@@ -248,9 +259,9 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
   const saveTech = useMutation({
     mutationFn: async () => {
       if (!savedPrinter) throw new Error("Impressora não definida.");
-      const updated = await PrinterService.update(savedPrinter.id, tech as any);
+      const updated = await PrinterService.update(savedPrinter.id, { ...tech, raw_language: testLanguage } as any);
       setSavedPrinter(updated);
-      await logAudit(companyId, "wizard.update_tech_config", savedPrinter.id, tech);
+      await logAudit(companyId, "wizard.update_tech_config", savedPrinter.id, { ...tech, raw_language: testLanguage });
     },
     onSuccess: () => { setStep(6); qc.invalidateQueries({ queryKey: ["printers"] }); },
     onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar configurações."),
@@ -258,23 +269,85 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
 
   async function runTestPrint() {
     if (!savedPrinter?.agent_printer_id) return;
-    setTestStatus("running"); setTestError(null);
+    setTestStatus("running"); setTestError(null); setTestDetails(null);
+    setTestProgress(["Gerando comando", "Enviando ao agente"]);
     try {
-      await agent.client.printTestPage(savedPrinter.agent_printer_id);
+      const language = testLanguage === "driver"
+        ? normalizeRawLanguage(savedPrinter.raw_language, savedPrinter.driver_name, savedPrinter.manufacturer, savedPrinter.model)
+        : testLanguage;
+      setTestProgress((p) => [...p, "Enviando ao spooler", "Aguardando impressora"]);
+      const res = await agent.client.printTestPage(savedPrinter.agent_printer_id, { language, timeoutMs: testTimeoutMs });
       setTestStatus("ok");
+      setTestDetails(res as any);
       await PrinterService.update(savedPrinter.id, {
         last_test_at: new Date().toISOString(),
         last_status: "ok",
+        raw_language: language ?? savedPrinter.raw_language ?? "driver",
       } as any).catch(() => undefined);
       await logAudit(companyId, "wizard.test_print_ok", savedPrinter.id, {
         agent_printer_id: savedPrinter.agent_printer_id,
+        endpoint: res.endpoint ?? `/printers/${savedPrinter.agent_printer_id}/test-page`,
+        rawBytes: res.rawBytes ?? null,
+        language: res.language ?? language ?? null,
+        spooler: res.spooler ?? null,
       });
     } catch (e: any) {
       setTestStatus("fail");
-      setTestError(e?.message ?? "Falha ao executar teste de impressão.");
+      const status = e?.status ? `HTTP ${e.status}` : e?.code ?? "erro";
+      setTestError(`${status}: ${e?.message ?? "Falha ao executar teste de impressão."}`);
+      setTestDetails(e?.details ?? null);
       await logAudit(companyId, "wizard.test_print_fail", savedPrinter.id, {
+        endpoint: `/printers/${savedPrinter.agent_printer_id}/test-page`,
+        status: e?.status ?? null,
+        code: e?.code ?? null,
+        language: testLanguage,
         error: e?.message ?? "unknown",
+        details: e?.details ?? null,
       });
+    }
+  }
+
+  async function runSpoolerTest() {
+    if (!savedPrinter?.agent_printer_id) return;
+    setTestStatus("running"); setTestError(null); setTestDetails(null);
+    setTestProgress(["Gerando comando", "Enviando ao agente", "Testando comunicação com spooler"]);
+    try {
+      const res = await agent.client.testSpooler(savedPrinter.agent_printer_id, testLanguage, testTimeoutMs);
+      setTestStatus("ok");
+      setTestDetails(res as any);
+      await logAudit(companyId, "wizard.spooler_test_ok", savedPrinter.id, res as any);
+    } catch (e: any) {
+      setTestStatus("fail");
+      setTestError(`${e?.status ? `HTTP ${e.status}` : e?.code ?? "erro"}: ${e?.message ?? "Falha no spooler."}`);
+      setTestDetails(e?.details ?? null);
+      await logAudit(companyId, "wizard.spooler_test_fail", savedPrinter.id, { error: e?.message, details: e?.details });
+    }
+  }
+
+  async function runSimpleRawTest() {
+    if (!savedPrinter?.agent_printer_id) return;
+    setTestStatus("running"); setTestError(null); setTestDetails(null);
+    setTestProgress(["Gerando comando", "Enviando ao agente", "Enviando ao spooler", "Aguardando impressora"]);
+    try {
+      const language = testLanguage === "driver"
+        ? normalizeRawLanguage(savedPrinter.raw_language, savedPrinter.driver_name, savedPrinter.manufacturer, savedPrinter.model)
+        : testLanguage;
+      const res = await agent.client.printSimpleRawTest({
+        printerId: savedPrinter.agent_printer_id,
+        printerName: savedPrinter.name,
+        driver: savedPrinter.driver_name,
+        language,
+        copies: 1,
+        timeoutMs: testTimeoutMs,
+      });
+      setTestStatus("ok");
+      setTestDetails(res as any);
+      await logAudit(companyId, "wizard.simple_raw_test_ok", savedPrinter.id, res as any);
+    } catch (e: any) {
+      setTestStatus("fail");
+      setTestError(`${e?.status ? `HTTP ${e.status}` : e?.code ?? "erro"}: ${e?.message ?? "Falha no teste RAW simples."}`);
+      setTestDetails(e?.details ?? null);
+      await logAudit(companyId, "wizard.simple_raw_test_fail", savedPrinter.id, { error: e?.message, details: e?.details });
     }
   }
 
@@ -533,7 +606,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
 
           {step === 5 && (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">Ajuste DPI, escala, margens e offsets físicos da impressora.</p>
+              <p className="text-sm text-muted-foreground">Ajuste DPI, escala, margens, offsets físicos e linguagem RAW da impressora.</p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 <div><Label>DPI</Label><Input type="number" min={72} max={2400} value={tech.dpi}
                   onChange={(e) => setTech({ ...tech, dpi: Number(e.target.value) || 0 })} /></div>
@@ -555,6 +628,14 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
                   onChange={(e) => setTech({ ...tech, offset_x: Number(e.target.value) || 0 })} /></div>
                 <div><Label>Offset vertical</Label><Input type="number" value={tech.offset_y}
                   onChange={(e) => setTech({ ...tech, offset_y: Number(e.target.value) || 0 })} /></div>
+                <div><Label>Linguagem RAW</Label>
+                  <Select value={testLanguage} onValueChange={setTestLanguage}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{DIRECT_RAW_LANGUAGES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Timeout do teste (seg.)</Label><Input type="number" min={10} max={180} value={Math.round(testTimeoutMs / 1000)}
+                  onChange={(e) => setTestTimeoutMs(Math.min(180000, Math.max(10000, (Number(e.target.value) || 60) * 1000)))} /></div>
                 <label className="flex items-center gap-2 col-span-full">
                   <Checkbox checked={tech.auto_cut} onCheckedChange={(c) => setTech({ ...tech, auto_cut: !!c })} />
                   Corte automático
@@ -570,7 +651,7 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
           {step === 6 && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Envia uma etiqueta de teste real à impressora via <code>POST /printers/{`{id}`}/test-page</code>.
+                Envia uma etiqueta de teste real à impressora via <code>POST /printers/{`{id}`}/test-page</code> ou RAW mínimo via <code>POST /print</code>.
               </p>
               <Card className="p-3 flex items-center gap-3">
                 <FlaskConical className="size-5" />
@@ -582,12 +663,26 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
                   Imprimir teste
                 </Button>
               </Card>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={runSimpleRawTest} disabled={testStatus === "running" || !savedPrinter?.agent_printer_id}>
+                  {testStatus === "running" ? <Loader2 className="size-4 animate-spin" /> : <FlaskConical className="size-4" />}
+                  Testar impressão direta simples
+                </Button>
+                <Button variant="outline" onClick={runSpoolerTest} disabled={testStatus === "running" || !savedPrinter?.agent_printer_id}>
+                  Testar comunicação com spooler
+                </Button>
+              </div>
+              {testProgress.length > 0 && (
+                <Card className="p-3 text-xs space-y-1">
+                  {testProgress.map((p) => <div key={p}>• {p}</div>)}
+                </Card>
+              )}
               {testStatus === "ok" && (
                 <Alert>
                   <CheckCircle2 className="size-4" />
                   <AlertTitle>Teste enviado com sucesso</AlertTitle>
                   <AlertDescription className="text-xs">
-                    Verifique fisicamente se a etiqueta saiu correta antes de avançar.
+                    Verifique fisicamente se a etiqueta saiu correta antes de avançar. Endpoint: <code>{String((testDetails as any)?.endpoint ?? `/printers/${savedPrinter?.agent_printer_id}/test-page`)}</code>; RAW: <code>{String((testDetails as any)?.rawBytes ?? "—")}</code> bytes; linguagem: <code>{String((testDetails as any)?.language ?? testLanguage)}</code>.
                   </AlertDescription>
                 </Alert>
               )}
@@ -595,7 +690,10 @@ export function PrinterSetupWizard({ companyId, open, onClose, onRequestDiagnost
                 <Alert variant="destructive">
                   <AlertTriangle className="size-4" />
                   <AlertTitle>Falha no teste</AlertTitle>
-                  <AlertDescription className="text-xs">{testError}</AlertDescription>
+                  <AlertDescription className="text-xs space-y-2">
+                    <div>{testError}</div>
+                    {testDetails && <pre className="max-h-40 overflow-auto rounded bg-muted p-2 whitespace-pre-wrap">{JSON.stringify(testDetails, null, 2)}</pre>}
+                  </AlertDescription>
                 </Alert>
               )}
             </div>

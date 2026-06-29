@@ -10,6 +10,8 @@ import { ROTATION_VALUES } from "../printer-config-validation";
 import type { PrinterConfig } from "../types";
 import { DefaultDriver } from "./driver-default";
 import { EplDriver } from "./epl";
+import { EscposDriver } from "./escpos";
+import { GdiDriver } from "./gdi";
 import { PplbDriver } from "./pplb";
 import { TsplDriver } from "./tspl";
 import { ZplDriver } from "./zpl";
@@ -24,8 +26,11 @@ export const DRIVER_REGISTRY: Record<string, PrintDriver> = {
   driver: DefaultDriver,
   ZPL: ZplDriver,
   EPL: EplDriver,
+  PPLA: PplbDriver,
   PPLB: PplbDriver,
   TSPL: TsplDriver,
+  ESCPOS: EscposDriver,
+  GDI: GdiDriver,
 };
 
 /** Maturidade declarada de cada linguagem — usada na documentação/UI. */
@@ -33,8 +38,11 @@ export const DRIVER_MATURITY: Record<DriverLanguage, "stable" | "prepared" | "fa
   driver: "stable",
   ZPL: "prepared",
   EPL: "prepared",
+  PPLA: "prepared",
   PPLB: "prepared",
   TSPL: "prepared",
+  ESCPOS: "fallback",
+  GDI: "fallback",
   DPL: "fallback",
   PCL: "fallback",
   ESCP: "fallback",
@@ -138,4 +146,4 @@ export function renderWithAdapter(printer: PrinterConfig, ctx: AdapterContext): 
 }
 
 export type { AdapterContext, AdapterOutput, PrintDriver, DriverLanguage } from "./types";
-export { DefaultDriver, ZplDriver, EplDriver, PplbDriver, TsplDriver };
+export { DefaultDriver, ZplDriver, EplDriver, PplbDriver, TsplDriver, EscposDriver, GdiDriver };

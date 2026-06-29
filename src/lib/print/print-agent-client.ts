@@ -20,6 +20,7 @@ import type {
   AgentPrintRequest,
   AgentPrintResponse,
 } from "./types";
+import { buildSimpleTestRaw, normalizeRawLanguage, rawSize, type DirectRawLanguage } from "./drivers/raw-commands";
 
 export interface AgentTransport {
   fetch: typeof fetch;
@@ -34,7 +35,7 @@ export interface PrintAgentClientOptions {
 }
 
 const DEFAULT_BASE_URL = "http://127.0.0.1:17777";
-const DEFAULT_TIMEOUT = 1500;
+const DEFAULT_TIMEOUT = 30000;
 
 export class PrintAgentOfflineError extends Error {
   code: AgentErrorCode = "AGENT_OFFLINE";
@@ -80,9 +81,9 @@ export class PrintAgentClient {
     return base;
   }
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async request<T>(path: string, init: RequestInit = {}, timeoutMs?: number): Promise<T> {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), this.timeoutMs);
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs ?? this.timeoutMs);
     try {
       const res = await this.fetchImpl(`${this.baseUrl}${path}`, {
         ...init,
@@ -93,7 +94,17 @@ export class PrintAgentClient {
         const body = (await res.json().catch(() => null)) as AgentErrorBody | null;
         const code = (body?.code ?? this.statusToCode(res.status)) as AgentErrorCode;
         const msg = body?.message ?? body?.error ?? `Agent ${res.status}: ${res.statusText}`;
-        throw new PrintAgentError(code, msg, res.status, body?.details);
+        const b = (body ?? {}) as Record<string, unknown>;
+        const details = {
+          ...(body?.details ?? {}),
+          endpoint: b.endpoint ?? path,
+          printerId: b.printerId ?? b.printerIdSent ?? null,
+          language: b.language ?? null,
+          rawBytes: b.rawBytes ?? null,
+          copies: b.copies ?? null,
+          durationMs: b.durationMs ?? null,
+        };
+        throw new PrintAgentError(code, msg, res.status, details);
       }
       return (await res.json()) as T;
     } catch (e: unknown) {
@@ -165,10 +176,34 @@ export class PrintAgentClient {
     return { ok: true };
   }
 
-  async printTestPage(printerId: string): Promise<AgentPrintResponse> {
+  async printTestPage(printerId: string, opts: { language?: string | null; raw?: string; timeoutMs?: number } = {}): Promise<AgentPrintResponse> {
     return this.request<AgentPrintResponse>(`/printers/${encodeURIComponent(printerId)}/test-page`, {
       method: "POST",
-    });
+      body: JSON.stringify({ language: opts.language ?? null, raw: opts.raw ?? null, timeoutMs: opts.timeoutMs ?? null }),
+    }, opts.timeoutMs ?? 60000);
+  }
+
+  async printSimpleRawTest(input: { printerId: string; printerName?: string | null; driver?: string | null; language?: string | null; copies?: number; timeoutMs?: number }): Promise<AgentPrintResponse> {
+    const language = normalizeRawLanguage(input.language, input.driver, null, input.printerName) ?? "GDI";
+    const raw = buildSimpleTestRaw(language as DirectRawLanguage, input.printerName ?? input.printerId);
+    return this.request<AgentPrintResponse>("/print", {
+      method: "POST",
+      body: JSON.stringify({
+        printerId: input.printerId,
+        copies: Math.max(1, input.copies ?? 1),
+        raw,
+        language,
+        jobName: "Teste de impressão direta simples",
+        metadata: { test: true, rawBytes: rawSize(raw), language, endpoint: "/print" },
+      }),
+    }, input.timeoutMs ?? 60000);
+  }
+
+  async testSpooler(printerId: string, language?: string | null, timeoutMs = 60000): Promise<AgentPrintResponse> {
+    return this.request<AgentPrintResponse>(`/printers/${encodeURIComponent(printerId)}/spooler-test`, {
+      method: "POST",
+      body: JSON.stringify({ language: language ?? null, timeoutMs }),
+    }, timeoutMs);
   }
 
   async testConnection(): Promise<boolean> {
@@ -176,11 +211,11 @@ export class PrintAgentClient {
     return h.ok;
   }
 
-  async submit(req: AgentPrintRequest): Promise<AgentPrintResponse> {
+  async submit(req: AgentPrintRequest, timeoutMs = 60000): Promise<AgentPrintResponse> {
     return this.request<AgentPrintResponse>("/print", {
       method: "POST",
       body: JSON.stringify(req),
-    });
+    }, timeoutMs);
   }
 
   async getJob(jobId: string): Promise<AgentJobStatus> {
@@ -260,17 +295,20 @@ export function createMockAgentTransport(opts: MockAgentOptions = {}): AgentTran
         ],
       } satisfies AgentDiagnosticsReport);
       if (path === "/printers") return json(printers);
+      if (path.match(/^\/printers\/[^/]+\/spooler-test$/) && method === "POST") return json({ jobId: `mock-spooler-${Date.now()}`, ok: true, endpoint: path });
       if (path.match(/^\/printers\/[^/]+\/test$/) && method === "POST") return json({ ok: true });
       if (path.match(/^\/printers\/[^/]+\/test-page$/) && method === "POST") {
         const jobId = `mock-test-${Date.now()}`;
         jobs.set(jobId, { jobId, status: "completed" });
-        return json({ jobId });
+        return json({ jobId, ok: true, endpoint: path, rawBytes: 100, language: "ZPL" });
       }
       if (path === "/print" && method === "POST") {
         if (opts.failSubmit) return err(500, "INTERNAL_ERROR", "mock failure");
+        const body = init?.body ? JSON.parse(String(init.body)) : {};
+        if (!body.raw) return err(400, "INVALID_PAYLOAD", "payload sem comando raw");
         const jobId = `mock-${Date.now()}`;
         jobs.set(jobId, { jobId, status: "completed" });
-        return json({ jobId });
+        return json({ jobId, ok: true, endpoint: "/print", printerId: body.printerId, rawBytes: String(body.raw).length, language: body.language ?? null, copies: body.copies ?? 1 });
       }
       if (path.match(/^\/jobs\/[^/]+\/cancel$/) && method === "POST") {
         const jobId = decodeURIComponent(path.split("/")[2]);

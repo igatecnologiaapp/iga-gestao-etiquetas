@@ -6,6 +6,7 @@
 
 import type { DimensionalPayload } from "../layout-engine";
 import type { AdapterContext, AdapterOutput, PrintDriver } from "./types";
+import { buildTextLinesFromElements, zplText } from "./raw-commands";
 
 function dotsPerMm(dim: DimensionalPayload): number {
   return dim.dpi / 25.4;
@@ -29,10 +30,21 @@ export function buildZplPreview(ctx: AdapterContext): string {
   if (d.rotation && [90, 180, 270].includes(d.rotation)) {
     lines.push(`^PO${d.rotation === 90 ? "I" : d.rotation === 180 ? "R" : "B"}`);
   }
-  for (const el of d.element_bounds) {
-    lines.push(
-      `^FO${asInt(el.x_mm * dpmm)},${asInt(el.y_mm * dpmm)}^GB${asInt(el.width_mm * dpmm)},${asInt(el.height_mm * dpmm)},1^FS`,
-    );
+  for (const item of buildTextLinesFromElements(ctx)) {
+    const x = asInt(item.x * dpmm);
+    const y = asInt(item.y * dpmm);
+    const w = asInt(Math.max(item.w, 2) * dpmm);
+    const h = asInt(Math.max(item.h, 2) * dpmm);
+    if (item.type === "box" || item.type === "line") {
+      lines.push(`^FO${x},${y}^GB${w},${Math.max(1, h)},1^FS`);
+    } else if (item.type === "barcode") {
+      lines.push(`^FO${x},${y}^BY2,2,${Math.max(40, h)}^BCN,${Math.max(40, h)},Y,N,N^FD${zplText(item.text)}^FS`);
+    } else if (item.type === "qrcode") {
+      lines.push(`^FO${x},${y}^BQN,2,4^FDLA,${zplText(item.text)}^FS`);
+    } else {
+      const fontDots = asInt(Math.max(12, item.font * dpmm * 0.9));
+      lines.push(`^FO${x},${y}^A0N,${fontDots},${fontDots}^FB${Math.max(40, w)},3,2,L,0^FD${zplText(item.text)}^FS`);
+    }
   }
   lines.push(`^PQ${Math.max(1, ctx.copies)}`);
   lines.push(`^XZ`);

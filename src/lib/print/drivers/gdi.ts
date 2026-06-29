@@ -1,24 +1,20 @@
-// FASE 13 — Driver padrão (sistema operacional).
-// Saída dimensional já produzida pelo Layout Engine — o Print Agent repassa
-// ao driver nativo instalado no SO. Sempre disponível como fallback final.
-
 import type { AdapterContext, AdapterOutput, PrintDriver } from "./types";
 import { buildPlainTextRaw } from "./raw-commands";
 
-export const DefaultDriver: PrintDriver = {
-  language: "driver",
-  maturity: "stable",
+export const GdiDriver: PrintDriver = {
+  language: "GDI",
+  maturity: "fallback",
   validate(_ctx) {
     return [];
   },
   render(ctx: AdapterContext): AdapterOutput {
     return {
-      language: "driver",
+      language: "GDI",
       kind: "raw",
       raw: buildPlainTextRaw(ctx),
       dimensional: ctx.dimensional,
-      warnings: [],
-      maturity: "stable",
+      warnings: ["Windows GDI/texto usa o driver do Windows e pode não preservar posicionamento térmico avançado."],
+      maturity: "fallback",
       manufacturer: ctx.printer.manufacturer ?? null,
       model: ctx.printer.model ?? null,
     };
