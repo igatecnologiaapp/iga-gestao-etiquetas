@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
+import { buildNutritionColumns } from "@/lib/nutrition-columns";
+
 
 export type PreviewElement = {
   id?: string;
@@ -175,6 +177,16 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
     { label: "Fibra alimentar (g)", qty: fmt(n?.fiber_g), vd: dvPct(n?.fiber_g, 25) },
     { label: "Sódio (mg)", qty: fmt(n?.sodium_mg, 0), vd: dvPct(n?.sodium_mg, 2000) },
   ];
+
+  // Colunas dinâmicas (Fase 16.13): substitui o cabeçalho "Quantidade" por
+  // duas colunas rotuladas com o peso/unidade da porção (ex.: "100 g").
+  const cols = buildNutritionColumns(n);
+  const totalWeight =
+    cols.labelCol.widthWeight +
+    cols.valueCols.reduce((s, c) => s + c.widthWeight, 0) +
+    cols.vdCol.widthWeight;
+  const pctW = (w: number) => `${(w / totalWeight) * 100}%`;
+
   return (
     <div style={{ fontSize: fontPx, lineHeight: 1.05, padding: 2, height: "100%", overflow: "hidden", textAlign: "left", display: "flex", flexDirection: "column" }}>
       <div style={{ fontWeight: 800, textAlign: "center", fontSize: fontPx * 1.35, borderBottom: "1.5px solid #000", paddingBottom: 1 }}>
@@ -185,18 +197,34 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
         {n?.serving_size_g ? `Porção: ${n.serving_size_g} g${n?.serving_household ? ` (${n.serving_household})` : ""}` : "Porção: —"}
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: fontPx * 0.92, tableLayout: "fixed", flex: 1 }}>
+        <colgroup>
+          <col style={{ width: pctW(cols.labelCol.widthWeight) }} />
+          {cols.valueCols.map((c) => (
+            <col key={c.key} style={{ width: pctW(c.widthWeight) }} />
+          ))}
+          <col style={{ width: pctW(cols.vdCol.widthWeight) }} />
+        </colgroup>
         <thead>
           <tr>
             <td></td>
-            <td style={{ textAlign: "left", fontWeight: 700, borderBottom: "1px solid #000" }}>Quantidade</td>
-            <td style={{ textAlign: "left", fontWeight: 700, borderBottom: "1px solid #000", width: "20%" }}>%VD*</td>
+            {cols.valueCols.map((c) => (
+              <td
+                key={c.key}
+                style={{ textAlign: c.align, fontWeight: 700, borderBottom: "1px solid #000", paddingLeft: 2, paddingRight: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+              >
+                {c.title}
+              </td>
+            ))}
+            <td style={{ textAlign: "left", fontWeight: 700, borderBottom: "1px solid #000", paddingLeft: 2 }}>{cols.vdCol.title}</td>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.label} style={{ borderBottom: "0.5px solid #cbd5e1" }}>
               <td style={{ textAlign: "left", paddingLeft: r.indent ? 8 : 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</td>
-              <td style={{ textAlign: "left", paddingLeft: 2 }}>{r.qty}</td>
+              {cols.valueCols.map((c) => (
+                <td key={c.key} style={{ textAlign: c.align, paddingLeft: 2, paddingRight: 2 }}>{r.qty}</td>
+              ))}
               <td style={{ textAlign: "left", paddingLeft: 2 }}>{r.vd}</td>
             </tr>
           ))}
@@ -213,6 +241,7 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
     </div>
   );
 }
+
 
 
 export function LabelPreview({

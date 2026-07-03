@@ -2,6 +2,8 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
+import { buildNutritionColumns } from "./nutrition-columns";
+
 
 export type PdfFormat = {
   width: number; // in unit
@@ -221,16 +223,37 @@ export function renderNutritionTable(
   const rowH = Math.max(1.7, Math.min(baseSize * 0.7, available / rows.length));
   const rowFs = Math.max(4.2, Math.min(baseSize * 0.95, rowH * 1.55));
 
+  // Colunas dinâmicas (Fase 16.13): substituem o antigo cabeçalho "Quantidade"
+  // por duas colunas rotuladas com o peso/unidade da porção (ex.: "100 g").
+  // A configuração é declarativa em `buildNutritionColumns` para permitir
+  // evoluções futuras (por 100 g, preparado, cru, etc.) sem refatoração.
+  const cols = buildNutritionColumns(n);
+  const totalWeight =
+    cols.labelCol.widthWeight +
+    cols.valueCols.reduce((s, c) => s + c.widthWeight, 0) +
+    cols.vdCol.widthWeight;
+  const usableW = w - 2.4;
+  const unitW = usableW / totalWeight;
   const col1 = x + 1.2;
   const col1Indent = col1 + Math.max(1.2, rowFs * 0.4);
-  const col2 = x + w * 0.62;
-  const col3 = x + w * 0.85;
+  const labelWidth = cols.labelCol.widthWeight * unitW;
+  const valueXs: number[] = [];
+  let cursor = col1 + labelWidth;
+  for (const c of cols.valueCols) {
+    const cw = c.widthWeight * unitW;
+    // âncora no lado direito da célula (align: right)
+    valueXs.push(cursor + cw - 0.3);
+    cursor += cw;
+  }
+  const vdX = cursor + 0.2; // %VD alinhado à esquerda dentro da última célula
 
   // Header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(rowFs);
-  doc.text("Quantidade", col2, cy + headerH * 0.72, { align: "left" });
-  doc.text("%VD*", col3, cy + headerH * 0.72, { align: "left" });
+  cols.valueCols.forEach((c, i) => {
+    if (c.title) doc.text(c.title, valueXs[i], cy + headerH * 0.72, { align: "right" });
+  });
+  doc.text(cols.vdCol.title, vdX, cy + headerH * 0.72, { align: "left" });
   cy += headerH;
   doc.setLineWidth(0.2);
   doc.line(x, cy, x + w, cy);
@@ -240,14 +263,17 @@ export function renderNutritionTable(
   doc.setFontSize(rowFs);
   for (const r of rows) {
     doc.text(r.label, r.indent ? col1Indent : col1, cy + rowH * 0.72, { align: "left" });
-    doc.text(r.qty, col2, cy + rowH * 0.72, { align: "left" });
-    doc.text(r.vd, col3, cy + rowH * 0.72, { align: "left" });
+    cols.valueCols.forEach((_c, i) => {
+      doc.text(r.qty, valueXs[i], cy + rowH * 0.72, { align: "right" });
+    });
+    doc.text(r.vd, vdX, cy + rowH * 0.72, { align: "left" });
     cy += rowH;
     doc.setLineWidth(0.05);
     doc.setDrawColor(190);
     doc.line(x + 0.5, cy, x + w - 0.5, cy);
     doc.setDrawColor(0);
   }
+
 
   // Notes — only inside the table; never duplicated below
   if (notesText) {
