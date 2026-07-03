@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
+import { buildNutritionColumns } from "@/lib/nutrition-columns";
+
 
 export type PreviewElement = {
   id?: string;
