@@ -2,6 +2,8 @@
 import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
+import { buildNutritionColumns } from "./nutrition-columns";
+
 
 export type PdfFormat = {
   width: number; // in unit
