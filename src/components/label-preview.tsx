@@ -207,25 +207,25 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
         <thead>
           <tr>
             <td></td>
-            {cols.valueCols.map((c) => (
+            {cols.valueCols.map((c, idx) => (
               <td
                 key={c.key}
-                style={{ textAlign: c.align, fontWeight: 700, borderBottom: "1px solid #000", paddingLeft: 2, paddingRight: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                style={{ textAlign: c.align, fontWeight: 700, borderBottom: "1px solid #000", paddingLeft: idx === 0 ? 6 : 4, paddingRight: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
               >
                 {c.title}
               </td>
             ))}
-            <td style={{ textAlign: "left", fontWeight: 700, borderBottom: "1px solid #000", paddingLeft: 2 }}>{cols.vdCol.title}</td>
+            <td style={{ textAlign: "center", fontWeight: 700, borderBottom: "1px solid #000", paddingLeft: 6, paddingRight: 2 }}>{cols.vdCol.title}</td>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.label} style={{ borderBottom: "0.5px solid #cbd5e1" }}>
-              <td style={{ textAlign: "left", paddingLeft: r.indent ? 8 : 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</td>
-              {cols.valueCols.map((c) => (
-                <td key={c.key} style={{ textAlign: c.align, paddingLeft: 2, paddingRight: 2 }}>{r.qty}</td>
+              <td style={{ textAlign: "left", paddingLeft: r.indent ? 8 : 1, paddingRight: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.label}</td>
+              {cols.valueCols.map((c, idx) => (
+                <td key={c.key} style={{ textAlign: c.align, paddingLeft: idx === 0 ? 6 : 4, paddingRight: 4 }}>{r.qty}</td>
               ))}
-              <td style={{ textAlign: "left", paddingLeft: 2 }}>{r.vd}</td>
+              <td style={{ textAlign: "center", paddingLeft: 6, paddingRight: 2 }}>{r.vd}</td>
             </tr>
           ))}
         </tbody>

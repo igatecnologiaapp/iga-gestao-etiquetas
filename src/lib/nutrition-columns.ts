@@ -62,13 +62,16 @@ export function buildNutritionColumns(
   const header = formatServingHeader(n?.serving_size_g, n?.serving_household);
   // Duas colunas dinâmicas — hoje ambas mostram valor por porção;
   // amanhã a segunda pode virar "por 100 g" ou "preparado".
+  // Pesos calibrados (Fase 16.14 — refinamento visual):
+  // Proporção alvo ~ 45% / 18% / 18% / 19% (soma 10.0), garantindo
+  // separação clara entre as duas colunas numéricas e o %VD*.
   const valueCols: NutritionValueColumn[] = [
-    { key: "serving_a", title: header, source: "per_serving", align: "right", widthWeight: 1 },
-    { key: "serving_b", title: header, source: "per_serving", align: "right", widthWeight: 1 },
+    { key: "serving_a", title: header, source: "per_serving", align: "center", widthWeight: 1.8 },
+    { key: "serving_b", title: header, source: "per_serving", align: "center", widthWeight: 1.8 },
   ];
   return {
-    labelCol: { widthWeight: 3.2 },
+    labelCol: { widthWeight: 4.5 },
     valueCols,
-    vdCol: { title: "%VD*", widthWeight: 0.9 },
+    vdCol: { title: "%VD*", widthWeight: 1.9 },
   };
 }

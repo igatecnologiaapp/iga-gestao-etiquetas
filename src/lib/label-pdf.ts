@@ -237,23 +237,27 @@ export function renderNutritionTable(
   const col1 = x + 1.2;
   const col1Indent = col1 + Math.max(1.2, rowFs * 0.4);
   const labelWidth = cols.labelCol.widthWeight * unitW;
+  // Fase 16.14 — refinamento visual:
+  // âncora CENTRALIZADA em cada coluna numérica, com pequeno padding interno
+  // para evitar que as duas colunas de porção pareçam um único campo.
+  const cellPad = 0.6;
   const valueXs: number[] = [];
   let cursor = col1 + labelWidth;
   for (const c of cols.valueCols) {
     const cw = c.widthWeight * unitW;
-    // âncora no lado direito da célula (align: right)
-    valueXs.push(cursor + cw - 0.3);
+    valueXs.push(cursor + cw / 2);
     cursor += cw;
   }
-  const vdX = cursor + 0.2; // %VD alinhado à esquerda dentro da última célula
+  const vdCellW = cols.vdCol.widthWeight * unitW;
+  const vdX = cursor + vdCellW / 2; // %VD* centralizado dentro da última célula
 
   // Header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(rowFs);
   cols.valueCols.forEach((c, i) => {
-    if (c.title) doc.text(c.title, valueXs[i], cy + headerH * 0.72, { align: "right" });
+    if (c.title) doc.text(c.title, valueXs[i], cy + headerH * 0.72, { align: "center" });
   });
-  doc.text(cols.vdCol.title, vdX, cy + headerH * 0.72, { align: "left" });
+  doc.text(cols.vdCol.title, vdX, cy + headerH * 0.72, { align: "center" });
   cy += headerH;
   doc.setLineWidth(0.2);
   doc.line(x, cy, x + w, cy);
@@ -262,11 +266,14 @@ export function renderNutritionTable(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(rowFs);
   for (const r of rows) {
-    doc.text(r.label, r.indent ? col1Indent : col1, cy + rowH * 0.72, { align: "left" });
-    cols.valueCols.forEach((_c, i) => {
-      doc.text(r.qty, valueXs[i], cy + rowH * 0.72, { align: "right" });
+    doc.text(r.label, r.indent ? col1Indent : col1, cy + rowH * 0.72, {
+      align: "left",
+      maxWidth: labelWidth - cellPad,
     });
-    doc.text(r.vd, vdX, cy + rowH * 0.72, { align: "left" });
+    cols.valueCols.forEach((_c, i) => {
+      doc.text(r.qty, valueXs[i], cy + rowH * 0.72, { align: "center" });
+    });
+    doc.text(r.vd, vdX, cy + rowH * 0.72, { align: "center" });
     cy += rowH;
     doc.setLineWidth(0.05);
     doc.setDrawColor(190);
