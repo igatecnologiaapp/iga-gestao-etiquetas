@@ -34,16 +34,16 @@ const nav: NavItem[] = [
   { to: "/app/layouts", label: "Central de Layouts", icon: LayoutTemplate, group: "Layouts" },
   { to: "/app/layout-categories", label: "Categorias de Layout", icon: FolderKanban, group: "Layouts" },
   { to: "/app/layout-formats", label: "Formatos", icon: Ruler, group: "Layouts" },
-  { to: "/app/printers", label: "Impressoras", icon: Printer, group: "Layouts" },
   { to: "/app/companies", label: "Empresas", icon: Building2, group: "Administração" },
   { to: "/app/branches", label: "Filiais", icon: Store, group: "Administração" },
   { to: "/app/users", label: "Usuários", icon: Users, group: "Administração" },
   { to: "/app/admin-handover", label: "Transferir Admin Principal", icon: ShieldCheck, group: "Administração" },
   { to: "/app/roles", label: "Perfis", icon: ShieldCheck, group: "Administração" },
   { to: "/app/audit", label: "Auditoria", icon: FileText, group: "Administração" },
+  { to: "/app/printers", label: "Impressoras", icon: Printer, group: "Integrações" },
   { to: "/app/integrations", label: "Integrações", icon: Plug, group: "Integrações" },
   { to: "/app/message-templates", label: "Templates de Mensagens", icon: MessageSquare, group: "Integrações" },
-  { to: "/app/settings", label: "Configurações", icon: Settings, group: "Administração" },
+  { to: "/app/settings", label: "Configurações", icon: Settings, group: "Integrações" },
 ];
 
 const groups = ["Geral", "Emissão", "Cadastros", "Layouts", "Administração", "Integrações"] as const;
