@@ -116,30 +116,7 @@ export function PrintAgentPanel({ companyId, canManage }: PrintAgentPanelProps) 
             </Button>
           </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-medium">
-          {loading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : online ? (
-            <Wifi className="size-4 text-emerald-600" />
-          ) : (
-            <WifiOff className="size-4 text-amber-600" />
-          )}
-          Print Agent
-          {mock && <Badge variant="outline">simulado</Badge>}
-        </div>
-        <Button variant="ghost" size="sm" onClick={() => refresh()} disabled={loading}>
-          Atualizar
-        </Button>
-      </div>
 
-      <div className="text-xs text-muted-foreground">
-        {loading
-          ? "Verificando agente local..."
-          : online
-            ? `Online${health?.version ? ` · v${health.version}` : ""}`
-            : `Offline${health?.code ? ` (${health.code})` : ""} — emissão usará PDF.`}
-      </div>
 
       {!hasToken && !mock && (
         <Alert variant="default" className="py-2">
