@@ -34,7 +34,6 @@ const nav: NavItem[] = [
   { to: "/app/layouts", label: "Central de Layouts", icon: LayoutTemplate, group: "Layouts" },
   { to: "/app/layout-categories", label: "Categorias de Layout", icon: FolderKanban, group: "Layouts" },
   { to: "/app/layout-formats", label: "Formatos", icon: Ruler, group: "Layouts" },
-  { to: "/app/printers", label: "Impressoras", icon: Printer, group: "Layouts" },
   { to: "/app/companies", label: "Empresas", icon: Building2, group: "Administração" },
   { to: "/app/branches", label: "Filiais", icon: Store, group: "Administração" },
   { to: "/app/users", label: "Usuários", icon: Users, group: "Administração" },
