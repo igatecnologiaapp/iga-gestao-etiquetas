@@ -206,6 +206,9 @@ export function PrintAgentPanel({ companyId, canManage }: PrintAgentPanelProps) 
           )}
         </div>
       )}
-    </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
+
