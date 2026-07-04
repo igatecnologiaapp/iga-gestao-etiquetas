@@ -40,9 +40,10 @@ const nav: NavItem[] = [
   { to: "/app/admin-handover", label: "Transferir Admin Principal", icon: ShieldCheck, group: "Administração" },
   { to: "/app/roles", label: "Perfis", icon: ShieldCheck, group: "Administração" },
   { to: "/app/audit", label: "Auditoria", icon: FileText, group: "Administração" },
+  { to: "/app/printers", label: "Impressoras", icon: Printer, group: "Integrações" },
   { to: "/app/integrations", label: "Integrações", icon: Plug, group: "Integrações" },
   { to: "/app/message-templates", label: "Templates de Mensagens", icon: MessageSquare, group: "Integrações" },
-  { to: "/app/settings", label: "Configurações", icon: Settings, group: "Administração" },
+  { to: "/app/settings", label: "Configurações", icon: Settings, group: "Integrações" },
 ];
 
 const groups = ["Geral", "Emissão", "Cadastros", "Layouts", "Administração", "Integrações"] as const;
