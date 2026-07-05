@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 import { buildNutritionColumns } from "./nutrition-columns";
+import { calculateDailyValuePercent, type NutritionKey } from "./nutrition-daily-values";
 
 
 export type PdfFormat = {
