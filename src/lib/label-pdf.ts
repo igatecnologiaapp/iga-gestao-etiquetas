@@ -206,16 +206,16 @@ export function renderNutritionTable(
 
   // 4) Required nutritional rows (ALL 10 — never skipped, never cut)
   const rows: Array<{ label: string; qty: string; vd: string; indent?: boolean }> = [
-    { label: "Valor energético (kcal)", qty: `${fmtNum(n?.energy_kcal, 0)}`, vd: dv(n, "energy_kcal", 2000) },
-    { label: "Carboidratos (g)", qty: `${fmtNum(n?.carbs_g)}`, vd: dv(n, "carbs_g", 300) },
-    { label: "Açúcares totais (g)", qty: `${fmtNum(n?.total_sugars_g)}`, vd: "", indent: true },
-    { label: "Açúcares adicionados (g)", qty: `${fmtNum(n?.added_sugars_g)}`, vd: dv(n, "added_sugars_g", 50), indent: true },
-    { label: "Proteínas (g)", qty: `${fmtNum(n?.protein_g)}`, vd: dv(n, "protein_g", 75) },
-    { label: "Gorduras totais (g)", qty: `${fmtNum(n?.total_fat_g)}`, vd: dv(n, "total_fat_g", 65) },
-    { label: "Gorduras saturadas (g)", qty: `${fmtNum(n?.saturated_fat_g)}`, vd: dv(n, "saturated_fat_g", 20), indent: true },
-    { label: "Gorduras trans (g)", qty: `${fmtNum(n?.trans_fat_g)}`, vd: "", indent: true },
-    { label: "Fibra alimentar (g)", qty: `${fmtNum(n?.fiber_g)}`, vd: dv(n, "fiber_g", 25) },
-    { label: "Sódio (mg)", qty: `${fmtNum(n?.sodium_mg, 0)}`, vd: dv(n, "sodium_mg", 2000) },
+    { label: "Valor energético (kcal)", qty: `${fmtNum(n?.energy_kcal, 0)}`, vd: dv(n, "energy_kcal") },
+    { label: "Carboidratos (g)", qty: `${fmtNum(n?.carbs_g)}`, vd: dv(n, "carbs_g") },
+    { label: "Açúcares totais (g)", qty: `${fmtNum(n?.total_sugars_g)}`, vd: dv(n, "total_sugars_g"), indent: true },
+    { label: "Açúcares adicionados (g)", qty: `${fmtNum(n?.added_sugars_g)}`, vd: dv(n, "added_sugars_g"), indent: true },
+    { label: "Proteínas (g)", qty: `${fmtNum(n?.protein_g)}`, vd: dv(n, "protein_g") },
+    { label: "Gorduras totais (g)", qty: `${fmtNum(n?.total_fat_g)}`, vd: dv(n, "total_fat_g") },
+    { label: "Gorduras saturadas (g)", qty: `${fmtNum(n?.saturated_fat_g)}`, vd: dv(n, "saturated_fat_g"), indent: true },
+    { label: "Gorduras trans (g)", qty: `${fmtNum(n?.trans_fat_g)}`, vd: dv(n, "trans_fat_g"), indent: true },
+    { label: "Fibra alimentar (g)", qty: `${fmtNum(n?.fiber_g)}`, vd: dv(n, "fiber_g") },
+    { label: "Sódio (mg)", qty: `${fmtNum(n?.sodium_mg, 0)}`, vd: dv(n, "sodium_mg") },
   ];
 
   // 5) Adaptive sizing: shrink rowH/fontSize so all 10 rows fit
