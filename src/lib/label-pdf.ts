@@ -308,15 +308,11 @@ export function renderNutritionTable(
   );
 }
 
-function dv(n: PdfNutrition | null | undefined, key: keyof PdfNutrition, ref: number): string {
+function dv(n: PdfNutrition | null | undefined, key: NutritionKey): string {
   if (!n) return "";
   const raw = (n as any)[key];
-  if (raw === null || raw === undefined) return "";
   const explicit = n.daily_values?.[key as string];
-  if (typeof explicit === "number") return `${explicit.toFixed(0)}%`;
-  const pct = (Number(raw) / ref) * 100;
-  if (!isFinite(pct)) return "";
-  return `${pct.toFixed(0)}%`;
+  return calculateDailyValuePercent(key, raw, typeof explicit === "number" ? explicit : null);
 }
 
 export function elementValue(el: PdfElement, d: PdfLabelData): string {
