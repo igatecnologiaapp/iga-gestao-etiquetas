@@ -161,22 +161,19 @@ function NutritionMini({ n, fontPx }: { n: any | null | undefined; fontPx: numbe
       : Number.isInteger(Number(v))
         ? String(v)
         : Number(v).toFixed(d);
-  const dvPct = (v: any, ref: number) => {
-    if (v == null || isNaN(Number(v))) return "";
-    const p = (Number(v) / ref) * 100;
-    return isFinite(p) ? `${p.toFixed(0)}%` : "";
-  };
+  const dvPct = (key: Parameters<typeof calculateDailyValuePercent>[0], v: any) =>
+    calculateDailyValuePercent(key, v, (n?.daily_values?.[key] as number | undefined) ?? null);
   const rows: Array<{ label: string; qty: string; vd: string; indent?: boolean }> = [
-    { label: "Valor energético (kcal)", qty: fmt(n?.energy_kcal, 0), vd: dvPct(n?.energy_kcal, 2000) },
-    { label: "Carboidratos (g)", qty: fmt(n?.carbs_g), vd: dvPct(n?.carbs_g, 300) },
-    { label: "Açúcares totais (g)", qty: fmt(n?.total_sugars_g), vd: "", indent: true },
-    { label: "Açúcares adicionados (g)", qty: fmt(n?.added_sugars_g), vd: dvPct(n?.added_sugars_g, 50), indent: true },
-    { label: "Proteínas (g)", qty: fmt(n?.protein_g), vd: dvPct(n?.protein_g, 75) },
-    { label: "Gorduras totais (g)", qty: fmt(n?.total_fat_g), vd: dvPct(n?.total_fat_g, 65) },
-    { label: "Gorduras saturadas (g)", qty: fmt(n?.saturated_fat_g), vd: dvPct(n?.saturated_fat_g, 20), indent: true },
-    { label: "Gorduras trans (g)", qty: fmt(n?.trans_fat_g), vd: "", indent: true },
-    { label: "Fibra alimentar (g)", qty: fmt(n?.fiber_g), vd: dvPct(n?.fiber_g, 25) },
-    { label: "Sódio (mg)", qty: fmt(n?.sodium_mg, 0), vd: dvPct(n?.sodium_mg, 2000) },
+    { label: "Valor energético (kcal)", qty: fmt(n?.energy_kcal, 0), vd: dvPct("energy_kcal", n?.energy_kcal) },
+    { label: "Carboidratos (g)", qty: fmt(n?.carbs_g), vd: dvPct("carbs_g", n?.carbs_g) },
+    { label: "Açúcares totais (g)", qty: fmt(n?.total_sugars_g), vd: dvPct("total_sugars_g", n?.total_sugars_g), indent: true },
+    { label: "Açúcares adicionados (g)", qty: fmt(n?.added_sugars_g), vd: dvPct("added_sugars_g", n?.added_sugars_g), indent: true },
+    { label: "Proteínas (g)", qty: fmt(n?.protein_g), vd: dvPct("protein_g", n?.protein_g) },
+    { label: "Gorduras totais (g)", qty: fmt(n?.total_fat_g), vd: dvPct("total_fat_g", n?.total_fat_g) },
+    { label: "Gorduras saturadas (g)", qty: fmt(n?.saturated_fat_g), vd: dvPct("saturated_fat_g", n?.saturated_fat_g), indent: true },
+    { label: "Gorduras trans (g)", qty: fmt(n?.trans_fat_g), vd: dvPct("trans_fat_g", n?.trans_fat_g), indent: true },
+    { label: "Fibra alimentar (g)", qty: fmt(n?.fiber_g), vd: dvPct("fiber_g", n?.fiber_g) },
+    { label: "Sódio (mg)", qty: fmt(n?.sodium_mg, 0), vd: dvPct("sodium_mg", n?.sodium_mg) },
   ];
 
   // Colunas dinâmicas (Fase 16.13): substitui o cabeçalho "Quantidade" por
