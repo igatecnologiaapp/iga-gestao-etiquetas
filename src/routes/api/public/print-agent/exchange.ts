@@ -1,13 +1,17 @@
-// FASE 16 — Endpoint público de troca: o Print Agent envia o código de 6 dígitos
-// digitado pelo operador e recebe de volta um token permanente.
+// FASE 1 — Endpoint público de troca de código por token (hardening).
 //
 // Segurança:
-//  - Endpoint público (sem auth) porque o agente ainda não tem credenciais —
-//    a proteção é o próprio código (6 dígitos, uso único, validade 10 min).
-//  - Validação rigorosa de entrada (Zod) e rate limit implícito via expiração.
-//  - O token bruto é retornado UMA ÚNICA VEZ; o banco guarda apenas o hash SHA-256.
-//  - Usa supabaseAdmin (service role) porque o consumo precisa contornar RLS,
-//    já que o agente não está autenticado como usuário.
+//  - Rate limit por IP (RPC check_pairing_ip_rate_limit): 20 falhas em 15 min => 429.
+//  - Consumo atômico do código via RPC consume_pairing_code:
+//      valida existência + expiração + tentativas em uma única transação;
+//      cria pareamento e marca o código como consumido no mesmo commit;
+//      código de 6 dígitos é uso único e não reutilizável.
+//  - Após 5 tentativas erradas no MESMO código, o código é automaticamente invalidado.
+//  - Resposta genérica ("Código inválido ou expirado") não revela existência do código.
+//  - Payload validado com Zod.
+//  - Token bruto retornado somente aqui; banco guarda apenas SHA-256.
+//  - CORS aberto por método (POST/OPTIONS) porque quem chama é o Print Agent local,
+//    não o navegador; o browser não precisa consumir esse endpoint.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { createHash, randomBytes } from "node:crypto";
@@ -20,17 +24,40 @@ const BodySchema = z.object({
   agent_version: z.string().trim().max(40).optional(),
 });
 
+const CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-methods": "POST, OPTIONS",
+  "access-control-allow-headers": "content-type",
+  "access-control-max-age": "86400",
+} as const;
+
 function jsonError(message: string, status: number, code?: string) {
   return new Response(JSON.stringify({ ok: false, error: message, code }), {
     status,
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...CORS_HEADERS },
   });
+}
+
+function extractIp(request: Request): string {
+  const h = request.headers;
+  const fwd = h.get("x-forwarded-for") || h.get("cf-connecting-ip") || h.get("x-real-ip") || "";
+  if (fwd) return fwd.split(",")[0]!.trim().slice(0, 64);
+  return "unknown";
+}
+
+// Log seguro (nunca expõe token completo, apenas prefixo + IP mascarado)
+function maskIp(ip: string): string {
+  const parts = ip.split(".");
+  if (parts.length === 4) return `${parts[0]}.${parts[1]}.***.***`;
+  return ip.slice(0, 8) + "***";
 }
 
 export const Route = createFileRoute("/api/public/print-agent/exchange")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const ip = extractIp(request);
+
         let parsed: z.infer<typeof BodySchema>;
         try {
           const body = await request.json();
@@ -41,80 +68,109 @@ export const Route = createFileRoute("/api/public/print-agent/exchange")({
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-        // 1) Busca código ativo
-        const { data: codeRow, error: codeErr } = await supabaseAdmin
-          .from("print_agent_pairing_codes" as never)
-          .select("id,company_id,label,expires_at,consumed_at")
-          .eq("code", parsed.code)
-          .is("consumed_at", null)
-          .gt("expires_at", new Date().toISOString())
-          .maybeSingle();
+        // 1) Rate limit por IP (pré-verifica antes de consultar o código).
+        //    Registra a tentativa como "não sucesso" — se tudo der certo depois,
+        //    registramos outra entrada de sucesso para reset progressivo.
+        const { data: allowed, error: rlErr } = await supabaseAdmin.rpc(
+          "check_pairing_ip_rate_limit" as never,
+          { _ip: ip, _code: parsed.code, _success: false } as never,
+        );
+        if (rlErr) {
+          console.warn("[pairing.exchange] rate_limit_rpc_error", maskIp(ip));
+          return jsonError("Erro interno", 500, "INTERNAL");
+        }
+        if (allowed === false) {
+          console.warn("[pairing.exchange] blocked_by_rate_limit", maskIp(ip));
+          return jsonError(
+            "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.",
+            429,
+            "RATE_LIMITED",
+          );
+        }
 
-        if (codeErr) return jsonError("Erro interno", 500, "INTERNAL");
-        if (!codeRow) return jsonError("Código inválido ou expirado", 404, "INVALID_CODE");
-
-        const row = codeRow as unknown as {
-          id: string;
-          company_id: string;
-          label: string;
-          expires_at: string;
-        };
-
-        // 2) Gera token permanente
+        // 2) Consumo atômico do código (RPC transaciona tudo).
         const raw = `pat_${randomBytes(32).toString("hex")}`;
         const prefix = raw.slice(0, 12);
         const hash = createHash("sha256").update(raw, "utf8").digest("hex");
-        const finalLabel = parsed.device_name
-          ? `${row.label} — ${parsed.device_name}`
-          : row.label;
 
-        // 3) Cria pareamento
-        const { data: pairing, error: pairErr } = await supabaseAdmin
-          .from("print_agent_pairings" as never)
-          .insert({
-            company_id: row.company_id,
-            label: finalLabel.slice(0, 200),
+        const { data: consumeRes, error: consumeErr } = await supabaseAdmin.rpc(
+          "consume_pairing_code" as never,
+          {
+            _code: parsed.code,
+            _device_id: parsed.device_id ?? null,
+            _device_name: parsed.device_name ?? null,
+            _agent_version: parsed.agent_version ?? null,
+            _token_prefix: prefix,
+            _token_hash: hash,
+          } as never,
+        );
+
+        if (consumeErr) {
+          console.warn("[pairing.exchange] consume_rpc_error", maskIp(ip));
+          return jsonError("Erro interno", 500, "INTERNAL");
+        }
+
+        const consumed = consumeRes as unknown as
+          | { ok: true; pairing_id: string; company_id: string; label: string }
+          | { ok: false; code: string };
+
+        if (!consumed?.ok) {
+          // Incrementa contador do código (torna o código inutilizável após 5 falhas)
+          await supabaseAdmin.rpc("register_pairing_code_failure" as never, {
+            _code: parsed.code,
+          } as never);
+          console.warn(
+            "[pairing.exchange] invalid_code_from",
+            maskIp(ip),
+            "prefix",
+            parsed.code.slice(0, 2) + "****",
+          );
+          return jsonError("Código inválido ou expirado", 404, "INVALID_CODE");
+        }
+
+        // 3) Registra sucesso (para auditoria; o rate limit por IP considera só falhas)
+        await supabaseAdmin.rpc("check_pairing_ip_rate_limit" as never, {
+          _ip: ip,
+          _code: parsed.code,
+          _success: true,
+        } as never);
+
+        console.info(
+          "[pairing.exchange] success",
+          "company",
+          consumed.company_id,
+          "pairing",
+          consumed.pairing_id,
+          "prefix",
+          prefix,
+          "ip",
+          maskIp(ip),
+        );
+
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            token: raw,
             token_prefix: prefix,
-            token_hash: hash,
-            device_id: parsed.device_id ?? null,
-            device_name: parsed.device_name ?? null,
-            agent_version: parsed.agent_version ?? null,
-            status: "active",
-          } as never)
-          .select("id,company_id,label,token_prefix,device_id,device_name,agent_version,created_at")
-          .single();
-
-        if (pairErr || !pairing) return jsonError("Falha ao registrar pareamento", 500, "PAIRING_FAILED");
-
-        // 4) Marca código como consumido (uso único)
-        await supabaseAdmin
-          .from("print_agent_pairing_codes" as never)
-          .update({
-            consumed_at: new Date().toISOString(),
-            pairing_id: (pairing as { id: string }).id,
-          } as never)
-          .eq("id", row.id);
-
-        return Response.json({
-          ok: true,
-          token: raw,
-          token_prefix: prefix,
-          token_length: raw.length,
-          paired: true,
-          pairing,
-          company_id: row.company_id,
-        });
+            token_length: raw.length,
+            paired: true,
+            pairing: {
+              id: consumed.pairing_id,
+              company_id: consumed.company_id,
+              label: consumed.label,
+              token_prefix: prefix,
+              device_id: parsed.device_id ?? null,
+              device_name: parsed.device_name ?? null,
+              agent_version: parsed.agent_version ?? null,
+              created_at: new Date().toISOString(),
+            },
+            company_id: consumed.company_id,
+          }),
+          { status: 200, headers: { "content-type": "application/json", ...CORS_HEADERS } },
+        );
       },
 
-      OPTIONS: async () =>
-        new Response(null, {
-          status: 204,
-          headers: {
-            "access-control-allow-origin": "*",
-            "access-control-allow-methods": "POST, OPTIONS",
-            "access-control-allow-headers": "content-type",
-          },
-        }),
+      OPTIONS: async () => new Response(null, { status: 204, headers: CORS_HEADERS }),
     },
   },
 });
