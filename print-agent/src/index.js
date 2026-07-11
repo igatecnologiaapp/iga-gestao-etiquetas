@@ -583,7 +583,22 @@ function printRawToWindows(printerName, rawBytes, opts = {}) {
 // -------- HTTP server --------
 function buildServer() {
   const app = express();
-  app.use(cors({ origin: true, credentials: false }));
+  // FASE 1 (C-01) — CORS restritivo por origem, apenas GET/POST/OPTIONS,
+  // e apenas os headers realmente usados pelo painel.
+  app.use(cors({
+    origin: function (origin, callback) {
+      if (isOriginAllowed(origin)) return callback(null, true);
+      log("CORS_BLOCKED origin=", origin || "(none)");
+      return callback(new Error("Origin não autorizado"), false);
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Company-Id"],
+    credentials: false,
+    maxAge: 86400,
+    optionsSuccessStatus: 204,
+  }));
+  // Handler explícito para OPTIONS (preflight) de qualquer rota
+  app.options("*", cors());
   app.use(express.json({ limit: "10mb" }));
 
   function auth(req, res, next) {
