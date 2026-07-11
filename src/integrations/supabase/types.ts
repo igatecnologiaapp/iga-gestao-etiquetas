@@ -1445,6 +1445,7 @@ export type Database = {
       }
       print_agent_pairing_codes: {
         Row: {
+          attempts: number
           code: string
           company_id: string
           consumed_at: string | null
@@ -1457,6 +1458,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attempts?: number
           code: string
           company_id: string
           consumed_at?: string | null
@@ -1469,6 +1471,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attempts?: number
           code?: string
           company_id?: string
           consumed_at?: string | null
@@ -1496,6 +1499,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      print_agent_pairing_ip_attempts: {
+        Row: {
+          attempted_at: string
+          code_provided: string | null
+          id: string
+          ip: string
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          code_provided?: string | null
+          id?: string
+          ip: string
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          code_provided?: string | null
+          id?: string
+          ip?: string
+          success?: boolean
+        }
+        Relationships: []
       }
       print_agent_pairings: {
         Row: {
@@ -3361,6 +3388,21 @@ export type Database = {
       }
     }
     Functions: {
+      check_pairing_ip_rate_limit: {
+        Args: { _code: string; _ip: string; _success: boolean }
+        Returns: boolean
+      }
+      consume_pairing_code: {
+        Args: {
+          _agent_version: string
+          _code: string
+          _device_id: string
+          _device_name: string
+          _token_hash: string
+          _token_prefix: string
+        }
+        Returns: Json
+      }
       create_company_with_admin: {
         Args: {
           _email?: string
@@ -3416,6 +3458,14 @@ export type Database = {
           _record_id: string
           _table_name: string
         }
+        Returns: string
+      }
+      register_pairing_code_failure: {
+        Args: { _code: string }
+        Returns: number
+      }
+      rotate_print_agent_pairing: {
+        Args: { _new_hash: string; _new_prefix: string; _pairing_id: string }
         Returns: string
       }
       suggest_label_layout: {
