@@ -5,7 +5,7 @@
 //  - C-03: use-print-agent não persiste mais token em localStorage.
 //  - C-02/C-04: contrato das RPCs é testado pela integração (fora deste arquivo).
 
-import { describe, expect, it, beforeEach, vi } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
 
 // ---------------- C-01: allowlist de origens ----------------
 
