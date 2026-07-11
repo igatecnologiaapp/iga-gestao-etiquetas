@@ -1,32 +1,58 @@
-// FASE 7 — Hook do Print Agent (status + token de pareamento por empresa).
-// O token bruto é exibido apenas uma vez no momento da criação (ver FASE 4) e
-// fica armazenado localmente no navegador da estação operadora. Aqui só lemos
-// o que o usuário colou; jamais persistimos em servidor.
+// FASE 1 (C-03) — token do Print Agent removido do localStorage.
+//
+// Antes: `print_agent_token:<companyId>` era persistido em localStorage. XSS
+// no navegador poderia extrair o token. Mesmo com o comentário indicando uso
+// "apenas legado/diagnóstico", o token estava reversível a partir da máquina
+// do operador — risco desnecessário.
+//
+// Agora: mantemos o token apenas em MEMÓRIA (state React) pelo tempo da aba.
+// A autenticação operacional entre o navegador e o Print Agent local continua
+// funcionando: o agente lê agent.json a cada requisição e valida `X-Company-Id`.
+// O token bruto exibido em pareamento serve para o usuário digitar no CLI/GUI
+// do agente (`pair-ui`), não para armazenamento no navegador.
+//
+// Migração: na primeira carga do hook removemos QUALQUER chave legada
+// `print_agent_token:*` do localStorage para não deixar segredos antigos.
 
 import { useEffect, useMemo, useState } from "react";
 import { PrintAgentClient, createMockPrintAgent } from "./print-agent-client";
 import type { AgentHealth } from "./types";
 
-const KEY = (companyId: string) => `print_agent_token:${companyId}`;
 const MOCK_KEY = (companyId: string) => `print_agent_mock:${companyId}`;
+const LEGACY_TOKEN_KEY_PREFIX = "print_agent_token:";
 
-export function getStoredAgentToken(companyId: string | null | undefined): string | null {
-  if (!companyId || typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem(KEY(companyId));
-  } catch {
-    return null;
-  }
-}
+// Guardado em memória por aba (sobrevive re-renders, some ao fechar a aba).
+// Chave por companyId permite alternar de empresa sem misturar.
+const IN_MEMORY_TOKENS: Map<string, string> = new Map();
 
-export function setStoredAgentToken(companyId: string, token: string | null): void {
+function purgeLegacyTokens(): void {
   if (typeof window === "undefined") return;
   try {
-    if (!token) window.localStorage.removeItem(KEY(companyId));
-    else window.localStorage.setItem(KEY(companyId), token);
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith(LEGACY_TOKEN_KEY_PREFIX)) keys.push(k);
+    }
+    for (const k of keys) window.localStorage.removeItem(k);
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * Compatibilidade retroativa: componentes de diagnóstico chamam esta função
+ * para exibir prefixo do token guardado. Agora sempre retorna null (token
+ * não é mais persistido) — o diagnóstico continua exibindo os campos como
+ * "vazio", o que é o comportamento correto.
+ */
+export function getStoredAgentToken(_companyId: string | null | undefined): string | null {
+  return null;
+}
+
+/** Somente para uso interno; não persiste em disco. */
+function setInMemoryAgentToken(companyId: string, token: string | null): void {
+  if (!token) IN_MEMORY_TOKENS.delete(companyId);
+  else IN_MEMORY_TOKENS.set(companyId, token);
 }
 
 export function isMockMode(companyId: string | null | undefined): boolean {
@@ -53,17 +79,11 @@ export function buildAgentClient(companyId: string | null | undefined): PrintAge
     return createMockPrintAgent({ online: true });
   }
   return new PrintAgentClient({
-    // O token gravado no navegador pode ficar obsoleto após novo pareamento.
-    // O Print Agent local lê o agent.json a cada requisição; para evitar 401 por
-    // token antigo no browser, a autenticação operacional usa o pareamento local
-    // + X-Company-Id. O token armazenado fica apenas para diagnóstico/legado.
+    // Autenticação operacional usa agent.json + X-Company-Id;
+    // não enviamos token bruto do navegador (removido do localStorage — C-03).
     token: null,
     companyId: companyId ?? null,
   });
-}
-
-function tokenPrefix(token: string | null): string | null {
-  return token ? token.slice(0, 12) : null;
 }
 
 export interface UsePrintAgentResult {
@@ -79,14 +99,21 @@ export interface UsePrintAgentResult {
 }
 
 export function usePrintAgent(companyId: string | null | undefined): UsePrintAgentResult {
-  const [token, setTokenState] = useState<string | null>(() => getStoredAgentToken(companyId));
+  // Purga chaves legadas assim que o hook é montado no navegador.
+  useEffect(() => {
+    purgeLegacyTokens();
+  }, []);
+
+  const [token, setTokenState] = useState<string | null>(() =>
+    companyId ? IN_MEMORY_TOKENS.get(companyId) ?? null : null,
+  );
   const [mock, setMockState] = useState<boolean>(() => isMockMode(companyId));
   const [health, setHealth] = useState<AgentHealth | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
-    setTokenState(getStoredAgentToken(companyId));
+    setTokenState(companyId ? IN_MEMORY_TOKENS.get(companyId) ?? null : null);
     setMockState(isMockMode(companyId));
   }, [companyId]);
 
@@ -98,23 +125,16 @@ export function usePrintAgent(companyId: string | null | undefined): UsePrintAge
     client
       .health()
       .then((h) => alive && setHealth(h))
-      .catch((e) =>
-        alive && setHealth({ ok: false, reachable: false, error: String(e?.message ?? e), code: "AGENT_OFFLINE" }),
+      .catch(
+        (e) =>
+          alive &&
+          setHealth({ ok: false, reachable: false, error: String(e?.message ?? e), code: "AGENT_OFFLINE" }),
       )
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
   }, [client]);
-
-  useEffect(() => {
-    if (!companyId || !token || !health?.token_prefix) return;
-    if (tokenPrefix(token) !== health.token_prefix) {
-      setStoredAgentToken(companyId, null);
-      setTokenState(null);
-      setTick((n) => n + 1);
-    }
-  }, [companyId, health?.token_prefix, token]);
 
   return {
     health,
@@ -125,7 +145,7 @@ export function usePrintAgent(companyId: string | null | undefined): UsePrintAge
     client,
     setToken: (t) => {
       if (!companyId) return;
-      setStoredAgentToken(companyId, t);
+      setInMemoryAgentToken(companyId, t);
       setTokenState(t);
       setTick((n) => n + 1);
     },
@@ -140,3 +160,9 @@ export function usePrintAgent(companyId: string | null | undefined): UsePrintAge
     },
   };
 }
+
+// Exportado apenas para testes; NÃO usar em UI.
+export const __internal = {
+  IN_MEMORY_TOKENS,
+  purgeLegacyTokens,
+};

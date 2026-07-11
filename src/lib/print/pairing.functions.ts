@@ -102,43 +102,32 @@ export const revokePairing = createServerFn({ method: "POST" })
     return row as unknown as PrintAgentPairing;
   });
 
+// FASE 1 (C-04) — rotação atômica.
+// Toda a rotação (criar novo + revogar antigo) executa em UMA transação
+// via RPC public.rotate_print_agent_pairing. Se qualquer etapa falhar,
+// rollback total é aplicado e a estação continua com o pareamento anterior
+// intacto — nunca fica sem token válido.
 export const rotatePairing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { pairingId: string }) => z.object({ pairingId: z.string().uuid() }).parse(data))
   .handler(async ({ data, context }): Promise<PrintAgentPairingCreated> => {
-    const { data: existing, error: loadErr } = await context.supabase
-      .from("print_agent_pairings" as never)
-      .select("*")
-      .eq("id", data.pairingId)
-      .maybeSingle();
-    if (loadErr) throw loadErr;
-    if (!existing) throw new Error("Pareamento não encontrado");
-    const current = existing as unknown as PrintAgentPairing;
-    await assertCompanyAdmin(context.supabase, context.userId, current.company_id);
-
-    // Revoga atual
-    await context.supabase
-      .from("print_agent_pairings" as never)
-      .update({
-        status: "revoked",
-        revoked_by: context.userId,
-        revoked_at: new Date().toISOString(),
-      } as never)
-      .eq("id", data.pairingId);
-
-    // Cria novo com mesma label
     const { token, prefix, hash } = generateToken();
+
+    const { data: newId, error: rpcErr } = await context.supabase.rpc(
+      "rotate_print_agent_pairing" as never,
+      { _pairing_id: data.pairingId, _new_prefix: prefix, _new_hash: hash } as never,
+    );
+    if (rpcErr) {
+      // Erros da RPC: pairing_not_found | forbidden | not_authenticated
+      throw new Error(rpcErr.message || "Falha ao rotacionar pareamento");
+    }
+    if (!newId) throw new Error("Rotação não retornou id do novo pareamento");
+
+    // Carrega o novo registro para devolver ao chamador (RLS já permite ao admin da empresa).
     const { data: row, error } = await context.supabase
       .from("print_agent_pairings" as never)
-      .insert({
-        company_id: current.company_id,
-        label: `${current.label} (rotated)`,
-        token_prefix: prefix,
-        token_hash: hash,
-        created_by: context.userId,
-        status: "active",
-      } as never)
       .select("*")
+      .eq("id", newId as string)
       .single();
     if (error) throw error;
     return { pairing: row as unknown as PrintAgentPairing, token };

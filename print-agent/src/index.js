@@ -25,7 +25,7 @@ const cors = require("cors");
 
 // -------- Config --------
 const PORT = Number(process.env.PRINT_AGENT_PORT || 17777);
-const VERSION = "1.2.1";
+const VERSION = "1.3.0";
 const BASE_DIR = process.platform === "win32"
   ? path.join(process.env.PROGRAMDATA || "C:\\ProgramData", "LovablePrintAgent")
   : path.join(os.homedir(), ".lovable-print-agent");
@@ -33,6 +33,46 @@ const PROFILE_PATH = path.join(BASE_DIR, "agent.json");
 const LOG_PATH = path.join(BASE_DIR, "agent.log");
 const DEFAULT_API = process.env.PRINT_AGENT_API
   || "https://iga-gestao-etiquetas.lovable.app";
+
+// -------- FASE 1 (C-01): CORS restritivo --------
+// Allowlist estática (produção + previews Lovable).
+const STATIC_ALLOWED_ORIGINS = [
+  "https://iga-gestao-etiquetas.lovable.app",
+];
+const ALLOWED_ORIGIN_PATTERNS = [
+  // Preview stable: id-preview--<uuid>.lovable.app
+  /^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/i,
+  // Preview builds e projetos publicados: <slug>.lovable.app
+  /^https:\/\/[a-z0-9-]+\.lovable\.app$/i,
+  // project--<id> URLs (published/preview estáveis)
+  /^https:\/\/project--[a-z0-9-]+(?:-dev)?\.lovable\.app$/i,
+];
+const DEV_MODE = String(process.env.PRINT_AGENT_DEV || "").toLowerCase() === "1"
+  || String(process.env.PRINT_AGENT_DEV || "").toLowerCase() === "true";
+
+function readProfileAllowedOrigins() {
+  try {
+    const p = loadProfile();
+    const list = Array.isArray(p?.allowed_origins) ? p.allowed_origins : [];
+    return list.filter((o) => typeof o === "string" && /^https?:\/\//i.test(o)).slice(0, 20);
+  } catch { return []; }
+}
+
+function isOriginAllowed(origin) {
+  // Sem Origin: chamadas server-side / CLI / curl locais. Somente rotas que
+  // não têm segredo (health, diagnostics, pair) já respondem sem Origin;
+  // rotas autenticadas ainda exigem X-Company-Id + agent.json. Permitir.
+  if (!origin) return true;
+  if (STATIC_ALLOWED_ORIGINS.includes(origin)) return true;
+  if (ALLOWED_ORIGIN_PATTERNS.some((re) => re.test(origin))) return true;
+  if (readProfileAllowedOrigins().includes(origin)) return true;
+  if (DEV_MODE) {
+    if (/^https?:\/\/localhost(?::\d+)?$/i.test(origin)) return true;
+    if (/^https?:\/\/127\.0\.0\.1(?::\d+)?$/i.test(origin)) return true;
+  }
+  return false;
+}
+
 
 function ensureDir() {
   try { fs.mkdirSync(BASE_DIR, { recursive: true }); } catch {}
@@ -543,7 +583,22 @@ function printRawToWindows(printerName, rawBytes, opts = {}) {
 // -------- HTTP server --------
 function buildServer() {
   const app = express();
-  app.use(cors({ origin: true, credentials: false }));
+  // FASE 1 (C-01) — CORS restritivo por origem, apenas GET/POST/OPTIONS,
+  // e apenas os headers realmente usados pelo painel.
+  app.use(cors({
+    origin: function (origin, callback) {
+      if (isOriginAllowed(origin)) return callback(null, true);
+      log("CORS_BLOCKED origin=", origin || "(none)");
+      return callback(new Error("Origin não autorizado"), false);
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Company-Id"],
+    credentials: false,
+    maxAge: 86400,
+    optionsSuccessStatus: 204,
+  }));
+  // Handler explícito para OPTIONS (preflight) de qualquer rota
+  app.options("*", cors());
   app.use(express.json({ limit: "10mb" }));
 
   function auth(req, res, next) {
