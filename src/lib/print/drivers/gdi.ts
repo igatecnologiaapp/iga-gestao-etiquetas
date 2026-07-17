@@ -1,22 +1,14 @@
-import type { AdapterContext, AdapterOutput, PrintDriver } from "./types";
-import { buildPlainTextRaw } from "./raw-commands";
+// FASE 2 (item 2.1) — alias do driver do SO com rótulo "GDI".
+// Windows GDI/texto compartilha a mesma renderização passthrough do
+// DefaultDriver; a diferença é apenas semântica (linguagem declarada pela
+// impressora) e o aviso operacional exibido nos payloads.
 
-export const GdiDriver: PrintDriver = {
+import { createOsPassthroughDriver } from "./os-passthrough";
+
+export const GdiDriver = createOsPassthroughDriver({
   language: "GDI",
   maturity: "fallback",
-  validate(_ctx) {
-    return [];
-  },
-  render(ctx: AdapterContext): AdapterOutput {
-    return {
-      language: "GDI",
-      kind: "raw",
-      raw: buildPlainTextRaw(ctx),
-      dimensional: ctx.dimensional,
-      warnings: ["Windows GDI/texto usa o driver do Windows e pode não preservar posicionamento térmico avançado."],
-      maturity: "fallback",
-      manufacturer: ctx.printer.manufacturer ?? null,
-      model: ctx.printer.model ?? null,
-    };
-  },
-};
+  warnings: [
+    "Windows GDI/texto usa o driver do Windows e pode não preservar posicionamento térmico avançado.",
+  ],
+});

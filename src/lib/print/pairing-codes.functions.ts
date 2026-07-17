@@ -11,7 +11,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { randomInt } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { assertCompanyAdmin } from "./company-admin";
 
 export interface PairingCode {
   id: string;
@@ -21,21 +21,6 @@ export interface PairingCode {
   expires_at: string;
   consumed_at: string | null;
   created_at: string;
-}
-
-async function assertCompanyAdmin(
-  supabase: SupabaseClient,
-  userId: string,
-  companyId: string,
-): Promise<void> {
-  const { data: isGlobal } = await supabase.rpc("is_global_admin", { _user_id: userId });
-  if (isGlobal) return;
-  const { data: isAdmin } = await supabase.rpc("has_role", {
-    _user_id: userId,
-    _company_id: companyId,
-    _role: "administrador",
-  });
-  if (!isAdmin) throw new Error("Forbidden: requires administrator role");
 }
 
 function generateCode(): string {

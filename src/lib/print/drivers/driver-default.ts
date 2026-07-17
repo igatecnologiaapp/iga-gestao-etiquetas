@@ -1,26 +1,12 @@
 // FASE 13 — Driver padrão (sistema operacional).
+// FASE 2 (item 2.1) — implementação compartilhada em os-passthrough.ts.
+//
 // Saída dimensional já produzida pelo Layout Engine — o Print Agent repassa
 // ao driver nativo instalado no SO. Sempre disponível como fallback final.
 
-import type { AdapterContext, AdapterOutput, PrintDriver } from "./types";
-import { buildPlainTextRaw } from "./raw-commands";
+import { createOsPassthroughDriver } from "./os-passthrough";
 
-export const DefaultDriver: PrintDriver = {
+export const DefaultDriver = createOsPassthroughDriver({
   language: "driver",
   maturity: "stable",
-  validate(_ctx) {
-    return [];
-  },
-  render(ctx: AdapterContext): AdapterOutput {
-    return {
-      language: "driver",
-      kind: "raw",
-      raw: buildPlainTextRaw(ctx),
-      dimensional: ctx.dimensional,
-      warnings: [],
-      maturity: "stable",
-      manufacturer: ctx.printer.manufacturer ?? null,
-      model: ctx.printer.model ?? null,
-    };
-  },
-};
+});
