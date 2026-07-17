@@ -91,7 +91,9 @@ describe("PrintAgentClient (FASE 4)", () => {
 
   it("cancelJob: cancela com sucesso", async () => {
     const agent = createMockPrintAgent();
-    const { jobId } = await agent.submit({ printerId: "MOCK-001", copies: 1 });
+    // FASE 2 (2.9): submit exige comando raw — antes o mock aceitava payload
+    // vazio, o que mascarava o contrato real do endpoint /print.
+    const { jobId } = await agent.submit({ printerId: "MOCK-001", copies: 1, raw: "^XA^XZ", language: "ZPL" });
     const res = await agent.cancelJob(jobId);
     expect(res.canceled).toBe(true);
     const status = await agent.getJob(jobId);
@@ -108,7 +110,7 @@ describe("PrintAgentClient (FASE 4)", () => {
 
   it("cancelJob: JOB_NOT_CANCELABLE quando agente bloqueia", async () => {
     const agent = createMockPrintAgent({ cancelable: false });
-    const { jobId } = await agent.submit({ printerId: "MOCK-001", copies: 1 });
+    const { jobId } = await agent.submit({ printerId: "MOCK-001", copies: 1, raw: "^XA^XZ", language: "ZPL" });
     await expect(agent.cancelJob(jobId)).rejects.toMatchObject({
       code: "JOB_NOT_CANCELABLE",
       status: 409,
