@@ -8,8 +8,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { createHash, randomBytes } from "node:crypto";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PrintAgentPairing, PrintAgentPairingCreated } from "./types";
+import { assertCompanyAdmin } from "./company-admin";
 
 function sha256Hex(input: string): string {
   return createHash("sha256").update(input, "utf8").digest("hex");
@@ -18,21 +18,6 @@ function sha256Hex(input: string): string {
 function generateToken(): { token: string; prefix: string; hash: string } {
   const raw = `pat_${randomBytes(32).toString("hex")}`;
   return { token: raw, prefix: raw.slice(0, 12), hash: sha256Hex(raw) };
-}
-
-async function assertCompanyAdmin(
-  supabase: SupabaseClient,
-  userId: string,
-  companyId: string,
-): Promise<void> {
-  const { data: isGlobal } = await supabase.rpc("is_global_admin", { _user_id: userId });
-  if (isGlobal) return;
-  const { data: isAdmin } = await supabase.rpc("has_role", {
-    _user_id: userId,
-    _company_id: companyId,
-    _role: "administrador",
-  });
-  if (!isAdmin) throw new Error("Forbidden: requires administrator role");
 }
 
 export const listPairings = createServerFn({ method: "GET" })
