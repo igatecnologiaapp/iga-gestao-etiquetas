@@ -87,7 +87,8 @@ describe("Regras de cancelamento (UI)", () => {
 describe("Cancelamento via Print Agent", () => {
   it("cancela com sucesso quando job existe", async () => {
     const agent = createMockPrintAgent({ online: true });
-    const sub = await agent.submit({ printerId: "p1", copies: 1 });
+    // FASE 2 (2.9): submit passa a exigir comando raw (contrato do endpoint /print).
+    const sub = await agent.submit({ printerId: "p1", copies: 1, raw: "^XA^XZ", language: "ZPL" });
     const r = await agent.cancelJob(sub.jobId);
     expect(r.canceled).toBe(true);
   });
