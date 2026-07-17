@@ -205,14 +205,20 @@ describe("FASE 13 — render integrado", () => {
     expect(r.output.maturity).toBe("prepared");
   });
 
-  it("renderiza driver padrão com saída dimensional", () => {
+  it("renderiza driver padrão passando dimensional + raw texto ao Print Agent", () => {
+    // FASE 2 (2.1/2.9): DefaultDriver emite raw texto (buildPlainTextRaw) para
+    // que o Print Agent tenha um comando real quando o SO cair no fallback
+    // texto do spooler; o payload dimensional continua acompanhando para o
+    // driver nativo escolher o método adequado.
     const r = renderWithAdapter(makePrinter(), {
       printer: makePrinter(),
       dimensional: makeDimensional(),
       label: {},
       copies: 1,
     });
-    expect(r.output.kind).toBe("dimensional");
+    expect(r.output.kind).toBe("raw");
+    expect(r.output.language).toBe("driver");
+    expect(r.output.raw).toBeTypeOf("string");
     expect(r.output.dimensional).toBeDefined();
   });
 
