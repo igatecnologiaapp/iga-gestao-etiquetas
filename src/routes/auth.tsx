@@ -171,14 +171,21 @@ function AuthPage() {
 
           <div className="space-y-1.5">
             <h2 className="text-3xl font-bold tracking-tight text-neutral-900">
-              Bem-vindo!
+              {mode === "forgot" ? "Esqueci minha senha" : "Bem-vindo!"}
             </h2>
             <p className="text-sm text-neutral-500">
-              Acesse sua conta para continuar
+              {mode === "forgot"
+                ? "Informe seu e-mail para receber o link de redefinição"
+                : "Acesse sua conta para continuar"}
             </p>
           </div>
 
-          <form onSubmit={onSubmit} className="mt-8 space-y-5" noValidate>
+          <form
+            onSubmit={mode === "forgot" ? onRequestReset : onSubmit}
+            className="mt-8 space-y-5"
+            noValidate
+          >
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-neutral-700">
                 E-mail
