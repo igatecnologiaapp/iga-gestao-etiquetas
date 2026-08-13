@@ -262,6 +262,14 @@ function AuthPage() {
                 </button>
               </div>
             </div>
+            )}
+
+            {mode === "forgot" && resetSent && (
+              <p className="rounded-lg border border-red-100 bg-red-50/60 p-3 text-xs text-neutral-700">
+                Se este e-mail estiver cadastrado, você receberá um link para
+                criar uma nova senha. O link expira em pouco tempo.
+              </p>
+            )}
 
             <Button
               type="submit"
@@ -269,8 +277,27 @@ function AuthPage() {
               className="h-11 w-full rounded-lg bg-[#7a1117] text-base font-semibold text-white shadow-sm transition hover:bg-[#5e0d12] focus-visible:ring-[#7a1117]/40"
             >
               <Lock className="mr-2 size-4" />
-              {submitting ? "Entrando..." : "Entrar"}
+              {mode === "forgot"
+                ? submitting
+                  ? "Enviando..."
+                  : "Enviar link de redefinição"
+                : submitting
+                  ? "Entrando..."
+                  : "Entrar"}
             </Button>
+
+            {mode === "forgot" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setResetSent(false);
+                }}
+                className="w-full text-center text-xs font-medium text-neutral-500 hover:text-neutral-800"
+              >
+                Voltar para o login
+              </button>
+            )}
           </form>
 
           {/* Bloco de acesso seguro */}
@@ -288,9 +315,6 @@ function AuthPage() {
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-neutral-500">
-            Esqueceu sua senha? Solicite ao administrador da sua empresa.
-          </p>
 
           <p className="mt-8 text-center text-[11px] text-neutral-400">
             © {year} Casa de Carnes Souza Aguiar — Todos os direitos reservados.
