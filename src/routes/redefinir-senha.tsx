@@ -127,19 +127,25 @@ function ResetPasswordPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 8) {
-      toast.error("A senha deve ter no mínimo 8 caracteres.");
-      return;
-    }
-    if (password !== confirm) {
-      toast.error("As senhas não coincidem.");
+    setTouched({ password: true, confirm: true });
+    setSubmitError(null);
+    if (passwordError || confirmError) {
+      setSubmitError(passwordError ?? confirmError);
       return;
     }
     setStatus("saving");
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
+      const message = translateAuthError(error.message);
+      if (isExpiredLinkError(error.message)) {
+        setErrorMsg(message);
+        setStatus("invalid");
+        toast.error("Link expirado", { description: message });
+        return;
+      }
       setStatus("ready");
-      toast.error("Não foi possível salvar", { description: error.message });
+      setSubmitError(message);
+      toast.error("Não foi possível salvar", { description: message });
       return;
     }
     setStatus("done");
@@ -148,6 +154,7 @@ function ResetPasswordPage() {
     await supabase.auth.signOut();
     setTimeout(() => navigate({ to: "/auth" }), 600);
   }
+
 
   const heading =
     flowType === "invite"
