@@ -208,15 +208,29 @@ function ResetPasswordPage() {
 
             {status === "invalid" && (
               <div className="space-y-4">
-                <p className="text-sm text-destructive">{errorMsg}</p>
-                <Button variant="outline" className="w-full" onClick={() => navigate({ to: "/auth" })}>
-                  Voltar para o login
+                <Alert variant="destructive">
+                  <AlertTriangle className="size-4" aria-hidden />
+                  <AlertTitle>Não foi possível redefinir a senha</AlertTitle>
+                  <AlertDescription>{errorMsg}</AlertDescription>
+                </Alert>
+                <p className="text-sm text-muted-foreground">
+                  Os links de redefinição são de uso único e válidos por tempo limitado. Solicite um
+                  novo link em "Esqueci minha senha" na tela de login.
+                </p>
+                <Button className="w-full" onClick={() => navigate({ to: "/auth" })}>
+                  Solicitar novo link
                 </Button>
               </div>
             )}
 
             {(status === "ready" || status === "saving" || status === "done") && (
               <form onSubmit={onSubmit} className="space-y-4" noValidate>
+                {submitError && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="size-4" aria-hidden />
+                    <AlertDescription>{submitError}</AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="password">Nova senha</Label>
                   <div className="relative">
@@ -228,8 +242,11 @@ function ResetPasswordPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                       className="pr-10"
                       disabled={status !== "ready"}
+                      aria-invalid={touched.password && !!passwordError}
+                      aria-describedby="password-rules password-error"
                     />
                     <button
                       type="button"
@@ -241,6 +258,35 @@ function ResetPasswordPage() {
                       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
+                  {touched.password && passwordError && (
+                    <p id="password-error" className="text-xs text-destructive">
+                      {passwordError}
+                    </p>
+                  )}
+                  <ul id="password-rules" className="space-y-1 pt-1">
+                    {PASSWORD_RULES.map((rule) => {
+                      const ok = rule.test(password);
+                      return (
+                        <li
+                          key={rule.id}
+                          className={`flex items-center gap-2 text-xs ${
+                            ok
+                              ? "text-muted-foreground"
+                              : touched.password
+                                ? "text-destructive"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          {ok ? (
+                            <Check className="size-3.5 text-primary" aria-hidden />
+                          ) : (
+                            <X className="size-3.5" aria-hidden />
+                          )}
+                          <span>{rule.label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm">Confirmar nova senha</Label>
@@ -252,10 +298,22 @@ function ResetPasswordPage() {
                     required
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
+                    onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
                     disabled={status !== "ready"}
+                    aria-invalid={touched.confirm && !!confirmError}
+                    aria-describedby="confirm-error"
                   />
+                  {touched.confirm && confirmError && (
+                    <p id="confirm-error" className="text-xs text-destructive">
+                      {confirmError}
+                    </p>
+                  )}
                 </div>
-                <Button type="submit" className="w-full" disabled={status !== "ready"}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={status !== "ready" || !!passwordError || !!confirmError}
+                >
                   {status === "saving"
                     ? "Salvando…"
                     : status === "done"
@@ -267,6 +325,7 @@ function ResetPasswordPage() {
                 </p>
               </form>
             )}
+
           </CardContent>
         </Card>
       </div>
