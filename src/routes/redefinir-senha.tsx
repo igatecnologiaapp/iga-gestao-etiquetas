@@ -69,10 +69,8 @@ function ResetPasswordPage() {
       if (typeof window !== "undefined" && window.location.hash) {
         const t = parseHashTokens(window.location.hash);
         if (t.error) {
-          setErrorMsg(
-            t.error_description?.replace(/\+/g, " ") ||
-              "Link inválido ou expirado. Solicite um novo.",
-          );
+          const raw = t.error_description?.replace(/\+/g, " ") ?? t.error;
+          setErrorMsg(translateAuthError(raw));
           setStatus("invalid");
           return;
         }
@@ -84,10 +82,11 @@ function ResetPasswordPage() {
           // Limpa o hash da URL sem deixar token visível
           history.replaceState(null, "", window.location.pathname);
           if (error) {
-            setErrorMsg("Não foi possível validar o link. Solicite um novo.");
+            setErrorMsg(translateAuthError(error.message));
             setStatus("invalid");
             return;
           }
+
           if (t.type === "recovery") setFlowType("recovery");
           else if (t.type === "invite") setFlowType("invite");
           else if (t.type === "signup") setFlowType("signup");
