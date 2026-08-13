@@ -1,12 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Tag, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Tag, Eye, EyeOff, ShieldCheck, AlertTriangle, Check, X } from "lucide-react";
+import {
+  PASSWORD_RULES,
+  isExpiredLinkError,
+  translateAuthError,
+  validateConfirmation,
+  validatePassword,
+} from "@/lib/password-validation";
+
 
 export const Route = createFileRoute("/redefinir-senha")({
   head: () => ({
