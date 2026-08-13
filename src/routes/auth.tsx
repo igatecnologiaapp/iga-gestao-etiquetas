@@ -32,6 +32,33 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState<"login" | "forgot">("login");
+  const [resetSent, setResetSent] = useState(false);
+
+  async function onRequestReset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!EMAIL_RE.test(email.trim())) {
+      setEmailError("E-mail inválido.");
+      return;
+    }
+    setEmailError(null);
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error("Não foi possível enviar o e-mail", {
+        description: "Tente novamente em alguns instantes.",
+      });
+      return;
+    }
+    setResetSent(true);
+    toast.success("E-mail enviado", {
+      description: "Verifique sua caixa de entrada e o spam.",
+    });
+  }
+
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash) {
