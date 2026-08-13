@@ -32,6 +32,33 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState<"login" | "forgot">("login");
+  const [resetSent, setResetSent] = useState(false);
+
+  async function onRequestReset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!EMAIL_RE.test(email.trim())) {
+      setEmailError("E-mail inválido.");
+      return;
+    }
+    setEmailError(null);
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    setSubmitting(false);
+    if (error) {
+      toast.error("Não foi possível enviar o e-mail", {
+        description: "Tente novamente em alguns instantes.",
+      });
+      return;
+    }
+    setResetSent(true);
+    toast.success("E-mail enviado", {
+      description: "Verifique sua caixa de entrada e o spam.",
+    });
+  }
+
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.hash) {
@@ -144,14 +171,21 @@ function AuthPage() {
 
           <div className="space-y-1.5">
             <h2 className="text-3xl font-bold tracking-tight text-neutral-900">
-              Bem-vindo!
+              {mode === "forgot" ? "Esqueci minha senha" : "Bem-vindo!"}
             </h2>
             <p className="text-sm text-neutral-500">
-              Acesse sua conta para continuar
+              {mode === "forgot"
+                ? "Informe seu e-mail para receber o link de redefinição"
+                : "Acesse sua conta para continuar"}
             </p>
           </div>
 
-          <form onSubmit={onSubmit} className="mt-8 space-y-5" noValidate>
+          <form
+            onSubmit={mode === "forgot" ? onRequestReset : onSubmit}
+            className="mt-8 space-y-5"
+            noValidate
+          >
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-neutral-700">
                 E-mail
@@ -182,15 +216,24 @@ function AuthPage() {
               )}
             </div>
 
+            {mode === "login" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-neutral-700">
                   Senha
                 </Label>
-                <span className="text-xs text-neutral-400">
-                  Solicite ao administrador
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("forgot");
+                    setResetSent(false);
+                  }}
+                  className="text-xs font-medium text-[#7a1117] hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
               </div>
+
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
                 <Input
@@ -219,6 +262,14 @@ function AuthPage() {
                 </button>
               </div>
             </div>
+            )}
+
+            {mode === "forgot" && resetSent && (
+              <p className="rounded-lg border border-red-100 bg-red-50/60 p-3 text-xs text-neutral-700">
+                Se este e-mail estiver cadastrado, você receberá um link para
+                criar uma nova senha. O link expira em pouco tempo.
+              </p>
+            )}
 
             <Button
               type="submit"
@@ -226,8 +277,27 @@ function AuthPage() {
               className="h-11 w-full rounded-lg bg-[#7a1117] text-base font-semibold text-white shadow-sm transition hover:bg-[#5e0d12] focus-visible:ring-[#7a1117]/40"
             >
               <Lock className="mr-2 size-4" />
-              {submitting ? "Entrando..." : "Entrar"}
+              {mode === "forgot"
+                ? submitting
+                  ? "Enviando..."
+                  : "Enviar link de redefinição"
+                : submitting
+                  ? "Entrando..."
+                  : "Entrar"}
             </Button>
+
+            {mode === "forgot" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setResetSent(false);
+                }}
+                className="w-full text-center text-xs font-medium text-neutral-500 hover:text-neutral-800"
+              >
+                Voltar para o login
+              </button>
+            )}
           </form>
 
           {/* Bloco de acesso seguro */}
@@ -245,9 +315,6 @@ function AuthPage() {
             </div>
           </div>
 
-          <p className="mt-6 text-center text-xs text-neutral-500">
-            Esqueceu sua senha? Solicite ao administrador da sua empresa.
-          </p>
 
           <p className="mt-8 text-center text-[11px] text-neutral-400">
             © {year} Casa de Carnes Souza Aguiar — Todos os direitos reservados.
