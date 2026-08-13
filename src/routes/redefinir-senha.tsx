@@ -51,6 +51,15 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [touched, setTouched] = useState<{ password: boolean; confirm: boolean }>({
+    password: false,
+    confirm: false,
+  });
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const passwordError = useMemo(() => validatePassword(password), [password]);
+  const confirmError = useMemo(() => validateConfirmation(password, confirm), [password, confirm]);
+
 
   useEffect(() => {
     let unsub: { subscription: { unsubscribe: () => void } } | null = null;
