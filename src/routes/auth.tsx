@@ -216,15 +216,24 @@ function AuthPage() {
               )}
             </div>
 
+            {mode === "login" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-neutral-700">
                   Senha
                 </Label>
-                <span className="text-xs text-neutral-400">
-                  Solicite ao administrador
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("forgot");
+                    setResetSent(false);
+                  }}
+                  className="text-xs font-medium text-[#7a1117] hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
               </div>
+
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
                 <Input
