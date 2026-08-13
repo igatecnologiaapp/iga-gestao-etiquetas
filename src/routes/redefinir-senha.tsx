@@ -1,12 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Tag, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Tag, Eye, EyeOff, ShieldCheck, AlertTriangle, Check, X } from "lucide-react";
+import {
+  PASSWORD_RULES,
+  isExpiredLinkError,
+  translateAuthError,
+  validateConfirmation,
+  validatePassword,
+} from "@/lib/password-validation";
+
 
 export const Route = createFileRoute("/redefinir-senha")({
   head: () => ({
@@ -42,6 +51,15 @@ function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [touched, setTouched] = useState<{ password: boolean; confirm: boolean }>({
+    password: false,
+    confirm: false,
+  });
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const passwordError = useMemo(() => validatePassword(password), [password]);
+  const confirmError = useMemo(() => validateConfirmation(password, confirm), [password, confirm]);
+
 
   useEffect(() => {
     let unsub: { subscription: { unsubscribe: () => void } } | null = null;
@@ -51,10 +69,8 @@ function ResetPasswordPage() {
       if (typeof window !== "undefined" && window.location.hash) {
         const t = parseHashTokens(window.location.hash);
         if (t.error) {
-          setErrorMsg(
-            t.error_description?.replace(/\+/g, " ") ||
-              "Link inválido ou expirado. Solicite um novo.",
-          );
+          const raw = t.error_description?.replace(/\+/g, " ") ?? t.error;
+          setErrorMsg(translateAuthError(raw));
           setStatus("invalid");
           return;
         }
@@ -66,10 +82,11 @@ function ResetPasswordPage() {
           // Limpa o hash da URL sem deixar token visível
           history.replaceState(null, "", window.location.pathname);
           if (error) {
-            setErrorMsg("Não foi possível validar o link. Solicite um novo.");
+            setErrorMsg(translateAuthError(error.message));
             setStatus("invalid");
             return;
           }
+
           if (t.type === "recovery") setFlowType("recovery");
           else if (t.type === "invite") setFlowType("invite");
           else if (t.type === "signup") setFlowType("signup");
@@ -110,19 +127,25 @@ function ResetPasswordPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 8) {
-      toast.error("A senha deve ter no mínimo 8 caracteres.");
-      return;
-    }
-    if (password !== confirm) {
-      toast.error("As senhas não coincidem.");
+    setTouched({ password: true, confirm: true });
+    setSubmitError(null);
+    if (passwordError || confirmError) {
+      setSubmitError(passwordError ?? confirmError);
       return;
     }
     setStatus("saving");
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
+      const message = translateAuthError(error.message);
+      if (isExpiredLinkError(error.message)) {
+        setErrorMsg(message);
+        setStatus("invalid");
+        toast.error("Link expirado", { description: message });
+        return;
+      }
       setStatus("ready");
-      toast.error("Não foi possível salvar", { description: error.message });
+      setSubmitError(message);
+      toast.error("Não foi possível salvar", { description: message });
       return;
     }
     setStatus("done");
@@ -131,6 +154,7 @@ function ResetPasswordPage() {
     await supabase.auth.signOut();
     setTimeout(() => navigate({ to: "/auth" }), 600);
   }
+
 
   const heading =
     flowType === "invite"
@@ -184,15 +208,29 @@ function ResetPasswordPage() {
 
             {status === "invalid" && (
               <div className="space-y-4">
-                <p className="text-sm text-destructive">{errorMsg}</p>
-                <Button variant="outline" className="w-full" onClick={() => navigate({ to: "/auth" })}>
-                  Voltar para o login
+                <Alert variant="destructive">
+                  <AlertTriangle className="size-4" aria-hidden />
+                  <AlertTitle>Não foi possível redefinir a senha</AlertTitle>
+                  <AlertDescription>{errorMsg}</AlertDescription>
+                </Alert>
+                <p className="text-sm text-muted-foreground">
+                  Os links de redefinição são de uso único e válidos por tempo limitado. Solicite um
+                  novo link em "Esqueci minha senha" na tela de login.
+                </p>
+                <Button className="w-full" onClick={() => navigate({ to: "/auth" })}>
+                  Solicitar novo link
                 </Button>
               </div>
             )}
 
             {(status === "ready" || status === "saving" || status === "done") && (
               <form onSubmit={onSubmit} className="space-y-4" noValidate>
+                {submitError && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="size-4" aria-hidden />
+                    <AlertDescription>{submitError}</AlertDescription>
+                  </Alert>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="password">Nova senha</Label>
                   <div className="relative">
@@ -204,8 +242,11 @@ function ResetPasswordPage() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                       className="pr-10"
                       disabled={status !== "ready"}
+                      aria-invalid={touched.password && !!passwordError}
+                      aria-describedby="password-rules password-error"
                     />
                     <button
                       type="button"
@@ -217,6 +258,35 @@ function ResetPasswordPage() {
                       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
+                  {touched.password && passwordError && (
+                    <p id="password-error" className="text-xs text-destructive">
+                      {passwordError}
+                    </p>
+                  )}
+                  <ul id="password-rules" className="space-y-1 pt-1">
+                    {PASSWORD_RULES.map((rule) => {
+                      const ok = rule.test(password);
+                      return (
+                        <li
+                          key={rule.id}
+                          className={`flex items-center gap-2 text-xs ${
+                            ok
+                              ? "text-muted-foreground"
+                              : touched.password
+                                ? "text-destructive"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          {ok ? (
+                            <Check className="size-3.5 text-primary" aria-hidden />
+                          ) : (
+                            <X className="size-3.5" aria-hidden />
+                          )}
+                          <span>{rule.label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm">Confirmar nova senha</Label>
@@ -228,10 +298,22 @@ function ResetPasswordPage() {
                     required
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
+                    onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
                     disabled={status !== "ready"}
+                    aria-invalid={touched.confirm && !!confirmError}
+                    aria-describedby="confirm-error"
                   />
+                  {touched.confirm && confirmError && (
+                    <p id="confirm-error" className="text-xs text-destructive">
+                      {confirmError}
+                    </p>
+                  )}
                 </div>
-                <Button type="submit" className="w-full" disabled={status !== "ready"}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={status !== "ready" || !!passwordError || !!confirmError}
+                >
                   {status === "saving"
                     ? "Salvando…"
                     : status === "done"
@@ -243,6 +325,7 @@ function ResetPasswordPage() {
                 </p>
               </form>
             )}
+
           </CardContent>
         </Card>
       </div>
