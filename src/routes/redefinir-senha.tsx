@@ -125,6 +125,23 @@ function ResetPasswordPage() {
     };
   }, []);
 
+  const [countdown, setCountdown] = useState(5);
+  useEffect(() => {
+    if (status !== "done") return;
+    setCountdown(5);
+    const id = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(id);
+          navigate({ to: "/auth" });
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [status, navigate]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched({ password: true, confirm: true });
@@ -150,9 +167,8 @@ function ResetPasswordPage() {
     }
     setStatus("done");
     toast.success("Senha definida com sucesso");
-    // Encerra a sessão temporária e leva ao login limpo
+    // Encerra a sessão temporária de redefinição
     await supabase.auth.signOut();
-    setTimeout(() => navigate({ to: "/auth" }), 600);
   }
 
 
@@ -223,7 +239,27 @@ function ResetPasswordPage() {
               </div>
             )}
 
-            {(status === "ready" || status === "saving" || status === "done") && (
+            {status === "done" && (
+              <div className="space-y-6 text-center py-4">
+                <div className="mx-auto size-14 rounded-full bg-primary/10 grid place-items-center">
+                  <ShieldCheck className="size-7 text-primary" aria-hidden />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-semibold">Senha redefinida com sucesso</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Sua nova senha foi definida e já pode ser usada para entrar no sistema.
+                  </p>
+                </div>
+                <Button className="w-full" onClick={() => navigate({ to: "/auth" })}>
+                  Ir para a tela de login
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Redirecionando automaticamente em {countdown}s…
+                </p>
+              </div>
+            )}
+
+            {(status === "ready" || status === "saving") && (
               <form onSubmit={onSubmit} className="space-y-4" noValidate>
                 {submitError && (
                   <Alert variant="destructive">
@@ -314,11 +350,7 @@ function ResetPasswordPage() {
                   className="w-full"
                   disabled={status !== "ready" || !!passwordError || !!confirmError}
                 >
-                  {status === "saving"
-                    ? "Salvando…"
-                    : status === "done"
-                      ? "Redirecionando…"
-                      : "Salvar nova senha"}
+                  {status === "saving" ? "Salvando…" : "Salvar nova senha"}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
                   Após salvar, você será redirecionado para a tela de login.
