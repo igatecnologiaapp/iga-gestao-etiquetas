@@ -11,7 +11,9 @@ ROLES = ["administrador", "supervisor", "operador", "consulta"]
 CMDS = ["SELECT", "INSERT", "UPDATE", "DELETE"]
 
 SQL = """
-select p.tablename, p.cmd, coalesce(p.qual,''), coalesce(p.with_check,'')
+select p.tablename, p.cmd,
+       replace(coalesce(p.qual,''), chr(10), ' '),
+       replace(coalesce(p.with_check,''), chr(10), ' ')
 from pg_policies p
 where p.schemaname='public'
 order by 1,2
@@ -27,7 +29,13 @@ where table_schema='public' and grantee in ('anon','authenticated')
 def psql(sql: str):
     out = subprocess.run(["psql", "-At", "-F", "\x1f", "-c", sql],
                          capture_output=True, text=True, check=True).stdout
-    return [l.split("\x1f") for l in out.splitlines() if l.strip()]
+    rows = []
+    for line in out.splitlines():
+        if not line.strip():
+            continue
+        rows.append(line.split("\x1f"))
+    width = max((len(r) for r in rows), default=0)
+    return [r + [""] * (width - len(r)) for r in rows]
 
 
 def role_allows(expr: str, role: str) -> bool:
