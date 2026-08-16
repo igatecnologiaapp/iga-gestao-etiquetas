@@ -585,6 +585,22 @@ function buildServer() {
   const app = express();
   // FASE 1 (C-01) — CORS restritivo por origem, apenas GET/POST/OPTIONS,
   // e apenas os headers realmente usados pelo painel.
+  //
+  // AUDITORIA (P0-IMP-01) — Private Network Access (PNA):
+  // o painel roda em https://*.lovable.app (origem pública) e o agente em
+  // http://127.0.0.1:17777 (rede local). Navegadores Chromium enviam o
+  // preflight com `Access-Control-Request-Private-Network: true` e exigem
+  // `Access-Control-Allow-Private-Network: true` na resposta. Sem esse header
+  // o fetch é bloqueado ANTES de chegar ao agente e o painel só observa um
+  // TypeError de rede — indistinguível de "agente desligado".
+  // O header só é emitido para origens já aprovadas pela allowlist acima.
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (req.headers["access-control-request-private-network"] && isOriginAllowed(origin)) {
+      res.setHeader("Access-Control-Allow-Private-Network", "true");
+    }
+    next();
+  });
   app.use(cors({
     origin: function (origin, callback) {
       if (isOriginAllowed(origin)) return callback(null, true);
