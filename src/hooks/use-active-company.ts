@@ -5,9 +5,18 @@ const KEY = "active_company_id";
 
 export function useActiveCompany() {
   const { data: memberships, isLoading } = useUserCompanies();
-  const [companyId, setCompanyId] = useState<string | null>(
-    typeof window !== "undefined" ? localStorage.getItem(KEY) : null,
-  );
+  // Estado inicial idêntico em SSR e no primeiro render do cliente: a leitura
+  // de localStorage acontece somente após a hidratação (evita mismatch).
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved) setCompanyId((prev) => prev ?? saved);
+    } catch {
+      /* storage bloqueado — segue com seleção automática */
+    }
+  }, []);
 
   useEffect(() => {
     if (!memberships?.length) return;
