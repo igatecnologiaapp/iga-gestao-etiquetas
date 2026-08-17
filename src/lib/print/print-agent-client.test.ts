@@ -122,6 +122,21 @@ describe("PrintAgentClient (FASE 4)", () => {
     expect(await agent.testConnection()).toBe(false);
   });
 
+  // AUDITORIA (P0-IMP-01) — falha de rede (agente desligado OU bloqueio de
+  // Private Network Access pelo navegador) deve virar AGENT_OFFLINE sem perder
+  // a mensagem original, para o diagnóstico distinguir as duas causas.
+  it("falha de rede vira AGENT_OFFLINE preservando a mensagem original", async () => {
+    const netFail: typeof fetch = (() =>
+      Promise.reject(new TypeError("Failed to fetch"))) as typeof fetch;
+    const agent = new PrintAgentClient({ transport: { fetch: netFail }, timeoutMs: 500 });
+    const h = await agent.health();
+    expect(h.ok).toBe(false);
+    expect(h.reachable).toBe(false);
+    expect(h.code).toBe("AGENT_OFFLINE");
+    expect(h.error).toContain("Failed to fetch");
+  });
+
+
   it("PrintAgentError carrega code, status e mensagem padronizada", async () => {
     const agent = createMockPrintAgent({ requireToken: "x", invalidToken: true });
     try {
