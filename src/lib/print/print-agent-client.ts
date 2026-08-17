@@ -110,8 +110,21 @@ export class PrintAgentClient {
     } catch (e: unknown) {
       const err = e as { name?: string; message?: string };
       if (err?.name === "AbortError") throw new PrintAgentOfflineError("Tempo esgotado", "TIMEOUT");
-      // Network error / DNS / connection refused → offline
-      if (e instanceof TypeError) throw new PrintAgentOfflineError(err.message ?? "network", "AGENT_OFFLINE");
+      // Network error / DNS / connection refused → offline.
+      // AUDITORIA (P0-IMP-01): um bloqueio de Private Network Access / mixed
+      // content produz exatamente o mesmo TypeError de "conexão recusada".
+      // Quando a página está em https e o alvo é loopback http, informamos as
+      // duas causas possíveis para que o operador não conclua erradamente que
+      // o agente está desligado.
+      if (e instanceof TypeError) {
+        const httpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
+        const loopbackTarget = this.baseUrl.startsWith("http://");
+        const hint =
+          httpsPage && loopbackTarget
+            ? " — o agente pode estar desligado OU a chamada do navegador à rede local foi bloqueada (Private Network Access). Atualize o Print Agent para 1.3.1 ou superior."
+            : "";
+        throw new PrintAgentOfflineError(`${err.message ?? "network"}${hint}`, "AGENT_OFFLINE");
+      }
       throw e;
     } finally {
       clearTimeout(timer);

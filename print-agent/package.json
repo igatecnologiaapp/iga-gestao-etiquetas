@@ -1,6 +1,6 @@
 {
   "name": "lovable-print-agent",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Print Agent local — recebe trabalhos do painel via 127.0.0.1:17777 e envia para a impressora física.",
   "main": "src/index.js",
   "bin": "src/index.js",

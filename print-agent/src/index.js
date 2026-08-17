@@ -25,7 +25,7 @@ const cors = require("cors");
 
 // -------- Config --------
 const PORT = Number(process.env.PRINT_AGENT_PORT || 17777);
-const VERSION = "1.3.0";
+const VERSION = "1.3.1";
 const BASE_DIR = process.platform === "win32"
   ? path.join(process.env.PROGRAMDATA || "C:\\ProgramData", "LovablePrintAgent")
   : path.join(os.homedir(), ".lovable-print-agent");
