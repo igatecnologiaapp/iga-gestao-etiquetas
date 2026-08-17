@@ -96,7 +96,11 @@ function AuthPage() {
     navigate({ to: "/app" });
   }
 
-  const year = new Date().getFullYear();
+  // Ano fixo no primeiro render (SSR = cliente); atualizado após a hidratação.
+  const [year, setYear] = useState(2026);
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   return (
     <div className="min-h-screen w-full bg-white lg:grid lg:grid-cols-[1.05fr_1fr]">
